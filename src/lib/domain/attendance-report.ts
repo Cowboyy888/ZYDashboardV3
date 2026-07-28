@@ -10,7 +10,7 @@
  *   焊网机员工 10/11
  *   ...
  *   请假 1人
- *   thol savarin 7号（备用）焊网机机长
+ *   thol savarin 焊网机机长
  *   总计 37人，实到 36人
  *
  * Rules:
@@ -20,8 +20,8 @@
  *  - Scheduled = active employees assigned to that group on the date.
  *  - Below groups, only NON-ZERO exception sections in this order:
  *    请假 (leave) · 缺勤 (absent) · 迟到 (late) · 未打卡 (unmarked).
- *  - Each exception employee line:
- *    `{display name} {number}号（label）{job title}` (（label） only if present).
+ *  - Each exception employee line: `{display name} {job title}` — the
+ *    employee number and label are used only to order the list, not shown.
  *  - Footer: `总计 {total active}人，实到 {total actual present}人`.
  *
  * Pure — no I/O — so the exact output is unit-tested.
@@ -97,11 +97,10 @@ function isActualPresent(status: AttendanceStatus): boolean {
 }
 
 function employeeLine(e: ReportEmployee): string {
-  const num = e.employeeNumber ? `${e.employeeNumber}号` : '';
-  const label = e.label ? `（${e.label}）` : '';
+  // Employee number and label are used only for sort order (see `byNumber`
+  // below) — not shown in the report body.
   const title = e.jobTitle ?? '';
-  // "{display name} {num}号（label）{job title}"
-  return `${e.displayName} ${num}${label}${title}`.trimEnd();
+  return `${e.displayName} ${title}`.trimEnd();
 }
 
 /**

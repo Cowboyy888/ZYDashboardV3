@@ -84,11 +84,13 @@ Editable groups that structure the attendance report (老板助理, 工厂主管
 `start_date`, `is_active`, `pay_type`, `photo_path`, `notes`, `created_at`.
 The `assign_employee_identity` BEFORE INSERT trigger sets `seq_no`,
 `employee_code = 'ZY-' || lpad(seq_no,4,'0')`, and defaults `employee_number` to
-`seq_no` (so reports can show `7号`). Employee IDs are **never entered by the
-client** and never reused, even after archiving.
+`seq_no`. Employee IDs are **never entered by the client** and never reused,
+even after archiving.
 Report/grouping fields (added in 0005): `attendance_group_id → attendance_groups`,
-`employee_number` (e.g. "7" → renders "7号"), `display_name`, `job_title`,
-`label` (optional, e.g. 备用).
+`employee_number`, `display_name`, `job_title`, `label` (optional, e.g. 备用).
+`employee_number` and `label` are used only to order the attendance report's
+exception list (请假/缺勤/迟到/未打卡) — the report body itself shows just
+`{display name} {job title}`, not the number or label.
 
 ### employee_private  *(SENSITIVE)*
 `employee_id → employees (PK)`, `base_salary`, `daily_rate`, `emergency_contact`,

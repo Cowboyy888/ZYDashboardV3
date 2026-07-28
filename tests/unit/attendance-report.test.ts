@@ -93,7 +93,7 @@ describe('grouped attendance report — exact format', () => {
       '采买配件房 1/1',
       '安保 1/1',
       '请假 1人',
-      'thol savarin 7号（备用）焊网机机长',
+      'thol savarin 焊网机机长',
       '总计 37人，实到 36人',
     ].join('\n');
 
@@ -174,7 +174,9 @@ describe('grouped attendance report — leave details & totals', () => {
     expect(leave.key).toBe('leave');
     expect(leave.count).toBe(1);
     expect(report.text).toContain('请假 1人');
-    expect(report.text).toContain('thol savarin 7号（备用）焊网机机长');
+    expect(report.text).toContain('thol savarin 焊网机机长');
+    expect(report.text).not.toContain('7号');
+    expect(report.text).not.toContain('备用');
     // No spurious sections
     expect(report.text).not.toContain('缺勤');
     expect(report.text).not.toContain('未打卡');
