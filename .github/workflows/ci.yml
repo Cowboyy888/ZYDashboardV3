@@ -1,0 +1,69 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+jobs:
+  # Fast static gate — no database. verify auto-skips the e2e step when Supabase
+  # is not reachable, so this stays green without a backend.
+  verify:
+    name: verify (format · lint · types · tests · schema · build)
+    runs-on: ubuntu-latest
+    env:
+      NEXT_PUBLIC_SUPABASE_URL: http://127.0.0.1:54321
+      NEXT_PUBLIC_SUPABASE_ANON_KEY: ci-placeholder-anon-key
+      SUPABASE_SERVICE_ROLE_KEY: ci-placeholder-service-role-key
+      APP_TIMEZONE: Asia/Phnom_Penh
+      TELEGRAM_ADAPTER: mock
+      CRON_SECRET: ci-placeholder-cron-secret
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+      - run: npm ci
+      - run: npm run verify
+
+  # Full gate INCLUDING Playwright against a real local Supabase.
+  e2e:
+    name: verify + Playwright (local Supabase)
+    runs-on: ubuntu-latest
+    env:
+      REQUIRE_E2E: '1'
+      APP_TIMEZONE: Asia/Phnom_Penh
+      TELEGRAM_ADAPTER: mock
+      CRON_SECRET: ci-e2e-cron-secret
+      CI: 'true'
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+      - run: npm ci
+
+      - name: Install Supabase CLI
+        uses: supabase/setup-cli@v1
+        with:
+          version: latest
+
+      - name: Start Supabase + apply migrations/seed
+        run: |
+          supabase start
+          supabase db reset --no-seed=false
+
+      - name: Export Supabase env
+        run: |
+          echo "NEXT_PUBLIC_SUPABASE_URL=$(supabase status -o json | jq -r '.API_URL')" >> "$GITHUB_ENV"
+          echo "NEXT_PUBLIC_SUPABASE_ANON_KEY=$(supabase status -o json | jq -r '.ANON_KEY')" >> "$GITHUB_ENV"
+          echo "SUPABASE_SERVICE_ROLE_KEY=$(supabase status -o json | jq -r '.SERVICE_ROLE_KEY')" >> "$GITHUB_ENV"
+
+      - name: Install Playwright browser
+        run: npx playwright install --with-deps chromium
+
+      - name: Run verify (includes Playwright e2e)
+        run: npm run verify

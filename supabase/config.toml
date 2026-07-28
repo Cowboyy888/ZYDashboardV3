@@ -1,0 +1,50 @@
+# Supabase local development config. Run `supabase start` to boot the stack,
+# then `supabase db reset` to apply migrations + seed.
+project_id = "zysteel-operations"
+
+[api]
+enabled = true
+port = 54321
+schemas = ["public", "storage", "graphql_public"]
+extra_search_path = ["public", "extensions"]
+max_rows = 1000
+
+[db]
+port = 54322
+shadow_port = 54320
+major_version = 15
+
+[db.pooler]
+enabled = false
+
+# Disabled locally: the vector/logflare log pipeline bind-mounts the Docker
+# socket into a container, which isn't supported through Colima's virtiofs
+# home-directory share (only relevant on this non-Docker-Desktop host).
+[analytics]
+enabled = false
+
+[studio]
+enabled = true
+port = 54323
+
+[inbucket]
+enabled = true
+port = 54324
+
+[storage]
+enabled = true
+file_size_limit = "50MiB"
+
+[auth]
+enabled = true
+site_url = "http://localhost:3000"
+additional_redirect_urls = ["http://localhost:3000"]
+jwt_expiry = 3600
+# Public self-signup is disabled. The first Owner is bootstrapped once (only
+# while no Owner exists) and all later users are created by an Owner via the
+# service-role admin API. See docs/operations-runbook.md.
+enable_signup = false
+
+[auth.email]
+enable_signup = true
+enable_confirmations = false

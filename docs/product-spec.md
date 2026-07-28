@@ -1,0 +1,134 @@
+# Product Spec — Zysteel Operations
+
+## Purpose
+
+A single operational system for Zysteel (中粤铁网) covering the work the business
+does every day: recording **attendance**, tracking **inventory** as an auditable
+ledger, and pushing **Telegram** reports to the team. Built to be extended, in
+phased passes, into purchasing, sales, and payroll.
+
+## Users & roles
+
+Role-based access control (see `docs/data-dictionary.md` for the full matrix):
+
+- **Owner** — full access, approvals, the only role that may override negative stock.
+- **System Admin** — settings, users, employees, product master data, Telegram
+  config; views (not manage) suppliers/purchase orders, including costs.
+- **Attendance Admin** — daily attendance entry & correction; send attendance reports.
+- **Warehouse Admin** — inventory: opening/production/stock-out/adjustment/
+  transfer; suppliers and purchase orders (create, issue, receive), no
+  approval workflow.
+- **Sales Admin** — customers, sales orders (create, confirm, deliver), no
+  approval workflow; read inventory.
+- **Payroll Admin** — generates/manages payroll runs, deduction/advance lines
+  (not approval — Owner only); reads sensitive employee data.
+- **Viewer** — dashboard & reports only.
+
+## Localisation
+
+- Bilingual UI: **中文 (default)** and **English**, toggled in the top bar.
+- Product-domain terms (钢筋网, 螺纹盘圆, 拔丝料, units 张 / 捆, conditions 旧 /
+  错毛边) render verbatim in both languages.
+- **Khmer** employee names render with a Khmer font stack.
+- Dates display as **dd/mm/yyyy**. All schedules/times use **Asia/Phnom_Penh**.
+
+## First pass — Operations MVP (this release)
+
+1. **Engineering harness** — docs, `npm run verify`, CI, `.env.example`, tests.
+2. **Brand & foundation** — 中粤铁网 red/charcoal industrial UI, auth, roles,
+   immutable audit log, responsive shell, dashboard.
+3. **Settings / master data** — editable **locations** (Storage Room, Warehouse),
+   editable **product families** (钢筋网 / 螺纹盘圆 / 拔丝料), editable
+   **specifications** with attributes, units, conditions, and minimum-stock
+   levels. Seeded with the supplied example stock.
+4. **Employees & attendance** — profiles with private photos; manual morning &
+   afternoon entry; bulk "mark present" + per-employee exceptions; unmarked
+   warning; attendance dashboard; Telegram "Send now" + scheduled 08:00 / 13:00.
+5. **Core inventory** — append-only ledger (opening / production / stock-out /
+   adjustment / Storage↔Warehouse transfer); live stock by spec, condition,
+   location, and total; negative-stock block with Owner override; inventory
+   dashboard + daily Telegram report.
+6. **Verification** — automated tests for the acceptance criteria; `npm run
+   verify` green.
+
+Full Reports remains a **navigation placeholder** in this pass. Purchasing
+(Second pass), Sales (Third pass), and Payroll (Fourth pass, below) are now
+built.
+
+## Inventory model (core)
+
+- Two editable stock locations: **Storage Room (仓房)** and **Warehouse (仓库)**.
+- Product families and specifications are **editable master data**, never
+  hard-coded. For **钢筋网** each unique combination of *family · diameter · size ·
+  hole · optional rod count · condition · unit* is a distinct SKU. **拔丝料**
+  supports decimal 捆 quantities (e.g. 30.5). **螺纹盘圆** specs/units are fully
+  configurable.
+- Stock is an **append-only ledger**. Balance = `Σ quantity`:
+  `opening_balance + purchase_receipt + production_output + transfer_in
+   − sale_delivery − other_stock_out − transfer_out ± adjustment`.
+- **Transfers** create a matching out/in pair; company total is invariant.
+- **Negative stock** is blocked unless an **Owner** overrides with a recorded
+  reason.
+
+Seeded opening stock (Storage Room): 拔丝料 10厘 = 10 捆; 拔丝料 6厘 = 30.5 捆;
+钢筋网 9厘|3×6|20孔|Normal = 329 张; 9厘|3×6|20孔|旧 = 64 张;
+5.5厘|3×6|20孔|15根|Normal = 903 张; 5.5厘|3×6|20孔|14根|错毛边 = 146 张;
+3.3厘|2×6|20孔|Normal = 902 张.
+
+## Attendance model
+
+- Two manual shifts per business day: **morning** (~07:30) and **afternoon**
+  (~12:30). Statuses: Present, Late, Leave, Absent, plus **Unmarked** for anyone
+  without a record.
+- One record per (employee, business_date, shift). Admin bulk-marks Present, then
+  edits exceptions. Unmarked employees are flagged before a report is sent.
+- Reports: morning at **08:00**, afternoon at **13:00** (Asia/Phnom_Penh), with
+  totals + exceptions. Admin can resend a corrected report. Scheduled sends are
+  idempotent (no duplicates).
+
+## Roadmap (later passes)
+
+- **Second pass — Purchasing (built):** suppliers, purchase orders (USD/KHR/CNY,
+  `PO-YYYY-####`, Draft → Ordered → Partially Received/Received/Cancelled),
+  goods receiving into a location (creates `purchase_receipt`, immutable
+  ledger), over-receipt blocked without Owner override, and a Purchasing
+  dashboard (open/overdue/due-this-week/partially-received, ordered vs.
+  received, projected stock). Costs restricted to Owner/System Admin/Warehouse
+  Admin. The Telegram inventory report does not include supplier/PO
+  information — see `docs/data-dictionary.md` and `docs/test-plan.md` for the
+  schema and tests.
+- **Third pass — Sales (built):** customers, sales orders (USD/KHR/CNY,
+  `SO-YYYY-####`, Draft → Confirmed → Partially Delivered/Delivered/Cancelled),
+  delivery from a location (creates `sale_delivery`, immutable ledger,
+  stored negative), over-delivery blocked without Owner override, and a Sales
+  dashboard (open/overdue/due-this-week/partially-delivered, ordered vs.
+  delivered, committed stock = physical − outstanding ordered). Prices
+  restricted to Owner/System Admin/Sales Admin. No Telegram sales section (by
+  design, mirroring the decision to keep Purchasing's Telegram section off) —
+  see `docs/data-dictionary.md` and `docs/test-plan.md` for the schema and
+  tests.
+- **Fourth pass — Payroll (built):** payroll runs over a period (default
+  semi-monthly, 1st–15th / 16th–end), Draft → Approved → Paid/Cancelled.
+  Generating a draft snapshots one payslip per active employee: monthly
+  employees get `base_salary` in full (attendance does not affect it); daily
+  employees get `daily_rate × count(DISTINCT business dates with a 'present'
+  or 'late' attendance row in the period)` — a day with either shift marked
+  present/late counts once, never double-counted across morning + afternoon.
+  Deductions/advances are simple named line items per payslip (no cross-period
+  running balance). USD only — no currency field, matching
+  `employee_private`. Only Draft is editable; **Approved is permanently
+  immutable and requires an Owner** (enforced by the app AND a DB trigger as
+  the ultimate authority — belt & suspenders, same shape as the negative-stock
+  and over-receipt/over-delivery guards). No bank payments (Paid is a
+  bookkeeping marker only). Salary figures are restricted to Owner/System
+  Admin/Payroll Admin and are **never written to the audit log** (only
+  metadata like status transitions and line labels/kinds — see AGENTS.md).
+  These four rules (worked-day counting, monthly pro-ration, currency,
+  deduction structure) were explicit product decisions, not inferred — see
+  `docs/data-dictionary.md` and `docs/test-plan.md` for the schema and tests.
+
+## Explicit non-goals (v1)
+
+- No automatic raw-material consumption from production (documented future BOM).
+- No bank payments in payroll.
+- No purchasing/sales/payroll workflows in the first pass.

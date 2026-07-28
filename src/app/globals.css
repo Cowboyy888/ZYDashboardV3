@@ -1,0 +1,91 @@
+@import url('https://fonts.googleapis.com/css2?family=Noto+Sans+SC:wght@400;500;700&family=Noto+Sans+Khmer:wght@400;500;700&display=swap');
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/**
+ * Zysteel (中粤铁网) industrial theme — signal red + charcoal.
+ * Tokens are consumed by tailwind.config.ts via hsl(var(--token)).
+ */
+@layer base {
+  :root {
+    --font-sans:
+      'Noto Sans SC', ui-sans-serif, system-ui, -apple-system, 'Segoe UI', Roboto, 'Helvetica Neue',
+      Arial, sans-serif;
+    --font-khmer: 'Noto Sans Khmer', 'Khmer OS', 'Noto Sans SC', sans-serif;
+
+    --background: 210 20% 98%;
+    --foreground: 208 16% 16%;
+
+    --card: 0 0% 100%;
+    --card-foreground: 208 16% 16%;
+    --popover: 0 0% 100%;
+    --popover-foreground: 208 16% 16%;
+
+    /* Signal red */
+    --primary: 354 74% 45%;
+    --primary-foreground: 0 0% 100%;
+
+    --secondary: 210 16% 93%;
+    --secondary-foreground: 208 16% 20%;
+    --muted: 210 16% 95%;
+    --muted-foreground: 215 12% 42%;
+    --accent: 210 16% 92%;
+    --accent-foreground: 208 16% 18%;
+
+    --destructive: 0 72% 45%;
+    --destructive-foreground: 0 0% 100%;
+    --success: 152 52% 36%;
+    --success-foreground: 0 0% 100%;
+    --warning: 36 92% 48%;
+    --warning-foreground: 36 40% 12%;
+
+    --border: 214 16% 88%;
+    --input: 214 16% 84%;
+    --ring: 354 74% 45%;
+
+    --radius: 0.5rem;
+  }
+
+  .dark {
+    --background: 208 18% 11%;
+    --foreground: 210 16% 92%;
+    --card: 208 16% 14%;
+    --card-foreground: 210 16% 92%;
+    --popover: 208 16% 14%;
+    --popover-foreground: 210 16% 92%;
+    --primary: 354 78% 52%;
+    --primary-foreground: 0 0% 100%;
+    --secondary: 208 12% 20%;
+    --secondary-foreground: 210 16% 92%;
+    --muted: 208 12% 18%;
+    --muted-foreground: 214 12% 62%;
+    --accent: 208 12% 22%;
+    --accent-foreground: 210 16% 92%;
+    --destructive: 0 62% 46%;
+    --destructive-foreground: 0 0% 100%;
+    --border: 208 12% 24%;
+    --input: 208 12% 26%;
+    --ring: 354 78% 52%;
+  }
+
+  * {
+    @apply border-border;
+  }
+  body {
+    @apply bg-background text-foreground;
+    font-family: var(--font-sans);
+    -webkit-font-smoothing: antialiased;
+  }
+  /* Khmer employee names render with a Khmer-capable font stack. */
+  .name-khmer,
+  [lang='km'] {
+    font-family: var(--font-khmer);
+  }
+}
+
+/* Thin industrial accent bar used on the brand mark + sidebar. */
+.zy-accent-bar {
+  background: linear-gradient(180deg, hsl(var(--primary)) 0%, hsl(354 74% 38%) 100%);
+}
