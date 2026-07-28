@@ -109,6 +109,7 @@ export const dictionary = {
   'dash.openPOs': { en: 'Open POs', zh: '采购订单' },
   'dash.pendingDeliveries': { en: 'Pending deliveries', zh: '待交付' },
   'dash.payrollApprovals': { en: 'Payroll approvals', zh: '待审工资' },
+  'dash.logProduction': { en: 'Log production', zh: '登记生产' },
   'dash.placeholderNote': {
     en: 'Placeholder tiles cover modules planned for later passes (see docs/decisions.md).',
     zh: '占位卡片为后续阶段规划的模块（详见 docs/decisions.md）。',

@@ -1,4 +1,6 @@
 import { CalendarCheck, Boxes, AlertTriangle } from 'lucide-react';
+import { requireUser } from '@/lib/auth';
+import { hasPermission } from '@/lib/domain/rbac';
 import { getLocale } from '@/lib/i18n/locale';
 import { translator } from '@/lib/i18n';
 import { businessDate, formatDDMMYYYY } from '@/lib/domain/datetime';
@@ -18,19 +20,29 @@ import {
   getLocations,
   getBalances,
   getProductionCountForDate,
+  getPurchaseOrders,
+  getSalesOrders,
+  getPayrollRuns,
 } from '@/lib/db/queries';
 import { PageHeader } from '@/components/page-header';
 import { StatCard } from '@/components/stat-card';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
+import { ProductionQuickEntry } from './production-quick-entry';
 
 export const dynamic = 'force-dynamic';
 
 export default async function DashboardPage() {
+  const user = await requireUser();
   const locale = await getLocale();
   const t = translator(locale);
   const today = businessDate();
   const monthStart = today.slice(0, 8) + '01';
+
+  const canSales = hasPermission(user.role, 'sales:view');
+  const canPurchasing = hasPermission(user.role, 'purchasing:view');
+  const canPayroll = hasPermission(user.role, 'payroll:view');
+  const canLogProduction = hasPermission(user.role, 'stock:production');
 
   const [
     employees,
@@ -41,6 +53,9 @@ export default async function DashboardPage() {
     locations,
     balances,
     productionToday,
+    purchaseOrders,
+    salesOrders,
+    payrollRuns,
   ] = await Promise.all([
     getEmployees(),
     getAttendanceForDate(today),
@@ -50,7 +65,21 @@ export default async function DashboardPage() {
     getLocations(),
     getBalances(),
     getProductionCountForDate(today),
+    canPurchasing ? getPurchaseOrders() : Promise.resolve([]),
+    canSales ? getSalesOrders() : Promise.resolve([]),
+    canPayroll ? getPayrollRuns() : Promise.resolve([]),
   ]);
+
+  const openPoCount = purchaseOrders.filter(
+    (po) => po.status === 'ordered' || po.status === 'partially_received',
+  ).length;
+  const salesTodayCount = salesOrders.filter(
+    (so) => so.order_date === today && so.status !== 'cancelled',
+  ).length;
+  const pendingDeliveryCount = salesOrders.filter(
+    (so) => so.status === 'confirmed' || so.status === 'partially_delivered',
+  ).length;
+  const payrollApprovalCount = payrollRuns.filter((r) => r.status === 'draft').length;
 
   const activeIds = employees.map((e) => e.id);
   const records: AttendanceRecord[] = todaysAttendance.map((a) => ({
@@ -115,6 +144,16 @@ export default async function DashboardPage() {
           sub="张 · 钢筋网"
         />
       </div>
+
+      {canLogProduction && (
+        <div className="mt-4">
+          <ProductionQuickEntry
+            skus={rows.map((r) => ({ skuId: r.skuId, label: r.label }))}
+            locations={locations.map((l) => ({ id: l.id, name: l.name }))}
+            today={today}
+          />
+        </div>
+      )}
 
       <div className="mt-4 grid gap-4 lg:grid-cols-3">
         <Card className="lg:col-span-1">
@@ -205,45 +244,34 @@ export default async function DashboardPage() {
         </CardContent>
       </Card>
 
-      <div className="mt-4 grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
-        <ComingSoonTile
-          title={t('dash.salesToday')}
-          pass={t('pass.third')}
-          label={t('cs.comingSoon')}
-        />
-        <ComingSoonTile
-          title={t('dash.openPOs')}
-          pass={t('pass.second')}
-          label={t('cs.comingSoon')}
-        />
-        <ComingSoonTile
-          title={t('dash.pendingDeliveries')}
-          pass={t('pass.third')}
-          label={t('cs.comingSoon')}
-        />
-        <ComingSoonTile
-          title={t('dash.payrollApprovals')}
-          pass={t('pass.fourth')}
-          label={t('cs.comingSoon')}
-        />
-      </div>
-
-      <p className="mt-2 text-xs text-muted-foreground">{t('dash.placeholderNote')}</p>
+      {(canSales || canPurchasing || canPayroll) && (
+        <div className="mt-4 grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
+          {canSales && (
+            <StatCard label={t('dash.salesToday')} value={String(salesTodayCount)} tone="primary" />
+          )}
+          {canPurchasing && (
+            <StatCard
+              label={t('dash.openPOs')}
+              value={String(openPoCount)}
+              tone={openPoCount > 0 ? 'warning' : 'success'}
+            />
+          )}
+          {canSales && (
+            <StatCard
+              label={t('dash.pendingDeliveries')}
+              value={String(pendingDeliveryCount)}
+              tone={pendingDeliveryCount > 0 ? 'warning' : 'success'}
+            />
+          )}
+          {canPayroll && (
+            <StatCard
+              label={t('dash.payrollApprovals')}
+              value={String(payrollApprovalCount)}
+              tone={payrollApprovalCount > 0 ? 'warning' : 'success'}
+            />
+          )}
+        </div>
+      )}
     </div>
-  );
-}
-
-function ComingSoonTile({ title, pass, label }: { title: string; pass: string; label: string }) {
-  return (
-    <Card className="border-dashed">
-      <CardContent className="p-4">
-        <div className="text-xs font-medium uppercase tracking-wide text-muted-foreground">
-          {title}
-        </div>
-        <div className="mt-2 text-sm text-muted-foreground">
-          {label} · {pass}
-        </div>
-      </CardContent>
-    </Card>
   );
 }

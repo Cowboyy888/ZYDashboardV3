@@ -1,0 +1,83 @@
+'use client';
+import { PackagePlus } from 'lucide-react';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
+import { ActionForm } from '@/components/forms/action-form';
+import { SubmitButton } from '@/components/forms/submit-button';
+import { useT } from '@/components/i18n-provider';
+import { postMovement } from '@/lib/actions/inventory';
+
+const selectCls =
+  'flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring';
+
+export function ProductionQuickEntry({
+  skus,
+  locations,
+  today,
+}: {
+  skus: { skuId: string; label: string }[];
+  locations: { id: string; name: string }[];
+  today: string;
+}) {
+  const { t } = useT();
+
+  return (
+    <Card>
+      <CardHeader className="pb-3">
+        <CardTitle className="flex items-center gap-2 text-base">
+          <PackagePlus className="h-4 w-4 text-primary" /> {t('dash.logProduction')}
+        </CardTitle>
+      </CardHeader>
+      <CardContent>
+        <ActionForm action={postMovement} className="grid gap-3 sm:grid-cols-4 sm:items-end">
+          <input type="hidden" name="type" value="production_output" />
+          <div className="space-y-1.5 sm:col-span-2">
+            <Label htmlFor="pq-sku">{t('inv.specification')}</Label>
+            <select id="pq-sku" name="skuId" className={selectCls} required defaultValue="">
+              <option value="" disabled>
+                {t('common.select')}
+              </option>
+              {skus.map((s) => (
+                <option key={s.skuId} value={s.skuId}>
+                  {s.label}
+                </option>
+              ))}
+            </select>
+          </div>
+          <div className="space-y-1.5">
+            <Label htmlFor="pq-loc">{t('common.location')}</Label>
+            <select id="pq-loc" name="locationId" className={selectCls} required defaultValue="">
+              <option value="" disabled>
+                {t('common.select')}
+              </option>
+              {locations.map((l) => (
+                <option key={l.id} value={l.id}>
+                  {l.name}
+                </option>
+              ))}
+            </select>
+          </div>
+          <div className="space-y-1.5">
+            <Label htmlFor="pq-qty">{t('common.quantity')}</Label>
+            <Input
+              id="pq-qty"
+              name="quantity"
+              type="number"
+              step="0.001"
+              required
+              placeholder="0"
+            />
+          </div>
+          <div className="space-y-1.5">
+            <Label htmlFor="pq-date">{t('common.date')}</Label>
+            <Input id="pq-date" name="businessDate" type="date" defaultValue={today} required />
+          </div>
+          <div className="sm:col-span-4">
+            <SubmitButton>{t('dash.logProduction')}</SubmitButton>
+          </div>
+        </ActionForm>
+      </CardContent>
+    </Card>
+  );
+}
