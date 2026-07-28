@@ -448,11 +448,12 @@ export const dictionary = {
   // Report preview
   'rp.title': { en: 'Telegram Report Preview', zh: 'Telegram 报告预览' },
   'rp.desc': {
-    en: 'Exact grouped morning / afternoon attendance report, generated from records — identical to what Telegram sends.',
-    zh: '依据打卡记录生成的上午 / 下午分组考勤报告，与 Telegram 发送内容完全一致。',
+    en: 'Exact report bodies generated from live records — identical to what Telegram sends.',
+    zh: '依据实时数据生成的报告内容，与 Telegram 发送内容完全一致。',
   },
   'rp.morning': { en: 'Morning report', zh: '上午报告' },
   'rp.afternoon': { en: 'Afternoon report', zh: '下午报告' },
+  'rp.inventory': { en: 'Inventory report', zh: '库存报告' },
   'rp.sendNote': {
     en: "Send dispatches today's report to the configured Telegram chat.",
     zh: '“发送”会将今日报告发送至已配置的 Telegram 会话。',

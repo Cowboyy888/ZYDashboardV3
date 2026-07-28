@@ -8,6 +8,9 @@ import {
   type ReportGroup,
 } from '@/lib/domain/attendance-report';
 import type { Shift } from '@/lib/domain/attendance';
+import { renderInventoryReport, type InventoryReportRow } from '@/lib/domain/reports';
+import { buildInventoryRows } from '@/lib/domain/inventory-view';
+import type { SkuRow } from '@/lib/db/types';
 
 /**
  * Build the grouped attendance report for a date + shift from LIVE records,
@@ -70,4 +73,47 @@ export async function buildAttendancePreview(
     employees: reportEmployees,
     records,
   });
+}
+
+/**
+ * Build the inventory report body for a date from LIVE records, using the
+ * request-scoped (RLS-respecting) client. Mirrors `buildReportText`'s
+ * inventory branch in reports/service.ts (which uses the admin client for
+ * scheduled/manual sends) so the preview matches exactly what is sent.
+ */
+export async function buildInventoryPreview(date: string): Promise<string> {
+  const supabase = await createSupabaseServerClient();
+  const [{ data: skus }, { data: families }, { data: locations }, { data: balances }] =
+    await Promise.all([
+      supabase.from('skus').select('*').eq('is_active', true),
+      supabase.from('product_families').select('*'),
+      supabase.from('locations').select('*'),
+      supabase.from('stock_balances').select('*'),
+    ]);
+
+  const rows = buildInventoryRows(skus ?? [], families ?? [], locations ?? [], balances ?? []);
+  const skuById = new Map(((skus ?? []) as SkuRow[]).map((s) => [s.id, s]));
+  const reportRows: InventoryReportRow[] = rows
+    .filter((r) => r.total > 0 || r.isLow)
+    .map((r) => {
+      const sku = skuById.get(r.skuId);
+      return {
+        skuLabel: r.label,
+        familyName: r.familyName,
+        condition: r.condition,
+        unit: r.unit,
+        storageRoom: r.storageRoom,
+        warehouse: r.warehouse,
+        total: r.total,
+        minimumLevel: r.minimumLevel,
+        isLow: r.isLow,
+        diameter: sku?.diameter ?? null,
+        size: sku?.size ?? null,
+        hole: sku?.hole ?? null,
+        rodCount: sku?.rod_count ?? null,
+        extra: sku?.extra ?? null,
+      };
+    });
+
+  return renderInventoryReport(reportRows, { businessDate: date });
 }

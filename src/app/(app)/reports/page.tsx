@@ -1,14 +1,15 @@
-import { requirePermission } from '@/lib/auth';
-import { hasPermission } from '@/lib/domain/rbac';
+import { redirect } from 'next/navigation';
+import { requireUser } from '@/lib/auth';
+import { hasPermission, hasAnyPermission } from '@/lib/domain/rbac';
 import { businessDate, formatDDMMYYYY } from '@/lib/domain/datetime';
-import { buildAttendancePreview } from '@/lib/reports/preview';
+import { buildAttendancePreview, buildInventoryPreview } from '@/lib/reports/preview';
 import { getLocale } from '@/lib/i18n/locale';
 import { translator } from '@/lib/i18n';
 import { PageHeader } from '@/components/page-header';
 import { DateNav } from '@/components/attendance/date-nav';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { SendNowButton } from '@/components/telegram/send-now-button';
-import { sendMorningNow, sendAfternoonNow } from '@/lib/actions/telegram';
+import { sendMorningNow, sendAfternoonNow, sendInventoryNow } from '@/lib/actions/telegram';
 
 export const dynamic = 'force-dynamic';
 
@@ -17,7 +18,12 @@ export default async function ReportsPage({
 }: {
   searchParams: Promise<{ date?: string }>;
 }) {
-  const user = await requirePermission('attendance:view');
+  const user = await requireUser();
+  const canAttendance = hasPermission(user.role, 'attendance:view');
+  const canInventory = hasPermission(user.role, 'inventory:view');
+  if (!hasAnyPermission(user.role, ['attendance:view', 'inventory:view'])) {
+    redirect('/dashboard?denied=1');
+  }
   const locale = await getLocale();
   const t = translator(locale);
   const { date: dateParam } = await searchParams;
@@ -25,9 +31,10 @@ export default async function ReportsPage({
   const isToday = date === businessDate();
   const canSend = hasPermission(user.role, 'telegram:send');
 
-  const [morning, afternoon] = await Promise.all([
-    buildAttendancePreview(date, 'morning'),
-    buildAttendancePreview(date, 'afternoon'),
+  const [morning, afternoon, inventory] = await Promise.all([
+    canAttendance ? buildAttendancePreview(date, 'morning') : Promise.resolve(null),
+    canAttendance ? buildAttendancePreview(date, 'afternoon') : Promise.resolve(null),
+    canInventory ? buildInventoryPreview(date) : Promise.resolve(null),
   ]);
 
   const block = (
@@ -56,8 +63,9 @@ export default async function ReportsPage({
         actions={<DateNav date={date} />}
       />
       <div className="grid gap-4 lg:grid-cols-2">
-        {block(t('rp.morning'), morning.text, sendMorningNow)}
-        {block(t('rp.afternoon'), afternoon.text, sendAfternoonNow)}
+        {canAttendance && morning && block(t('rp.morning'), morning.text, sendMorningNow)}
+        {canAttendance && afternoon && block(t('rp.afternoon'), afternoon.text, sendAfternoonNow)}
+        {canInventory && inventory && block(t('rp.inventory'), inventory, sendInventoryNow)}
       </div>
       {canSend && <p className="mt-3 text-xs text-muted-foreground">{t('rp.sendNote')}</p>}
     </div>
