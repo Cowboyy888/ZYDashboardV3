@@ -17,6 +17,7 @@ import { Badge } from '@/components/ui/badge';
 import { PhotoUpload } from './photo-upload';
 import { PrivateForm } from './private-form';
 import { EmployeeProfileForm } from './profile-form';
+import { EmployeeDetailsForm } from './details-form';
 
 export const dynamic = 'force-dynamic';
 
@@ -95,6 +96,19 @@ export default async function EmployeeDetailPage({ params }: { params: Promise<{
         </Card>
 
         <div className="space-y-4 lg:col-span-2">
+          {canManage && (
+            <Card>
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2 text-base">
+                  <User className="h-4 w-4 text-primary" /> {t('emp.details')}
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                <EmployeeDetailsForm employee={employee} />
+              </CardContent>
+            </Card>
+          )}
+
           {canManage && (
             <Card>
               <CardHeader>

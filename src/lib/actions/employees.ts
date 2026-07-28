@@ -3,7 +3,11 @@ import { revalidatePath } from 'next/cache';
 import { createSupabaseServerClient } from '@/lib/supabase/server';
 import { assertPermission } from '@/lib/auth';
 import { writeAudit } from '@/lib/audit';
-import { employeeSchema, employeeProfileSchema } from '@/lib/validation/schemas';
+import {
+  employeeSchema,
+  employeeProfileSchema,
+  employeeDetailsSchema,
+} from '@/lib/validation/schemas';
 import { businessDate } from '@/lib/domain/datetime';
 import { fail, ok, zodFieldErrors, type ActionState } from './types';
 
@@ -181,4 +185,50 @@ export async function updateEmployeeProfile(
   revalidatePath('/employees');
   revalidatePath(`/employees/${employeeId}`);
   return ok('Profile updated');
+}
+
+/** Update an employee's core HR details (name variants, phone, department, start date, pay type, notes). */
+export async function updateEmployeeDetails(
+  _prev: ActionState,
+  formData: FormData,
+): Promise<ActionState> {
+  const user = await assertPermission('employees:manage');
+  const employeeId = String(formData.get('employeeId') ?? '');
+  if (!employeeId) return fail('Missing employee');
+  const parsed = employeeDetailsSchema.safeParse({
+    nameKhmer: formData.get('nameKhmer'),
+    nameChinese: formData.get('nameChinese'),
+    phone: formData.get('phone'),
+    department: formData.get('department'),
+    startDate: formData.get('startDate') || undefined,
+    payType: formData.get('payType') || 'monthly',
+    notes: formData.get('notes'),
+  });
+  if (!parsed.success) return fail('Validation failed', zodFieldErrors(parsed.error.issues));
+  const d = parsed.data;
+
+  const supabase = await createSupabaseServerClient();
+  const { error } = await supabase
+    .from('employees')
+    .update({
+      name_khmer: d.nameKhmer ?? null,
+      name_chinese: d.nameChinese ?? null,
+      phone: d.phone ?? null,
+      department: d.department ?? null,
+      start_date: d.startDate ?? null,
+      pay_type: d.payType,
+      notes: d.notes ?? null,
+    })
+    .eq('id', employeeId);
+  if (error) return fail(error.message);
+
+  await writeAudit(user, {
+    action: 'employee.details_update',
+    entity: 'employees',
+    entityId: employeeId,
+    newValue: d,
+  });
+  revalidatePath('/employees');
+  revalidatePath(`/employees/${employeeId}`);
+  return ok('Details updated');
 }

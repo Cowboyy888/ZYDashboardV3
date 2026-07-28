@@ -174,6 +174,24 @@ export const employeeProfileSchema = z.object({
 });
 export type EmployeeProfileInput = z.infer<typeof employeeProfileSchema>;
 
+/**
+ * Edit an existing employee's core HR details. These fields were previously
+ * write-once (set at creation, in `employeeSchema`, with no way to correct
+ * them afterward) — this covers everything from that set except
+ * `displayName`/`jobTitle` (edited via employeeProfileSchema above) and
+ * `nameEnglish`/`position` (unused post-creation elsewhere in the app).
+ */
+export const employeeDetailsSchema = z.object({
+  nameKhmer: optionalText,
+  nameChinese: optionalText,
+  phone: optionalText,
+  department: optionalText,
+  startDate: isoDate.optional(),
+  payType: payTypeSchema.default('monthly'),
+  notes: optionalText,
+});
+export type EmployeeDetailsInput = z.infer<typeof employeeDetailsSchema>;
+
 // --- Attendance groups -------------------------------------------------------
 
 export const attendanceGroupSchema = z.object({

@@ -221,6 +221,8 @@ export const dictionary = {
   'emp.groupCol': { en: 'Group', zh: '分组' },
   'emp.noEmployees': { en: 'No employees yet.', zh: '暂无员工。' },
   'emp.profile': { en: 'Profile', zh: '档案' },
+  'emp.details': { en: 'Employee details', zh: '员工详情' },
+  'emp.saveDetails': { en: 'Save details', zh: '保存详情' },
   'emp.reportProfile': { en: 'Report profile', zh: '报告信息' },
   'emp.payroll': { en: 'Payroll & private details', zh: '工资与隐私' },
   'emp.salaryRestricted': {
