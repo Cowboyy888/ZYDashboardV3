@@ -1,3 +1,4 @@
+import type { CSSProperties } from 'react';
 import { CalendarCheck, Boxes, AlertTriangle } from 'lucide-react';
 import { requireUser } from '@/lib/auth';
 import { hasPermission } from '@/lib/domain/rbac';
@@ -31,6 +32,27 @@ import { Badge } from '@/components/ui/badge';
 import { ProductionQuickEntry } from './production-quick-entry';
 
 export const dynamic = 'force-dynamic';
+
+/**
+ * One-shot entrance animation (opacity + transform only, GPU-composited, no
+ * JS) for a fixed, small number of dashboard cards. `motion-safe:` keeps it
+ * off entirely for prefers-reduced-motion. Never applied to list rows whose
+ * count scales with data — only to the bounded set of section/stat cards.
+ *
+ * The per-card delay is a runtime value, so it must be an inline style, not a
+ * Tailwind utility class — Tailwind's compiler only generates CSS for class
+ * names it can find as a complete, static string in the source; a
+ * template-interpolated class like `delay-[${ms}ms]` never appears literally
+ * in this file, so it would silently produce no CSS (verified: the animation
+ * classes below all worked, but a first attempt using `delay-[${ms}ms]` did
+ * not — every card animated with zero delay, no stagger).
+ */
+const ENTER_CLASS =
+  'motion-safe:animate-in motion-safe:fade-in motion-safe:slide-in-from-bottom-2 motion-safe:fill-mode-both motion-safe:duration-500';
+
+function enterStyle(delayMs = 0): CSSProperties {
+  return { animationDelay: `${delayMs}ms` };
+}
 
 export default async function DashboardPage() {
   const user = await requireUser();
@@ -121,24 +143,32 @@ export default async function DashboardPage() {
 
       <div className="grid grid-cols-2 gap-3 lg:grid-cols-4">
         <StatCard
+          className={ENTER_CLASS}
+          style={enterStyle(0)}
           label={t('dash.morningAtt')}
           value={`${morning.present}/${morning.totalActive}`}
           sub={sub(morning)}
           tone={morning.unmarked > 0 ? 'warning' : 'success'}
         />
         <StatCard
+          className={ENTER_CLASS}
+          style={enterStyle(60)}
           label={t('dash.afternoonAtt')}
           value={`${afternoon.present}/${afternoon.totalActive}`}
           sub={sub(afternoon)}
           tone={afternoon.unmarked > 0 ? 'warning' : 'success'}
         />
         <StatCard
+          className={ENTER_CLASS}
+          style={enterStyle(120)}
           label={t('dash.mtdRate')}
           value={`${(mtdRate * 100).toFixed(0)}%`}
           sub={`${formatDDMMYYYY(monthStart)} – ${formatDDMMYYYY(today)}`}
           tone="primary"
         />
         <StatCard
+          className={ENTER_CLASS}
+          style={enterStyle(180)}
           label={t('dash.productionToday')}
           value={productionToday.toLocaleString()}
           sub="张 · 钢筋网"
@@ -146,7 +176,7 @@ export default async function DashboardPage() {
       </div>
 
       {canLogProduction && (
-        <div className="mt-4">
+        <div className={`mt-4 ${ENTER_CLASS}`} style={enterStyle(220)}>
           <ProductionQuickEntry
             skus={rows.map((r) => ({ skuId: r.skuId, label: r.label }))}
             locations={locations.map((l) => ({ id: l.id, name: l.name }))}
@@ -156,7 +186,7 @@ export default async function DashboardPage() {
       )}
 
       <div className="mt-4 grid gap-4 lg:grid-cols-3">
-        <Card className="lg:col-span-1">
+        <Card className={`lg:col-span-1 ${ENTER_CLASS}`} style={enterStyle(260)}>
           <CardHeader className="pb-3">
             <CardTitle className="flex items-center gap-2 text-base">
               <Boxes className="h-4 w-4 text-primary" /> {t('dash.inventoryTotals')}
@@ -178,7 +208,7 @@ export default async function DashboardPage() {
           </CardContent>
         </Card>
 
-        <Card className="lg:col-span-2">
+        <Card className={`lg:col-span-2 ${ENTER_CLASS}`} style={enterStyle(300)}>
           <CardHeader className="pb-3">
             <CardTitle className="flex items-center gap-2 text-base">
               <AlertTriangle className="h-4 w-4 text-warning" /> {t('dash.lowStock')}
@@ -204,7 +234,7 @@ export default async function DashboardPage() {
         </Card>
       </div>
 
-      <Card className="mt-4">
+      <Card className={`mt-4 ${ENTER_CLASS}`} style={enterStyle(340)}>
         <CardHeader className="pb-3">
           <CardTitle className="flex items-center gap-2 text-base">
             <CalendarCheck className="h-4 w-4 text-primary" /> {t('dash.attExceptions')}
@@ -247,10 +277,18 @@ export default async function DashboardPage() {
       {(canSales || canPurchasing || canPayroll) && (
         <div className="mt-4 grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
           {canSales && (
-            <StatCard label={t('dash.salesToday')} value={String(salesTodayCount)} tone="primary" />
+            <StatCard
+              className={ENTER_CLASS}
+              style={enterStyle(380)}
+              label={t('dash.salesToday')}
+              value={String(salesTodayCount)}
+              tone="primary"
+            />
           )}
           {canPurchasing && (
             <StatCard
+              className={ENTER_CLASS}
+              style={enterStyle(420)}
               label={t('dash.openPOs')}
               value={String(openPoCount)}
               tone={openPoCount > 0 ? 'warning' : 'success'}
@@ -258,6 +296,8 @@ export default async function DashboardPage() {
           )}
           {canSales && (
             <StatCard
+              className={ENTER_CLASS}
+              style={enterStyle(460)}
               label={t('dash.pendingDeliveries')}
               value={String(pendingDeliveryCount)}
               tone={pendingDeliveryCount > 0 ? 'warning' : 'success'}
@@ -265,6 +305,8 @@ export default async function DashboardPage() {
           )}
           {canPayroll && (
             <StatCard
+              className={ENTER_CLASS}
+              style={enterStyle(500)}
               label={t('dash.payrollApprovals')}
               value={String(payrollApprovalCount)}
               tone={payrollApprovalCount > 0 ? 'warning' : 'success'}

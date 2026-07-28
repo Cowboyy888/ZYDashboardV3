@@ -7,12 +7,14 @@ export function StatCard({
   sub,
   tone = 'default',
   className,
+  style,
 }: {
   label: string;
   value: React.ReactNode;
   sub?: React.ReactNode;
   tone?: 'default' | 'primary' | 'success' | 'warning' | 'destructive';
   className?: string;
+  style?: React.CSSProperties;
 }) {
   const toneClass = {
     default: 'text-foreground',
@@ -23,7 +25,7 @@ export function StatCard({
   }[tone];
 
   return (
-    <Card className={className}>
+    <Card className={className} style={style}>
       <CardContent className="p-4">
         <div className="text-xs font-medium uppercase tracking-wide text-muted-foreground">
           {label}
