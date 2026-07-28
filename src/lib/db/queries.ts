@@ -159,6 +159,18 @@ export async function getEmployeePrivate(employeeId: string): Promise<EmployeePr
   }
 }
 
+/** All sensitive payroll rows (for the Employees list's rate column). RLS returns none unless permitted. */
+export async function getAllEmployeePrivate(): Promise<EmployeePrivateRow[]> {
+  try {
+    const supabase = await client();
+    const { data } = await supabase.from('employee_private').select('*');
+    return (data as EmployeePrivateRow[]) ?? [];
+  } catch (e) {
+    console.error('[queries] getAllEmployeePrivate', e);
+    return [];
+  }
+}
+
 /** Short-lived signed URL for a private employee photo (RLS still applies). */
 export async function getSignedPhotoUrl(path: string | null): Promise<string | null> {
   if (!path) return null;

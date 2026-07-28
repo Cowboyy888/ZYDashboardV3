@@ -18,20 +18,40 @@ import { SubmitButton } from '@/components/forms/submit-button';
 import { useT } from '@/components/i18n-provider';
 import { toggleEmployee } from '@/lib/actions/employees';
 import { CreateEmployeeForm } from './create-employee-form';
-import type { AttendanceGroupRow, EmployeeRow } from '@/lib/db/types';
+import type { AttendanceGroupRow, EmployeeRow, EmployeePrivateRow } from '@/lib/db/types';
 
 export function EmployeesClient({
   employees,
   groups,
   canManage,
+  canSensitive,
+  privateRows,
 }: {
   employees: EmployeeRow[];
   groups: AttendanceGroupRow[];
   canManage: boolean;
+  canSensitive: boolean;
+  privateRows: EmployeePrivateRow[];
 }) {
   const { t } = useT();
   const [showAdd, setShowAdd] = useState(false);
   const groupName = new Map(groups.map((g) => [g.id, g.name]));
+  const privateByEmployee = new Map(privateRows.map((p) => [p.employee_id, p]));
+
+  function rateLabel(e: EmployeeRow): string {
+    // Postgres `numeric` columns come back from PostgREST as strings, not
+    // numbers, despite the TS type — coerce before formatting (same pattern
+    // used everywhere else this app does arithmetic on a numeric column).
+    const priv = privateByEmployee.get(e.id);
+    if (e.pay_type === 'daily') {
+      return priv?.daily_rate != null
+        ? `$${Number(priv.daily_rate).toFixed(2)}${t('emp.perDay')}`
+        : '—';
+    }
+    return priv?.base_salary != null
+      ? `$${Number(priv.base_salary).toFixed(2)}${t('emp.perMonth')}`
+      : '—';
+  }
 
   return (
     <div className="space-y-4">
@@ -63,6 +83,7 @@ export function EmployeesClient({
                 <TableHead>{t('emp.nameCol')}</TableHead>
                 <TableHead>{t('emp.groupCol')}</TableHead>
                 <TableHead>{t('emp.payType')}</TableHead>
+                {canSensitive && <TableHead>{t('emp.rateCol')}</TableHead>}
                 <TableHead>{t('common.status')}</TableHead>
                 {canManage && <TableHead className="text-right">{t('common.actions')}</TableHead>}
               </TableRow>
@@ -93,6 +114,9 @@ export function EmployeesClient({
                       {e.pay_type === 'monthly' ? t('emp.monthly') : t('emp.daily')}
                     </Badge>
                   </TableCell>
+                  {canSensitive && (
+                    <TableCell className="text-sm tabular-nums">{rateLabel(e)}</TableCell>
+                  )}
                   <TableCell>
                     <Badge variant={e.is_active ? 'success' : 'secondary'}>
                       {e.is_active ? t('common.active') : t('common.inactive')}
@@ -114,7 +138,7 @@ export function EmployeesClient({
               {employees.length === 0 && (
                 <TableRow>
                   <TableCell
-                    colSpan={canManage ? 6 : 5}
+                    colSpan={5 + (canSensitive ? 1 : 0) + (canManage ? 1 : 0)}
                     className="text-center text-muted-foreground"
                   >
                     {t('emp.noEmployees')}
