@@ -838,6 +838,9 @@ const PHRASES: Record<string, string> = {
   'Telegram settings saved': '已保存 Telegram 设置',
   'No Telegram chat id configured. Set one in Settings → Telegram.':
     '未配置 Telegram 会话 ID，请在 设置 → Telegram 中设置。',
+  'Expected a numeric chat ID (e.g. -1001234567890)':
+    '请输入数字格式的会话 ID（例如 -1001234567890）',
+  'No chat ID configured (or this group is disabled).': '未配置会话 ID（或该群组已禁用）。',
   'Language updated': '已更新语言',
   // Purchasing
   'Supplier added': '已新增供应商',

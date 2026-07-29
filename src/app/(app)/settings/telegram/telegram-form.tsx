@@ -85,6 +85,7 @@ function DestinationCard({
   groupEnabledFieldName,
   placeholder,
   testAction,
+  fieldError,
   children,
 }: {
   title: string;
@@ -94,9 +95,10 @@ function DestinationCard({
   groupEnabledFieldName: string;
   placeholder: string;
   testAction: (typedChatId?: string) => Promise<ActionState>;
+  fieldError?: string;
   children: React.ReactNode;
 }) {
-  const { t } = useT();
+  const { t, m } = useT();
   const [clear, setClear] = useState(false);
   const [chatIdValue, setChatIdValue] = useState('');
 
@@ -132,7 +134,9 @@ function DestinationCard({
             disabled={clear}
             value={chatIdValue}
             onChange={(e) => setChatIdValue(e.target.value)}
+            className={fieldError ? 'border-destructive' : ''}
           />
+          {fieldError && <p className="text-xs text-destructive">{m(fieldError)}</p>}
           <label className="flex items-center gap-2 text-xs text-muted-foreground">
             <input
               type="checkbox"
@@ -215,6 +219,7 @@ export function TelegramForm({
           groupEnabledFieldName="attendanceGroupEnabled"
           placeholder="-1001234567890"
           testAction={testAttendanceConnection}
+          fieldError={state?.fieldErrors?.attendanceChatId}
         >
           <div className="space-y-1.5">
             <label className="flex items-center gap-2 text-sm font-medium">
@@ -281,6 +286,7 @@ export function TelegramForm({
           groupEnabledFieldName="inventoryGroupEnabled"
           placeholder="-1009876543210"
           testAction={testInventoryConnection}
+          fieldError={state?.fieldErrors?.inventoryChatId}
         >
           <div className="space-y-1.5">
             <label className="flex items-center gap-2 text-sm font-medium">
