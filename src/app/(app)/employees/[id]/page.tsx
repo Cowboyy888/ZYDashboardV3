@@ -44,7 +44,7 @@ export default async function EmployeeDetailPage({ params }: { params: Promise<{
           employee.name_chinese ||
           employee.employee_code
         }
-        description={`${t('emp.empId')} ${employee.employee_code}${employee.employee_number ? ` · ${employee.employee_number}号` : ''}`}
+        description={`${t('emp.empId')} ${employee.employee_code}`}
       />
 
       <div className="grid gap-4 lg:grid-cols-3">

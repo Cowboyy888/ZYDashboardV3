@@ -33,7 +33,7 @@ export async function buildAttendancePreview(
     supabase
       .from('employees')
       .select(
-        'id, attendance_group_id, employee_number, display_name, name_english, name_khmer, name_chinese, job_title, label',
+        'id, attendance_group_id, display_name, name_english, name_khmer, name_chinese, job_title, label',
       )
       .eq('is_active', true),
     supabase
@@ -55,9 +55,7 @@ export async function buildAttendancePreview(
       (e.name_english as string | null) ||
       (e.name_khmer as string | null) ||
       (e.name_chinese as string | null) ||
-      (e.employee_number as string | null) ||
       (e.id as string),
-    employeeNumber: (e.employee_number as string | null) ?? null,
     jobTitle: (e.job_title as string | null) ?? null,
     label: (e.label as string | null) ?? null,
   }));

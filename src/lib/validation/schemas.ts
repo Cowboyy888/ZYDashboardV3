@@ -148,8 +148,6 @@ export const employeeSchema = z.object({
     .min(1, 'Attendance group is required')
     .uuid('Attendance group is required'),
   jobTitle: z.string().trim().min(1, 'Job title is required'),
-  // Optional report override; defaults to the sequence number in the DB.
-  employeeNumber: optionalText,
   label: optionalText,
   // Optional alternate names + details.
   nameKhmer: optionalText,
@@ -166,7 +164,6 @@ export type EmployeeInput = z.infer<typeof employeeSchema>;
 /** Editing an existing employee's attendance-group profile fields. */
 export const employeeProfileSchema = z.object({
   attendanceGroupId: optionalUuid,
-  employeeNumber: optionalText,
   displayName: optionalText,
   jobTitle: optionalText,
   label: optionalText,

@@ -19,9 +19,9 @@
  *  - "实到" (actual present) = Present + Late. Leave/Absent/Unmarked do not count.
  *  - Scheduled = active employees assigned to that group on the date.
  *  - Below groups, only NON-ZERO exception sections in this order:
- *    请假 (leave) · 缺勤 (absent) · 迟到 (late) · 未打卡 (unmarked).
- *  - Each exception employee line: `{display name} {job title}` — the
- *    employee number and label are used only to order the list, not shown.
+ *    请假 (leave) · 缺勤 (absent) · 迟到 (late) · 未打卡 (unmarked), each sorted
+ *    by group order then display name.
+ *  - Each exception employee line: `{display name} {job title}`.
  *  - Footer: `总计 {total active}人，实到 {total actual present}人`.
  *
  * Pure — no I/O — so the exact output is unit-tested.
@@ -38,7 +38,6 @@ export interface ReportEmployee {
   id: string;
   groupId: string | null;
   displayName: string;
-  employeeNumber: string | null;
   jobTitle: string | null;
   label: string | null;
 }
@@ -97,8 +96,6 @@ function isActualPresent(status: AttendanceStatus): boolean {
 }
 
 function employeeLine(e: ReportEmployee): string {
-  // Employee number and label are used only for sort order (see `byNumber`
-  // below) — not shown in the report body.
   const title = e.jobTitle ?? '';
   return `${e.displayName} ${title}`.trimEnd();
 }
@@ -128,20 +125,17 @@ export function buildGroupedAttendanceReport(params: {
     return { groupId: g.id, name: g.name, actual, scheduled: members.length };
   });
 
-  // Exception sections — deterministic ordering by group order then number.
+  // Exception sections — deterministic ordering by group order then name.
   const groupOrder = new Map(groups.map((g, i) => [g.id, i]));
-  const byNumber = (a: ReportEmployee, b: ReportEmployee) => {
+  const byGroupThenName = (a: ReportEmployee, b: ReportEmployee) => {
     const ga = a.groupId ? (groupOrder.get(a.groupId) ?? 999) : 999;
     const gb = b.groupId ? (groupOrder.get(b.groupId) ?? 999) : 999;
     if (ga !== gb) return ga - gb;
-    const na = Number(a.employeeNumber ?? Number.MAX_SAFE_INTEGER);
-    const nb = Number(b.employeeNumber ?? Number.MAX_SAFE_INTEGER);
-    if (na !== nb) return na - nb;
     return a.displayName.localeCompare(b.displayName);
   };
 
   const exceptions: ExceptionSection[] = EXCEPTION_ORDER.map((key) => {
-    const members = employees.filter((e) => resolvedStatus(e.id) === key).sort(byNumber);
+    const members = employees.filter((e) => resolvedStatus(e.id) === key).sort(byGroupThenName);
     return { key, label: EXCEPTION_LABEL[key], count: members.length, employees: members };
   }).filter((s) => s.count > 0);
 

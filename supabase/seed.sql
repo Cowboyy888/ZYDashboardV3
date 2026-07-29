@@ -83,9 +83,9 @@ begin
   perform pg_temp.seed_sku(fam_coil, '6.5mm', null, null, null, 'normal', '捆', 0);
 end $$;
 
--- Employees (non-sensitive). employee_code + employee_number are assigned by the
--- trigger from seq_no → ZY-0001..ZY-0004. seq_no is given explicitly so the demo
--- codes are deterministic and the seed stays idempotent (conflict on employee_code).
+-- Employees (non-sensitive). employee_code is assigned by the trigger from
+-- seq_no → ZY-0001..ZY-0004. seq_no is given explicitly so the demo codes are
+-- deterministic and the seed stays idempotent (conflict on employee_code).
 insert into public.employees
   (seq_no, name_khmer, name_english, name_chinese, department, position, pay_type, start_date,
    attendance_group_id, display_name, job_title)

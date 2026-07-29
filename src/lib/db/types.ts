@@ -103,7 +103,6 @@ export interface EmployeeRow {
   notes: string | null;
   // Attendance-group profile fields (used by the grouped report).
   attendance_group_id: string | null;
-  employee_number: string | null;
   display_name: string | null;
   job_title: string | null;
   label: string | null;

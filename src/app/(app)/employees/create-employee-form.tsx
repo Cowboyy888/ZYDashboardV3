@@ -17,7 +17,6 @@ const BLANK = {
   displayName: '',
   attendanceGroupId: '',
   jobTitle: '',
-  employeeNumber: '',
   label: '',
   nameChinese: '',
   phone: '',
@@ -193,16 +192,6 @@ export function CreateEmployeeForm({ groups }: { groups: AttendanceGroupRow[] })
         </div>
         <p className="mb-2 text-xs text-muted-foreground">{t('emp.optionalNote')}</p>
         <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
-          <div className="space-y-1.5">
-            <Label htmlFor="ce-number">{t('emp.numberHint')}</Label>
-            <Input
-              id="ce-number"
-              name="employeeNumber"
-              value={v.employeeNumber}
-              onChange={set('employeeNumber')}
-              placeholder="7"
-            />
-          </div>
           <div className="space-y-1.5">
             <Label htmlFor="ce-label">{t('emp.labelHint')}</Label>
             <Input

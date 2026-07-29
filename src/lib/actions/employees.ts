@@ -20,7 +20,6 @@ export async function createEmployee(_prev: ActionState, formData: FormData): Pr
     displayName: formData.get('displayName'),
     attendanceGroupId: formData.get('attendanceGroupId') || '',
     jobTitle: formData.get('jobTitle'),
-    employeeNumber: formData.get('employeeNumber'),
     label: formData.get('label'),
     nameKhmer: formData.get('nameKhmer'),
     nameEnglish: formData.get('nameEnglish'),
@@ -44,7 +43,6 @@ export async function createEmployee(_prev: ActionState, formData: FormData): Pr
       display_name: d.displayName,
       attendance_group_id: d.attendanceGroupId,
       job_title: d.jobTitle,
-      employee_number: d.employeeNumber ?? null,
       label: d.label ?? null,
       name_khmer: d.nameKhmer ?? null,
       // The required "English name" field maps to display_name; mirror it into
@@ -153,7 +151,6 @@ export async function updateEmployeeProfile(
   if (!employeeId) return fail('Missing employee');
   const parsed = employeeProfileSchema.safeParse({
     attendanceGroupId: formData.get('attendanceGroupId') || undefined,
-    employeeNumber: formData.get('employeeNumber'),
     displayName: formData.get('displayName'),
     jobTitle: formData.get('jobTitle'),
     label: formData.get('label'),
@@ -166,7 +163,6 @@ export async function updateEmployeeProfile(
     .from('employees')
     .update({
       attendance_group_id: d.attendanceGroupId ?? null,
-      employee_number: d.employeeNumber ?? null,
       display_name: d.displayName ?? null,
       job_title: d.jobTitle ?? null,
       label: d.label ?? null,

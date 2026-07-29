@@ -85,7 +85,10 @@ check(/function public\.post_stock_transfer/i.test(sql), 'atomic transfer functi
 check(/function public\.handle_new_user/i.test(sql), 'auto-profile-on-signup trigger fn');
 check(/skus_signature_uidx/i.test(sql), 'unique SKU signature index');
 check(/add column if not exists attendance_group_id/i.test(sql), 'employees.attendance_group_id');
-check(/add column if not exists employee_number/i.test(sql), 'employees.employee_number');
+check(
+  /drop column if exists employee_number/i.test(sql),
+  'employee_number removed (report no longer shows/sorts by it)',
+);
 check(/attendance_groups_name_uidx/i.test(sql), 'unique attendance group name index');
 check(/add column if not exists locale/i.test(sql), 'profiles.locale');
 check(/add column if not exists report_language/i.test(sql), 'telegram_settings.report_language');

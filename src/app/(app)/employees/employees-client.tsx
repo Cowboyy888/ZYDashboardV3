@@ -88,7 +88,6 @@ export function EmployeesClient({
                 <TableRow key={e.id}>
                   <TableCell className="whitespace-nowrap font-mono text-xs">
                     {e.employee_code}
-                    {e.employee_number ? ` · ${e.employee_number}号` : ''}
                   </TableCell>
                   <TableCell>
                     <Link

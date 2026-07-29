@@ -49,14 +49,6 @@ export function EmployeeProfileForm({
           </select>
         </div>
         <div className="space-y-1.5">
-          <Label htmlFor="pf-number">{t('emp.numberHint')}</Label>
-          <Input
-            id="pf-number"
-            name="employeeNumber"
-            defaultValue={employee.employee_number ?? ''}
-          />
-        </div>
-        <div className="space-y-1.5">
           <Label htmlFor="pf-display">{t('emp.english')}</Label>
           <Input id="pf-display" name="displayName" defaultValue={employee.display_name ?? ''} />
         </div>

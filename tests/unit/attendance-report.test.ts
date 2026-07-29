@@ -27,7 +27,6 @@ function present(groupId: string, count: number): ReportEmployee[] {
       id: `e${seq}`,
       groupId,
       displayName: `emp${seq}`,
-      employeeNumber: String(seq),
       jobTitle: '员工',
       label: null,
     };
@@ -55,7 +54,6 @@ function buildScenario() {
     id: 'leaver',
     groupId: 'g4',
     displayName: 'thol savarin',
-    employeeNumber: '7',
     jobTitle: '焊网机机长',
     label: '备用',
   };
@@ -136,10 +134,10 @@ describe('grouped attendance report — group totals', () => {
   it('counts Late as actual present but Leave/Absent/Unmarked as not', () => {
     const groups: ReportGroup[] = [{ id: 'g', name: '组' }];
     const employees: ReportEmployee[] = [
-      { id: 'a', groupId: 'g', displayName: 'A', employeeNumber: '1', jobTitle: null, label: null },
-      { id: 'b', groupId: 'g', displayName: 'B', employeeNumber: '2', jobTitle: null, label: null },
-      { id: 'c', groupId: 'g', displayName: 'C', employeeNumber: '3', jobTitle: null, label: null },
-      { id: 'd', groupId: 'g', displayName: 'D', employeeNumber: '4', jobTitle: null, label: null },
+      { id: 'a', groupId: 'g', displayName: 'A', jobTitle: null, label: null },
+      { id: 'b', groupId: 'g', displayName: 'B', jobTitle: null, label: null },
+      { id: 'c', groupId: 'g', displayName: 'C', jobTitle: null, label: null },
+      { id: 'd', groupId: 'g', displayName: 'D', jobTitle: null, label: null },
     ];
     const records: ReportAttendance[] = [
       { employeeId: 'a', status: 'present' },
@@ -198,15 +196,14 @@ describe('grouped attendance report — leave details & totals', () => {
 
   it('orders exception sections 请假 · 缺勤 · 迟到 · 未打卡 and omits empty ones', () => {
     const groups: ReportGroup[] = [{ id: 'g', name: '组' }];
-    const mk = (id: string, n: string): ReportEmployee => ({
+    const mk = (id: string): ReportEmployee => ({
       id,
       groupId: 'g',
       displayName: id.toUpperCase(),
-      employeeNumber: n,
       jobTitle: '工',
       label: null,
     });
-    const employees = [mk('a', '1'), mk('b', '2'), mk('c', '3')];
+    const employees = [mk('a'), mk('b'), mk('c')];
     const records: ReportAttendance[] = [
       { employeeId: 'a', status: 'leave' },
       { employeeId: 'b', status: 'absent' },
