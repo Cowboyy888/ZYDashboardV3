@@ -93,11 +93,12 @@ function DestinationCard({
   chatIdClearFieldName: string;
   groupEnabledFieldName: string;
   placeholder: string;
-  testAction: () => Promise<ActionState>;
+  testAction: (typedChatId?: string) => Promise<ActionState>;
   children: React.ReactNode;
 }) {
   const { t } = useT();
   const [clear, setClear] = useState(false);
+  const [chatIdValue, setChatIdValue] = useState('');
 
   return (
     <Card>
@@ -129,6 +130,8 @@ function DestinationCard({
             name={chatIdFieldName}
             placeholder={placeholder}
             disabled={clear}
+            value={chatIdValue}
+            onChange={(e) => setChatIdValue(e.target.value)}
           />
           <label className="flex items-center gap-2 text-xs text-muted-foreground">
             <input
@@ -139,9 +142,10 @@ function DestinationCard({
             />
             {t('tg.chatIdClear')}
           </label>
+          {chatIdValue && <p className="text-xs text-muted-foreground">{t('tg.testsTypedNote')}</p>}
         </div>
 
-        <SendNowButton action={testAction} label={t('tg.testConnection')} />
+        <SendNowButton action={() => testAction(chatIdValue)} label={t('tg.testConnection')} />
         <LastSendStatus dest={dest} />
 
         <div className="space-y-3 border-t pt-3">{children}</div>

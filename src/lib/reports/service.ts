@@ -306,17 +306,32 @@ export async function sendReportManual(
  * "Test connection" for a single destination (Settings → Telegram cards).
  * Sends a small ping to THAT group's chat id only — never touches the other
  * group's chat id — and updates that destination's last status/error.
+ *
+ * `overrideChatId`, when given, is sent to DIRECTLY instead of looking up the
+ * saved chat id — this lets the Settings page test a newly-typed chat id
+ * before it's been saved (otherwise "Test connection" would silently test
+ * the OLD saved value, or fail with "no chat id configured" for a
+ * not-yet-saved first-time setup, which is confusing since the id is right
+ * there in the input).
  */
-export async function testTelegramDestination(group: ReportGroup): Promise<SendReportOutcome> {
-  const destinations = await resolveDestinations();
-  const chatId =
-    group === 'attendance'
-      ? destinations.attendanceGroupEnabled
-        ? destinations.attendanceChatId
-        : null
-      : destinations.inventoryGroupEnabled
-        ? destinations.inventoryChatId
-        : null;
+export async function testTelegramDestination(
+  group: ReportGroup,
+  overrideChatId?: string,
+): Promise<SendReportOutcome> {
+  let chatId: string | null;
+  if (overrideChatId) {
+    chatId = overrideChatId;
+  } else {
+    const destinations = await resolveDestinations();
+    chatId =
+      group === 'attendance'
+        ? destinations.attendanceGroupEnabled
+          ? destinations.attendanceChatId
+          : null
+        : destinations.inventoryGroupEnabled
+          ? destinations.inventoryChatId
+          : null;
+  }
 
   const reportKey = `test:${group}:${Date.now()}`;
   if (!chatId) {
@@ -346,6 +361,9 @@ export async function testTelegramDestination(group: ReportGroup): Promise<SendR
     detail: result.error,
     result,
   };
-  await recordDestinationHealth(group, outcome);
+  // Only record health for the SAVED chat id — a failed test of an ad-hoc,
+  // not-yet-saved candidate id must not overwrite the real destination's
+  // last-known-good status on the Settings page.
+  if (!overrideChatId) await recordDestinationHealth(group, outcome);
   return outcome;
 }

@@ -120,10 +120,21 @@ export async function sendInventoryNow(): Promise<ActionState> {
   return sendNow('inventory');
 }
 
-/** "Test connection" for one destination card. Pings ONLY that group's chat id. */
-async function testConnection(group: ReportGroup): Promise<ActionState> {
+/**
+ * "Test connection" for one destination card. Pings ONLY that group's chat
+ * id. `typedChatId` is whatever is CURRENTLY in the input on screen — tested
+ * directly, even if it hasn't been saved yet (otherwise a first-time setup
+ * would fail with "no chat id configured" despite the id being right there
+ * in the box, since Save and Test are two separate steps). Falls back to the
+ * saved value when the input is empty.
+ */
+async function testConnection(group: ReportGroup, typedChatId?: string): Promise<ActionState> {
   await assertPermission('telegram:manage');
-  const outcome = await testTelegramDestination(group);
+  const trimmed = typedChatId?.trim();
+  if (trimmed && !/^-?\d+$/.test(trimmed)) {
+    return fail('Expected a numeric chat ID (e.g. -1001234567890)');
+  }
+  const outcome = await testTelegramDestination(group, trimmed || undefined);
   revalidatePath('/settings/telegram');
   if (outcome.status === 'sent') return ok('Test message sent.');
   if (outcome.status === 'no_chat')
@@ -131,9 +142,9 @@ async function testConnection(group: ReportGroup): Promise<ActionState> {
   return fail(`Test failed: ${outcome.detail ?? 'unknown error'}`);
 }
 
-export async function testAttendanceConnection(): Promise<ActionState> {
-  return testConnection('attendance');
+export async function testAttendanceConnection(typedChatId?: string): Promise<ActionState> {
+  return testConnection('attendance', typedChatId);
 }
-export async function testInventoryConnection(): Promise<ActionState> {
-  return testConnection('inventory');
+export async function testInventoryConnection(typedChatId?: string): Promise<ActionState> {
+  return testConnection('inventory', typedChatId);
 }

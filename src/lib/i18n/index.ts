@@ -413,6 +413,10 @@ export const dictionary = {
   },
   'tg.chatIdClear': { en: 'Remove this chat ID', zh: '移除此会话 ID' },
   'tg.testConnection': { en: 'Test connection', zh: '测试连接' },
+  'tg.testsTypedNote': {
+    en: "Test connection will send to this ID (whether or not you've saved it yet).",
+    zh: '“测试连接”将发送到此 ID（无论是否已保存）。',
+  },
   'tg.neverSent': { en: 'Never sent', zh: '从未发送' },
   'tg.lastSent': { en: 'Last sent', zh: '最近发送' },
   'tg.lastError': { en: 'Last error', zh: '最近错误' },
