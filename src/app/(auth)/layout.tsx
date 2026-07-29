@@ -8,6 +8,15 @@ export default async function AuthLayout({ children }: { children: React.ReactNo
   return (
     <I18nProvider locale={locale}>
       <div className="relative flex min-h-screen items-center justify-center overflow-hidden bg-gradient-to-b from-[hsl(208_18%_13%)] to-[hsl(208_20%_9%)] p-4">
+        {/* Wire-mesh grid backdrop — a nod to ZY Steel's welded mesh product
+            line. Sized past the container's edges by exactly the drift
+            distance (inset-10 = 40px = one grid tile) so the seamless
+            translate loop never reveals an edge. Purely decorative and
+            motion-safe-gated like the glow below. */}
+        <div
+          aria-hidden
+          className="zy-mesh pointer-events-none absolute -inset-10 motion-safe:animate-zy-mesh-drift"
+        />
         {/* Ambient background glow — purely decorative, so it's hidden from
             assistive tech and gated behind motion-safe like every other
             looping animation in the app. */}

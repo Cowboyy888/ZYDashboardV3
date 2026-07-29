@@ -95,12 +95,19 @@ const config: Config = {
           '30%, 50%, 70%': { transform: 'translateX(-4px)' },
           '40%, 60%': { transform: 'translateX(4px)' },
         },
+        // Drifts the .zy-mesh background by exactly one 40px tile, so the
+        // loop wraps seamlessly back to its starting position.
+        'zy-mesh-drift': {
+          '0%': { transform: 'translate3d(0, 0, 0)' },
+          '100%': { transform: 'translate3d(-40px, -40px, 0)' },
+        },
       },
       animation: {
         'accordion-down': 'accordion-down 0.2s ease-out',
         'accordion-up': 'accordion-up 0.2s ease-out',
         'zy-glow': 'zy-glow 12s ease-in-out infinite',
         'zy-shake': 'zy-shake 0.5s cubic-bezier(0.36, 0.07, 0.19, 0.97) both',
+        'zy-mesh-drift': 'zy-mesh-drift 25s linear infinite',
       },
     },
   },
