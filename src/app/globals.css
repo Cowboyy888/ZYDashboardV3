@@ -1,5 +1,3 @@
-@import url('https://fonts.googleapis.com/css2?family=Noto+Sans+SC:wght@400;500;700&family=Noto+Sans+Khmer:wght@400;500;700&display=swap');
-
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
@@ -10,10 +8,9 @@
  */
 @layer base {
   :root {
-    --font-sans:
-      'Noto Sans SC', ui-sans-serif, system-ui, -apple-system, 'Segoe UI', Roboto, 'Helvetica Neue',
-      Arial, sans-serif;
-    --font-khmer: 'Noto Sans Khmer', 'Khmer OS', 'Noto Sans SC', sans-serif;
+    /* --font-sans / --font-khmer are defined by next/font (src/app/layout.tsx),
+       not hardcoded here — that's what lets the fonts be self-hosted and
+       fetched off the app's own origin instead of fonts.googleapis.com. */
 
     --background: 210 20% 98%;
     --foreground: 208 16% 16%;
