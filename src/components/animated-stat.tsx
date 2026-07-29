@@ -16,6 +16,16 @@ function prefersReducedMotion(): boolean {
  * throws "Functions cannot be passed directly to Client Components" at
  * runtime), and this is meant to be rendered straight from Server Component
  * pages like the dashboard.
+ *
+ * Initial state is ALWAYS 0 (matching what the server renders, since
+ * `window`/`matchMedia` don't exist during SSR) — reading
+ * `prefersReducedMotion()` inside the `useState` initializer instead would
+ * make the client's first render disagree with the server-rendered HTML for
+ * anyone with the OS-level reduced-motion preference on, which is a real
+ * hydration mismatch (verified: React discards and re-renders the whole
+ * subtree, logging a "Hydration failed" error). The reduced-motion check
+ * only happens inside `useEffect`, which never runs during SSR, so it can't
+ * disagree with the server output.
  */
 export function AnimatedNumber({
   value,
@@ -26,12 +36,13 @@ export function AnimatedNumber({
   duration?: number;
   suffix?: string;
 }) {
-  const [display, setDisplay] = useState(prefersReducedMotion() ? value : 0);
+  const [display, setDisplay] = useState(0);
   const mounted = useRef(false);
 
   useEffect(() => {
     if (prefersReducedMotion()) {
       setDisplay(value);
+      mounted.current = true;
       return;
     }
     let raf = 0;
@@ -57,7 +68,11 @@ export function AnimatedNumber({
   );
 }
 
-/** A thin bar that grows from 0 to `percent` width on mount. Respects prefers-reduced-motion. */
+/**
+ * A thin bar that grows from 0 to `percent` width on mount. Respects
+ * prefers-reduced-motion. Initial state is always 0 for the same
+ * SSR/hydration-mismatch reason as `AnimatedNumber` above.
+ */
 export function AnimatedBar({
   percent,
   className = 'bg-primary',
@@ -66,9 +81,13 @@ export function AnimatedBar({
   className?: string;
 }) {
   const clamped = Math.max(0, Math.min(100, percent));
-  const [width, setWidth] = useState(prefersReducedMotion() ? clamped : 0);
+  const [width, setWidth] = useState(0);
 
   useEffect(() => {
+    if (prefersReducedMotion()) {
+      setWidth(clamped);
+      return;
+    }
     const raf = requestAnimationFrame(() => setWidth(clamped));
     return () => cancelAnimationFrame(raf);
     // eslint-disable-next-line react-hooks/exhaustive-deps
