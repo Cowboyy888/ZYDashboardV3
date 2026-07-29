@@ -123,6 +123,7 @@ export default async function DashboardPage() {
 
   const rows = buildInventoryRows(skus, families, locations, balances, locale);
   const lowStock = rows.filter((r) => r.isLow);
+  const warehouseLocationId = locations.find((l) => l.code === 'warehouse')?.id;
   const nameOf = new Map(
     employees.map((e) => [
       e.id,
@@ -175,11 +176,11 @@ export default async function DashboardPage() {
         />
       </div>
 
-      {canLogProduction && (
+      {canLogProduction && warehouseLocationId && (
         <div className={`mt-4 ${ENTER_CLASS}`} style={enterStyle(220)}>
           <ProductionQuickEntry
             skus={rows.map((r) => ({ skuId: r.skuId, label: r.label }))}
-            locations={locations.map((l) => ({ id: l.id, name: l.name }))}
+            locationId={warehouseLocationId}
             today={today}
           />
         </div>

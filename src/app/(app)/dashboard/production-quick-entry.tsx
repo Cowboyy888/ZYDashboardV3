@@ -13,11 +13,11 @@ const selectCls =
 
 export function ProductionQuickEntry({
   skus,
-  locations,
+  locationId,
   today,
 }: {
   skus: { skuId: string; label: string }[];
-  locations: { id: string; name: string }[];
+  locationId: string;
   today: string;
 }) {
   const { t } = useT();
@@ -30,8 +30,9 @@ export function ProductionQuickEntry({
         </CardTitle>
       </CardHeader>
       <CardContent>
-        <ActionForm action={postMovement} className="grid gap-3 sm:grid-cols-4 sm:items-end">
+        <ActionForm action={postMovement} className="grid gap-3 sm:grid-cols-3 sm:items-end">
           <input type="hidden" name="type" value="production_output" />
+          <input type="hidden" name="locationId" value={locationId} />
           <div className="space-y-1.5 sm:col-span-2">
             <Label htmlFor="pq-sku">{t('inv.specification')}</Label>
             <select id="pq-sku" name="skuId" className={selectCls} required defaultValue="">
@@ -41,19 +42,6 @@ export function ProductionQuickEntry({
               {skus.map((s) => (
                 <option key={s.skuId} value={s.skuId}>
                   {s.label}
-                </option>
-              ))}
-            </select>
-          </div>
-          <div className="space-y-1.5">
-            <Label htmlFor="pq-loc">{t('common.location')}</Label>
-            <select id="pq-loc" name="locationId" className={selectCls} required defaultValue="">
-              <option value="" disabled>
-                {t('common.select')}
-              </option>
-              {locations.map((l) => (
-                <option key={l.id} value={l.id}>
-                  {l.name}
                 </option>
               ))}
             </select>
@@ -73,7 +61,7 @@ export function ProductionQuickEntry({
             <Label htmlFor="pq-date">{t('common.date')}</Label>
             <Input id="pq-date" name="businessDate" type="date" defaultValue={today} required />
           </div>
-          <div className="sm:col-span-4">
+          <div className="sm:col-span-3">
             <SubmitButton>{t('dash.logProduction')}</SubmitButton>
           </div>
         </ActionForm>
