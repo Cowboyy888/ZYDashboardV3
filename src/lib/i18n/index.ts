@@ -340,6 +340,11 @@ export const dictionary = {
   'set.hole': { en: 'Hole', zh: '孔' },
   'set.rod': { en: 'Rod count', zh: '根数' },
   'set.extra': { en: 'Extra spec (螺纹盘圆)', zh: '其他规格（螺纹盘圆）' },
+  'set.openingQty': { en: 'Starting quantity (optional)', zh: '起始数量（可选）' },
+  'set.openingQtyHint': {
+    en: 'Recorded as an opening balance at the chosen location.',
+    zh: '将作为期初库存记录到所选地点。',
+  },
   'set.minStock': { en: 'Min stock', zh: '最低库存' },
   'set.addSpecBtn': { en: 'Add specification', zh: '新增规格' },
   'set.editSpec': { en: 'Edit specification', zh: '编辑规格' },

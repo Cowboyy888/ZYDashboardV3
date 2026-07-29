@@ -16,6 +16,8 @@ import {
   skuUpdateSchema,
 } from '@/lib/validation/schemas';
 import { canDeleteFamily, type FamilyUsage } from '@/lib/domain/products';
+import { hasPermission } from '@/lib/domain/rbac';
+import { businessDate } from '@/lib/domain/datetime';
 import { fail, ok, zodFieldErrors, type ActionState } from './types';
 
 type ServerClient = Awaited<ReturnType<typeof createSupabaseServerClient>>;
@@ -295,6 +297,19 @@ export async function createSku(_prev: ActionState, formData: FormData): Promise
   if (!parsed.success) return fail('Validation failed', zodFieldErrors(parsed.error.issues));
   const d = parsed.data;
 
+  // Optional: post an opening balance for this brand-new SKU in the same
+  // step, so "add a spec" and "record its starting quantity" don't require
+  // two separate trips. Only offered to callers who can also post stock (a
+  // distinct permission from products:manage — see PERM in inventory/page.tsx).
+  const canPostOpening = hasPermission(user.role, 'stock:opening');
+  const openingQtyRaw = formData.get('openingQuantity');
+  const openingLocationId = formData.get('openingLocationId');
+  const openingQty = openingQtyRaw ? Number(openingQtyRaw) : 0;
+  const wantsOpening = canPostOpening && (openingQty > 0 || !!openingLocationId);
+  if (wantsOpening && (openingQty <= 0 || !openingLocationId)) {
+    return fail('Enter both a starting quantity and a location, or leave both blank.');
+  }
+
   const supabase = await createSupabaseServerClient();
   const { data, error } = await supabase
     .from('skus')
@@ -319,6 +334,36 @@ export async function createSku(_prev: ActionState, formData: FormData): Promise
   }
 
   await writeAudit(user, { action: 'sku.create', entity: 'skus', entityId: data.id, newValue: d });
+
+  if (wantsOpening) {
+    const { data: mv, error: mvError } = await supabase
+      .from('stock_movements')
+      .insert({
+        sku_id: data.id,
+        location_id: String(openingLocationId),
+        type: 'opening_balance',
+        quantity: openingQty,
+        business_date: businessDate(),
+        created_by: user.id,
+      })
+      .select('id')
+      .single();
+    if (mvError) {
+      // The spec itself was created successfully; only the opening balance
+      // failed. Surface that distinctly rather than reporting the whole
+      // action as failed (the spec must not be silently rolled back client-side).
+      revalidatePath('/settings/products');
+      revalidatePath('/inventory');
+      return fail(`Specification added, but opening balance failed: ${mvError.message}`);
+    }
+    await writeAudit(user, {
+      action: 'stock.opening_balance',
+      entity: 'stock_movements',
+      entityId: mv.id,
+      newValue: { skuId: data.id, locationId: String(openingLocationId), quantity: openingQty },
+    });
+  }
+
   revalidatePath('/settings/products');
   revalidatePath('/inventory');
   return ok('Specification added');

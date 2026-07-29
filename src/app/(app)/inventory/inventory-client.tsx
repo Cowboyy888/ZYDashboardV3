@@ -120,7 +120,11 @@ export function InventoryClient({
             </CardHeader>
             {showAddSpec && (
               <CardContent>
-                <CreateSkuForm families={families} onDone={() => setShowAddSpec(false)} />
+                <CreateSkuForm
+                  families={families}
+                  locations={allowedTypes.includes('opening_balance') ? locations : []}
+                  onDone={() => setShowAddSpec(false)}
+                />
               </CardContent>
             )}
           </Card>
@@ -798,7 +802,15 @@ function EditSkuDialog({
 
 // --- Add specification (SKU) form --------------------------------------------
 
-function CreateSkuForm({ families, onDone }: { families: FamilyOpt[]; onDone: () => void }) {
+function CreateSkuForm({
+  families,
+  locations,
+  onDone,
+}: {
+  families: FamilyOpt[];
+  locations: LocationOpt[];
+  onDone: () => void;
+}) {
   const { t, m, locale } = useT();
   const [state, formAction] = useActionState<ActionState, FormData>(createSku, null);
   const formRef = useRef<HTMLFormElement>(null);
@@ -873,6 +885,40 @@ function CreateSkuForm({ families, onDone }: { families: FamilyOpt[]; onDone: ()
         <Label htmlFor="inv-sku-extra">{t('set.extra')}</Label>
         <Input id="inv-sku-extra" name="extra" placeholder="free-form" />
       </div>
+      {locations.length > 0 && (
+        <div className="grid grid-cols-2 gap-3 rounded-md border border-dashed p-3 lg:grid-cols-3">
+          <div className="space-y-1.5">
+            <Label htmlFor="inv-sku-opening-qty">{t('set.openingQty')}</Label>
+            <Input
+              id="inv-sku-opening-qty"
+              name="openingQuantity"
+              type="number"
+              step="0.001"
+              min="0"
+              placeholder="0"
+            />
+          </div>
+          <div className="space-y-1.5">
+            <Label htmlFor="inv-sku-opening-loc">{t('common.location')}</Label>
+            <select
+              id="inv-sku-opening-loc"
+              name="openingLocationId"
+              className={selectCls}
+              defaultValue=""
+            >
+              <option value="">{t('common.select')}</option>
+              {locations.map((l) => (
+                <option key={l.id} value={l.id}>
+                  {l.name}
+                </option>
+              ))}
+            </select>
+          </div>
+          <p className="col-span-2 text-xs text-muted-foreground lg:col-span-3">
+            {t('set.openingQtyHint')}
+          </p>
+        </div>
+      )}
       {state?.error && (
         <p className="rounded-md bg-destructive/10 px-3 py-1.5 text-sm text-destructive">
           {m(state.error)}
