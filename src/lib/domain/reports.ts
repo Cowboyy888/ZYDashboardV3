@@ -7,7 +7,12 @@
  */
 
 import { formatDDMMYYYY } from './datetime';
-import { CONDITION_LABELS, type ConditionCode } from './products';
+import {
+  CONDITION_LABELS,
+  leadingSpecNumber,
+  familyDisplayRank,
+  type ConditionCode,
+} from './products';
 
 export interface InventoryReportRow {
   skuLabel: string;
@@ -40,28 +45,15 @@ function fmtQty(n: number): string {
 
 // Section headings match how the factory floor actually refers to each
 // family in daily stock-taking notes (网片/盘圆), not the formal family name.
-// Any family not listed here just uses its own name, and sections are shown
-// in this order first, then any other family in whatever order it appears.
+// Any family not listed here just uses its own name; section ORDER comes
+// from the shared `familyDisplayRank` (see ./products).
 const FAMILY_HEADING: Record<string, string> = {
   钢筋网: '网片',
   螺纹盘圆: '盘圆',
 };
-const FAMILY_ORDER = ['钢筋网', '螺纹盘圆', '拔丝料'];
 
 function familyHeading(name: string): string {
   return FAMILY_HEADING[name] ?? name;
-}
-
-function familyRank(name: string): number {
-  const i = FAMILY_ORDER.indexOf(name);
-  return i === -1 ? FAMILY_ORDER.length : i;
-}
-
-/** Leading numeric value of a free-text spec like "7.8厘" or "6.5mm" (for sorting). */
-function leadingNumber(value: string | null): number {
-  if (!value) return -Infinity;
-  const m = value.match(/^-?\d+(\.\d+)?/);
-  return m ? Number(m[0]) : -Infinity;
 }
 
 /** Condition (if not normal) and any free-form extra spec, e.g. " (旧)" or " (错毛边)". */
@@ -100,14 +92,16 @@ export function renderInventoryReport(
     if (!byFamily.has(r.familyName)) byFamily.set(r.familyName, []);
     byFamily.get(r.familyName)!.push(r);
   }
-  const familyNames = [...byFamily.keys()].sort((a, b) => familyRank(a) - familyRank(b));
+  const familyNames = [...byFamily.keys()].sort(
+    (a, b) => familyDisplayRank(a) - familyDisplayRank(b),
+  );
 
   familyNames.forEach((name, i) => {
     const heading = familyHeading(name);
     lines.push(i === 0 ? `${dateStr} ${heading}库存` : heading);
     lines.push('');
     const items = [...byFamily.get(name)!].sort(
-      (a, b) => leadingNumber(b.diameter) - leadingNumber(a.diameter),
+      (a, b) => leadingSpecNumber(b.diameter) - leadingSpecNumber(a.diameter),
     );
     for (const r of items) {
       lines.push(r.size || r.hole ? meshLine(r) : coilLine(r));

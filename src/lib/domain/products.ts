@@ -97,6 +97,32 @@ export function isLowStock(balance: number, minimumLevel: number | null | undefi
   return balance <= minimumLevel;
 }
 
+/**
+ * Leading numeric value of a free-text spec like "7.8厘", "9", or "6.5mm" — used
+ * to sort specs by diameter (high to low) wherever they're listed: the
+ * Inventory page's stock table and the Telegram inventory report both use
+ * this, so the ordering stays identical between them.
+ */
+export function leadingSpecNumber(value: string | null): number {
+  if (!value) return -Infinity;
+  const m = value.match(/^-?\d+(\.\d+)?/);
+  return m ? Number(m[0]) : -Infinity;
+}
+
+/**
+ * Display order for product families — 钢筋网 (mesh) first, then 螺纹盘圆
+ * (coil), then 拔丝料 (wire); any other family sorts after these, in
+ * whatever order it appears. Deliberately NOT locale string comparison
+ * (Chinese collation order doesn't track this business convention). Shared
+ * by the Inventory page's stock table and the Telegram inventory report.
+ */
+export const FAMILY_DISPLAY_ORDER = ['钢筋网', '螺纹盘圆', '拔丝料'];
+
+export function familyDisplayRank(name: string): number {
+  const i = FAMILY_DISPLAY_ORDER.indexOf(name);
+  return i === -1 ? FAMILY_DISPLAY_ORDER.length : i;
+}
+
 // --- Product family deletion safety ------------------------------------------
 
 /**

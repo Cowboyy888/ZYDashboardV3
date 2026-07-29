@@ -3,7 +3,13 @@
  * Reused by the Inventory page and the Telegram inventory report so both show
  * identical numbers. No I/O.
  */
-import { buildSkuLabel, isLowStock, type ConditionCode } from './products';
+import {
+  buildSkuLabel,
+  isLowStock,
+  leadingSpecNumber,
+  familyDisplayRank,
+  type ConditionCode,
+} from './products';
 import { round3 } from './stock-ledger';
 
 export interface SkuLike {
@@ -102,7 +108,19 @@ export function buildInventoryRows(
     bySku.get(b.sku_id)!.set(b.location_id, Number(b.quantity));
   }
 
-  return skus.map((sku) => {
+  // Group by family, then diameter descending (high to low) within each —
+  // same ordering the Telegram inventory report uses, via the shared
+  // `leadingSpecNumber` helper, so both stay consistent.
+  const ordered = [...skus].sort((a, b) => {
+    const famA = familyName.get(a.family_id) ?? '—';
+    const famB = familyName.get(b.family_id) ?? '—';
+    return (
+      familyDisplayRank(famA) - familyDisplayRank(famB) ||
+      leadingSpecNumber(b.diameter) - leadingSpecNumber(a.diameter)
+    );
+  });
+
+  return ordered.map((sku) => {
     const locBal = bySku.get(sku.id) ?? new Map<string, number>();
     let total = 0;
     for (const q of locBal.values()) total += q;

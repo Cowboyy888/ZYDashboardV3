@@ -50,6 +50,29 @@ describe('inventory view assembly', () => {
     expect(rows[0]!.total).toBe(0);
     expect(rows[0]!.isLow).toBe(false);
   });
+
+  it('sorts by family, then by diameter descending (high to low) — matches the Telegram report', () => {
+    const mixedFamilies = [
+      { id: 'fam-mesh', name: '钢筋网' },
+      { id: 'fam-coil', name: '螺纹盘圆' },
+    ];
+    const mixedSkus = [
+      { ...skus[0]!, id: 'sku-7.4', diameter: '7.4' },
+      { ...skus[0]!, id: 'sku-9', diameter: '9' },
+      { ...skus[0]!, id: 'sku-7.8', diameter: '7.8' },
+      {
+        ...skus[0]!,
+        id: 'sku-coil-10',
+        family_id: 'fam-coil',
+        diameter: '10厘',
+        size: null,
+        hole: null,
+      },
+    ];
+    const rows = buildInventoryRows(mixedSkus, mixedFamilies, locations, [], 'en');
+    // Same family stays grouped, each group sorted diameter high -> low.
+    expect(rows.map((r) => r.skuId)).toEqual(['sku-9', 'sku-7.8', 'sku-7.4', 'sku-coil-10']);
+  });
 });
 
 describe('totalsByFamilyUnit — never sum across units', () => {
