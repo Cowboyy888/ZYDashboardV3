@@ -125,6 +125,7 @@ export const dictionary = {
   'att.afternoon': { en: 'Afternoon', zh: '下午' },
   'att.sendReport': { en: 'Send report', zh: '发送报告' },
   'att.markNPresent': { en: 'Mark {n} present', zh: '标记 {n} 人出勤' },
+  'att.markAllPresent': { en: 'Mark all present', zh: '全部标为出勤' },
   'att.selectAll': { en: 'Select all', zh: '全选' },
   'att.unmarkedWarn': {
     en: 'employee(s) still unmarked for this shift — complete before sending the report.',

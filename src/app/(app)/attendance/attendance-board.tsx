@@ -139,16 +139,32 @@ export function AttendanceBoard({
             )}
 
             {canManage && (
-              <ActionForm action={bulkMarkPresent} className="space-y-0">
-                <input type="hidden" name="businessDate" value={date} />
-                <input type="hidden" name="shift" value={shift} />
-                {[...selectedIds].map((id) => (
-                  <input key={id} type="hidden" name="employeeIds" value={id} />
-                ))}
-                <SubmitButton variant="secondary" disabled={selectedIds.size === 0}>
-                  {t('att.markNPresent').replace('{n}', String(selectedIds.size))}
-                </SubmitButton>
-              </ActionForm>
+              <div className="flex flex-wrap gap-2">
+                <ActionForm action={bulkMarkPresent} className="space-y-0">
+                  <input type="hidden" name="businessDate" value={date} />
+                  <input type="hidden" name="shift" value={shift} />
+                  {activeIds.map((id) => (
+                    <input key={id} type="hidden" name="employeeIds" value={id} />
+                  ))}
+                  <SubmitButton
+                    variant="secondary"
+                    onClick={() => setSelectedIds(new Set(activeIds))}
+                  >
+                    {t('att.markAllPresent')}
+                  </SubmitButton>
+                </ActionForm>
+
+                <ActionForm action={bulkMarkPresent} className="space-y-0">
+                  <input type="hidden" name="businessDate" value={date} />
+                  <input type="hidden" name="shift" value={shift} />
+                  {[...selectedIds].map((id) => (
+                    <input key={id} type="hidden" name="employeeIds" value={id} />
+                  ))}
+                  <SubmitButton variant="outline" disabled={selectedIds.size === 0}>
+                    {t('att.markNPresent').replace('{n}', String(selectedIds.size))}
+                  </SubmitButton>
+                </ActionForm>
+              </div>
             )}
 
             <Card>
