@@ -305,6 +305,21 @@ export async function getSupplier(id: string): Promise<SupplierRow | null> {
   }
 }
 
+/** Count-only (no row data transferred) — for the dashboard's "Open POs" tile. */
+export async function getOpenPurchaseOrderCount(): Promise<number> {
+  try {
+    const supabase = await client();
+    const { count } = await supabase
+      .from('purchase_orders')
+      .select('id', { count: 'exact', head: true })
+      .in('status', ['ordered', 'partially_received']);
+    return count ?? 0;
+  } catch (e) {
+    console.error('[queries] getOpenPurchaseOrderCount', e);
+    return 0;
+  }
+}
+
 export async function getPurchaseOrders(): Promise<PurchaseOrderRow[]> {
   try {
     const supabase = await client();
@@ -345,10 +360,22 @@ export async function getPurchaseOrderItems(
   }
 }
 
-export async function getPurchaseOrderItemsReceived(): Promise<PurchaseOrderItemReceivedRow[]> {
+/**
+ * `purchase_order_item_received` aggregates (sums) over the whole
+ * `stock_movements` ledger per item — pass `itemIds` (a single PO's item ids)
+ * whenever the caller only needs one order, so the DB filters before
+ * aggregating instead of scanning every receipt ever recorded company-wide.
+ * Callers that genuinely need every order (the PO list, exports) omit it.
+ */
+export async function getPurchaseOrderItemsReceived(
+  itemIds?: string[],
+): Promise<PurchaseOrderItemReceivedRow[]> {
+  if (itemIds && itemIds.length === 0) return [];
   try {
     const supabase = await client();
-    const { data } = await supabase.from('purchase_order_item_received').select('*');
+    let q = supabase.from('purchase_order_item_received').select('*');
+    if (itemIds) q = q.in('item_id', itemIds);
+    const { data } = await q;
     return (data as PurchaseOrderItemReceivedRow[]) ?? [];
   } catch (e) {
     console.error('[queries] getPurchaseOrderItemsReceived', e);
@@ -417,6 +444,37 @@ export async function getCustomer(id: string): Promise<CustomerRow | null> {
   }
 }
 
+/** Count-only (no row data transferred) — for the dashboard's "Sales today" tile. */
+export async function getSalesOrderTodayCount(businessDate: string): Promise<number> {
+  try {
+    const supabase = await client();
+    const { count } = await supabase
+      .from('sales_orders')
+      .select('id', { count: 'exact', head: true })
+      .eq('order_date', businessDate)
+      .neq('status', 'cancelled');
+    return count ?? 0;
+  } catch (e) {
+    console.error('[queries] getSalesOrderTodayCount', e);
+    return 0;
+  }
+}
+
+/** Count-only (no row data transferred) — for the dashboard's "Pending deliveries" tile. */
+export async function getPendingDeliveryOrderCount(): Promise<number> {
+  try {
+    const supabase = await client();
+    const { count } = await supabase
+      .from('sales_orders')
+      .select('id', { count: 'exact', head: true })
+      .in('status', ['confirmed', 'partially_delivered']);
+    return count ?? 0;
+  } catch (e) {
+    console.error('[queries] getPendingDeliveryOrderCount', e);
+    return 0;
+  }
+}
+
 export async function getSalesOrders(): Promise<SalesOrderRow[]> {
   try {
     const supabase = await client();
@@ -455,10 +513,22 @@ export async function getSalesOrderItems(salesOrderId?: string): Promise<SalesOr
   }
 }
 
-export async function getSalesOrderItemsDelivered(): Promise<SalesOrderItemDeliveredRow[]> {
+/**
+ * `sales_order_item_delivered` aggregates (sums) over the whole
+ * `stock_movements` ledger per item — pass `itemIds` (a single SO's item ids)
+ * whenever the caller only needs one order, so the DB filters before
+ * aggregating instead of scanning every delivery ever recorded company-wide.
+ * Callers that genuinely need every order (the SO list, exports) omit it.
+ */
+export async function getSalesOrderItemsDelivered(
+  itemIds?: string[],
+): Promise<SalesOrderItemDeliveredRow[]> {
+  if (itemIds && itemIds.length === 0) return [];
   try {
     const supabase = await client();
-    const { data } = await supabase.from('sales_order_item_delivered').select('*');
+    let q = supabase.from('sales_order_item_delivered').select('*');
+    if (itemIds) q = q.in('item_id', itemIds);
+    const { data } = await q;
     return (data as SalesOrderItemDeliveredRow[]) ?? [];
   } catch (e) {
     console.error('[queries] getSalesOrderItemsDelivered', e);
@@ -503,6 +573,21 @@ export async function getSalesOrderDeliveries(itemIds: string[]): Promise<StockM
 
 // --- Payroll (Fourth pass) ------------------------------------------------------
 
+/** Count-only (no row data transferred) — for the dashboard's "Payroll approvals" tile. */
+export async function getDraftPayrollRunCount(): Promise<number> {
+  try {
+    const supabase = await client();
+    const { count } = await supabase
+      .from('payroll_runs')
+      .select('id', { count: 'exact', head: true })
+      .eq('status', 'draft');
+    return count ?? 0;
+  } catch (e) {
+    console.error('[queries] getDraftPayrollRunCount', e);
+    return 0;
+  }
+}
+
 export async function getPayrollRuns(): Promise<PayrollRunRow[]> {
   try {
     const supabase = await client();
@@ -541,10 +626,23 @@ export async function getPayrollItems(payrollRunId?: string): Promise<PayrollIte
   }
 }
 
-export async function getPayrollItemDeductions(): Promise<PayrollItemDeductionsRow[]> {
+/**
+ * `payroll_item_deductions` aggregates (sums) over the whole
+ * `payroll_item_lines` table per item — pass `itemIds` (a single run's item
+ * ids) whenever the caller only needs one run, so the DB filters before
+ * aggregating instead of scanning every deduction/advance line ever recorded
+ * company-wide. Callers that genuinely need every run (the runs list, the
+ * payroll export) omit it.
+ */
+export async function getPayrollItemDeductions(
+  itemIds?: string[],
+): Promise<PayrollItemDeductionsRow[]> {
+  if (itemIds && itemIds.length === 0) return [];
   try {
     const supabase = await client();
-    const { data } = await supabase.from('payroll_item_deductions').select('*');
+    let q = supabase.from('payroll_item_deductions').select('*');
+    if (itemIds) q = q.in('item_id', itemIds);
+    const { data } = await q;
     return (data as PayrollItemDeductionsRow[]) ?? [];
   } catch (e) {
     console.error('[queries] getPayrollItemDeductions', e);

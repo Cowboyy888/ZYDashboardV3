@@ -30,12 +30,12 @@ export default async function PayrollRunDetailPage({
   const run = await getPayrollRun(id);
   if (!run) notFound();
 
-  const [items, deductions, employees] = await Promise.all([
-    getPayrollItems(id),
-    getPayrollItemDeductions(),
-    getEmployees(true),
+  const [items, employees] = await Promise.all([getPayrollItems(id), getEmployees(true)]);
+  const itemIds = items.map((i) => i.id);
+  const [deductions, lines] = await Promise.all([
+    getPayrollItemDeductions(itemIds),
+    getPayrollRunLines(itemIds),
   ]);
-  const lines = await getPayrollRunLines(items.map((i) => i.id));
 
   const rows = buildPayrollRunRows([run], items, deductions, lines, employees);
   const row = rows[0];

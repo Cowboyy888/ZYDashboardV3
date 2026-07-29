@@ -32,16 +32,19 @@ export default async function PurchaseOrderDetailPage({
   const po = await getPurchaseOrder(id);
   if (!po) notFound();
 
-  const [items, received, supplier, skus, families, locations, profiles] = await Promise.all([
+  const [items, supplier, skus, families, locations, profiles] = await Promise.all([
     getPurchaseOrderItems(id),
-    getPurchaseOrderItemsReceived(),
     getSupplier(po.supplier_id),
     getSkus(true),
     getFamilies(true),
     getLocations(true),
     getProfiles(),
   ]);
-  const receipts = await getPurchaseOrderReceipts(items.map((i) => i.id));
+  const itemIds = items.map((i) => i.id);
+  const [received, receipts] = await Promise.all([
+    getPurchaseOrderItemsReceived(itemIds),
+    getPurchaseOrderReceipts(itemIds),
+  ]);
 
   const rows = buildPurchaseOrderRows(
     [po],

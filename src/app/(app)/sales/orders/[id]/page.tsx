@@ -32,16 +32,19 @@ export default async function SalesOrderDetailPage({
   const so = await getSalesOrder(id);
   if (!so) notFound();
 
-  const [items, delivered, customer, skus, families, locations, profiles] = await Promise.all([
+  const [items, customer, skus, families, locations, profiles] = await Promise.all([
     getSalesOrderItems(id),
-    getSalesOrderItemsDelivered(),
     getCustomer(so.customer_id),
     getSkus(true),
     getFamilies(true),
     getLocations(true),
     getProfiles(),
   ]);
-  const deliveries = await getSalesOrderDeliveries(items.map((i) => i.id));
+  const itemIds = items.map((i) => i.id);
+  const [delivered, deliveries] = await Promise.all([
+    getSalesOrderItemsDelivered(itemIds),
+    getSalesOrderDeliveries(itemIds),
+  ]);
 
   const rows = buildSalesOrderRows(
     [so],

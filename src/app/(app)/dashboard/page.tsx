@@ -34,9 +34,10 @@ import {
   getLocations,
   getBalances,
   getProductionCountForDate,
-  getPurchaseOrders,
-  getSalesOrders,
-  getPayrollRuns,
+  getOpenPurchaseOrderCount,
+  getSalesOrderTodayCount,
+  getPendingDeliveryOrderCount,
+  getDraftPayrollRunCount,
 } from '@/lib/db/queries';
 import { PageHeader } from '@/components/page-header';
 import { StatCard } from '@/components/stat-card';
@@ -93,9 +94,10 @@ export default async function DashboardPage() {
     locations,
     balances,
     productionToday,
-    purchaseOrders,
-    salesOrders,
-    payrollRuns,
+    openPoCount,
+    salesTodayCount,
+    pendingDeliveryCount,
+    payrollApprovalCount,
   ] = await Promise.all([
     getEmployees(),
     getAttendanceForDate(today),
@@ -105,21 +107,11 @@ export default async function DashboardPage() {
     getLocations(),
     getBalances(),
     getProductionCountForDate(today),
-    canPurchasing ? getPurchaseOrders() : Promise.resolve([]),
-    canSales ? getSalesOrders() : Promise.resolve([]),
-    canPayroll ? getPayrollRuns() : Promise.resolve([]),
+    canPurchasing ? getOpenPurchaseOrderCount() : Promise.resolve(0),
+    canSales ? getSalesOrderTodayCount(today) : Promise.resolve(0),
+    canSales ? getPendingDeliveryOrderCount() : Promise.resolve(0),
+    canPayroll ? getDraftPayrollRunCount() : Promise.resolve(0),
   ]);
-
-  const openPoCount = purchaseOrders.filter(
-    (po) => po.status === 'ordered' || po.status === 'partially_received',
-  ).length;
-  const salesTodayCount = salesOrders.filter(
-    (so) => so.order_date === today && so.status !== 'cancelled',
-  ).length;
-  const pendingDeliveryCount = salesOrders.filter(
-    (so) => so.status === 'confirmed' || so.status === 'partially_delivered',
-  ).length;
-  const payrollApprovalCount = payrollRuns.filter((r) => r.status === 'draft').length;
 
   const activeIds = employees.map((e) => e.id);
   const records: AttendanceRecord[] = todaysAttendance.map((a) => ({
