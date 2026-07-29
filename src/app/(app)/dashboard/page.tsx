@@ -1,5 +1,18 @@
 import type { CSSProperties } from 'react';
-import { CalendarCheck, Boxes, AlertTriangle } from 'lucide-react';
+import Link from 'next/link';
+import {
+  CalendarCheck,
+  Boxes,
+  AlertTriangle,
+  Sun,
+  MoonStar,
+  TrendingUp,
+  Factory,
+  ShoppingCart,
+  ClipboardList,
+  Truck,
+  Wallet,
+} from 'lucide-react';
 import { requireUser } from '@/lib/auth';
 import { hasPermission } from '@/lib/domain/rbac';
 import { getLocale } from '@/lib/i18n/locale';
@@ -27,6 +40,7 @@ import {
 } from '@/lib/db/queries';
 import { PageHeader } from '@/components/page-header';
 import { StatCard } from '@/components/stat-card';
+import { AnimatedNumber, AnimatedBar } from '@/components/animated-stat';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { ProductionQuickEntry } from './production-quick-entry';
@@ -53,6 +67,10 @@ const ENTER_CLASS =
 function enterStyle(delayMs = 0): CSSProperties {
   return { animationDelay: `${delayMs}ms` };
 }
+
+/** Hover affordance for the section cards that link out to a detail page. */
+const LINK_CARD_CLASS =
+  'block transition-all duration-200 hover:-translate-y-0.5 hover:border-primary/40 hover:shadow-md';
 
 export default async function DashboardPage() {
   const user = await requireUser();
@@ -146,32 +164,58 @@ export default async function DashboardPage() {
         <StatCard
           className={ENTER_CLASS}
           style={enterStyle(0)}
+          href="/attendance"
+          icon={<Sun className="h-4 w-4" />}
           label={t('dash.morningAtt')}
-          value={`${morning.present}/${morning.totalActive}`}
+          value={
+            <>
+              <AnimatedNumber value={morning.present} />/{morning.totalActive}
+            </>
+          }
           sub={sub(morning)}
           tone={morning.unmarked > 0 ? 'warning' : 'success'}
         />
         <StatCard
           className={ENTER_CLASS}
           style={enterStyle(60)}
+          href="/attendance"
+          icon={<MoonStar className="h-4 w-4" />}
           label={t('dash.afternoonAtt')}
-          value={`${afternoon.present}/${afternoon.totalActive}`}
+          value={
+            <>
+              <AnimatedNumber value={afternoon.present} />/{afternoon.totalActive}
+            </>
+          }
           sub={sub(afternoon)}
           tone={afternoon.unmarked > 0 ? 'warning' : 'success'}
         />
         <StatCard
           className={ENTER_CLASS}
           style={enterStyle(120)}
+          href="/attendance"
+          icon={<TrendingUp className="h-4 w-4" />}
           label={t('dash.mtdRate')}
-          value={`${(mtdRate * 100).toFixed(0)}%`}
-          sub={`${formatDDMMYYYY(monthStart)} – ${formatDDMMYYYY(today)}`}
+          value={<AnimatedNumber value={mtdRate * 100} suffix="%" />}
+          sub={
+            <>
+              {formatDDMMYYYY(monthStart)} – {formatDDMMYYYY(today)}
+              <AnimatedBar
+                percent={mtdRate * 100}
+                className={
+                  mtdRate >= 0.9 ? 'bg-success' : mtdRate >= 0.75 ? 'bg-primary' : 'bg-warning'
+                }
+              />
+            </>
+          }
           tone="primary"
         />
         <StatCard
           className={ENTER_CLASS}
           style={enterStyle(180)}
+          href="/inventory"
+          icon={<Factory className="h-4 w-4" />}
           label={t('dash.productionToday')}
-          value={productionToday.toLocaleString()}
+          value={<AnimatedNumber value={productionToday} />}
           sub="张 · 钢筋网"
         />
       </div>
@@ -187,93 +231,114 @@ export default async function DashboardPage() {
       )}
 
       <div className="mt-4 grid gap-4 lg:grid-cols-3">
-        <Card className={`lg:col-span-1 ${ENTER_CLASS}`} style={enterStyle(260)}>
-          <CardHeader className="pb-3">
-            <CardTitle className="flex items-center gap-2 text-base">
-              <Boxes className="h-4 w-4 text-primary" /> {t('dash.inventoryTotals')}
-            </CardTitle>
-          </CardHeader>
-          <CardContent className="space-y-2">
-            {familyTotals.length === 0 && <p className="text-sm text-muted-foreground">—</p>}
-            {familyTotals.map((f) => (
-              <div
-                key={`${f.familyId}-${f.unit}`}
-                className="flex items-center justify-between text-sm"
-              >
-                <span>{f.familyName}</span>
-                <span className="font-semibold tabular-nums">
-                  {f.total.toLocaleString()} {f.unit}
-                </span>
-              </div>
-            ))}
-          </CardContent>
-        </Card>
+        <Link
+          href="/inventory"
+          className={`h-full lg:col-span-1 ${ENTER_CLASS} ${LINK_CARD_CLASS}`}
+          style={enterStyle(260)}
+        >
+          <Card className="h-full">
+            <CardHeader className="pb-3">
+              <CardTitle className="flex items-center gap-2 text-base">
+                <Boxes className="h-4 w-4 text-primary" /> {t('dash.inventoryTotals')}
+              </CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-2">
+              {familyTotals.length === 0 && <p className="text-sm text-muted-foreground">—</p>}
+              {familyTotals.map((f) => (
+                <div
+                  key={`${f.familyId}-${f.unit}`}
+                  className="flex items-center justify-between text-sm"
+                >
+                  <span>{f.familyName}</span>
+                  <span className="font-semibold tabular-nums">
+                    {f.total.toLocaleString()} {f.unit}
+                  </span>
+                </div>
+              ))}
+            </CardContent>
+          </Card>
+        </Link>
 
-        <Card className={`lg:col-span-2 ${ENTER_CLASS}`} style={enterStyle(300)}>
+        <Link
+          href="/inventory"
+          className={`h-full lg:col-span-2 ${ENTER_CLASS} ${LINK_CARD_CLASS}`}
+          style={enterStyle(300)}
+        >
+          <Card className="h-full">
+            <CardHeader className="pb-3">
+              <CardTitle className="flex items-center gap-2 text-base">
+                <AlertTriangle
+                  className={`h-4 w-4 text-warning ${lowStock.length > 0 ? 'motion-safe:animate-pulse' : ''}`}
+                />{' '}
+                {t('dash.lowStock')}
+                {lowStock.length > 0 && <Badge variant="warning">{lowStock.length}</Badge>}
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              {lowStock.length === 0 ? (
+                <p className="text-sm text-muted-foreground">{t('dash.allGood')} ✅</p>
+              ) : (
+                <ul className="space-y-1.5 text-sm">
+                  {lowStock.slice(0, 8).map((r) => (
+                    <li key={r.skuId} className="flex items-center justify-between">
+                      <span className="truncate pr-2">{r.label}</span>
+                      <span className="shrink-0 font-semibold tabular-nums text-warning">
+                        {r.total} / {r.minimumLevel} {r.unit}
+                      </span>
+                    </li>
+                  ))}
+                </ul>
+              )}
+            </CardContent>
+          </Card>
+        </Link>
+      </div>
+
+      <Link
+        href="/attendance"
+        className={`mt-4 block ${ENTER_CLASS} ${LINK_CARD_CLASS}`}
+        style={enterStyle(340)}
+      >
+        <Card>
           <CardHeader className="pb-3">
             <CardTitle className="flex items-center gap-2 text-base">
-              <AlertTriangle className="h-4 w-4 text-warning" /> {t('dash.lowStock')}
-              {lowStock.length > 0 && <Badge variant="warning">{lowStock.length}</Badge>}
+              <CalendarCheck className="h-4 w-4 text-primary" /> {t('dash.attExceptions')}
             </CardTitle>
           </CardHeader>
           <CardContent>
-            {lowStock.length === 0 ? (
-              <p className="text-sm text-muted-foreground">{t('dash.allGood')} ✅</p>
+            {morning.exceptions.length === 0 && afternoon.exceptions.length === 0 ? (
+              <p className="text-sm text-muted-foreground">{t('dash.none')} ✅</p>
             ) : (
-              <ul className="space-y-1.5 text-sm">
-                {lowStock.slice(0, 8).map((r) => (
-                  <li key={r.skuId} className="flex items-center justify-between">
-                    <span className="truncate pr-2">{r.label}</span>
-                    <span className="shrink-0 font-semibold tabular-nums text-warning">
-                      {r.total} / {r.minimumLevel} {r.unit}
-                    </span>
-                  </li>
-                ))}
-              </ul>
+              <div className="grid gap-4 sm:grid-cols-2">
+                {(['morning', 'afternoon'] as const).map((shift) => {
+                  const summary = shift === 'morning' ? morning : afternoon;
+                  return (
+                    <div key={shift}>
+                      <div className="mb-1 text-xs font-semibold uppercase text-muted-foreground">
+                        {shift === 'morning' ? t('dash.morning') : t('dash.afternoon')}
+                      </div>
+                      {summary.exceptions.length === 0 ? (
+                        <p className="text-sm text-muted-foreground">—</p>
+                      ) : (
+                        <ul className="space-y-1 text-sm">
+                          {summary.exceptions.map((ex) => (
+                            <li key={ex.employeeId} className="flex justify-between">
+                              <span>{nameOf.get(ex.employeeId) ?? ex.employeeId}</span>
+                              <Badge variant={ex.status === 'unmarked' ? 'outline' : 'secondary'}>
+                                {STATUS_LABELS[ex.status][locale]}
+                              </Badge>
+                            </li>
+                          ))}
+                        </ul>
+                      )}
+                    </div>
+                  );
+                })}
+              </div>
             )}
           </CardContent>
         </Card>
-      </div>
-
-      <Card className={`mt-4 ${ENTER_CLASS}`} style={enterStyle(340)}>
-        <CardHeader className="pb-3">
-          <CardTitle className="flex items-center gap-2 text-base">
-            <CalendarCheck className="h-4 w-4 text-primary" /> {t('dash.attExceptions')}
-          </CardTitle>
-        </CardHeader>
-        <CardContent>
-          {morning.exceptions.length === 0 && afternoon.exceptions.length === 0 ? (
-            <p className="text-sm text-muted-foreground">{t('dash.none')} ✅</p>
-          ) : (
-            <div className="grid gap-4 sm:grid-cols-2">
-              {(['morning', 'afternoon'] as const).map((shift) => {
-                const summary = shift === 'morning' ? morning : afternoon;
-                return (
-                  <div key={shift}>
-                    <div className="mb-1 text-xs font-semibold uppercase text-muted-foreground">
-                      {shift === 'morning' ? t('dash.morning') : t('dash.afternoon')}
-                    </div>
-                    {summary.exceptions.length === 0 ? (
-                      <p className="text-sm text-muted-foreground">—</p>
-                    ) : (
-                      <ul className="space-y-1 text-sm">
-                        {summary.exceptions.map((ex) => (
-                          <li key={ex.employeeId} className="flex justify-between">
-                            <span>{nameOf.get(ex.employeeId) ?? ex.employeeId}</span>
-                            <Badge variant={ex.status === 'unmarked' ? 'outline' : 'secondary'}>
-                              {STATUS_LABELS[ex.status][locale]}
-                            </Badge>
-                          </li>
-                        ))}
-                      </ul>
-                    )}
-                  </div>
-                );
-              })}
-            </div>
-          )}
-        </CardContent>
-      </Card>
+      </Link>
 
       {(canSales || canPurchasing || canPayroll) && (
         <div className="mt-4 grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
@@ -281,8 +346,10 @@ export default async function DashboardPage() {
             <StatCard
               className={ENTER_CLASS}
               style={enterStyle(380)}
+              href="/sales/orders"
+              icon={<ShoppingCart className="h-4 w-4" />}
               label={t('dash.salesToday')}
-              value={String(salesTodayCount)}
+              value={<AnimatedNumber value={salesTodayCount} />}
               tone="primary"
             />
           )}
@@ -290,8 +357,10 @@ export default async function DashboardPage() {
             <StatCard
               className={ENTER_CLASS}
               style={enterStyle(420)}
+              href="/purchasing/orders"
+              icon={<ClipboardList className="h-4 w-4" />}
               label={t('dash.openPOs')}
-              value={String(openPoCount)}
+              value={<AnimatedNumber value={openPoCount} />}
               tone={openPoCount > 0 ? 'warning' : 'success'}
             />
           )}
@@ -299,8 +368,10 @@ export default async function DashboardPage() {
             <StatCard
               className={ENTER_CLASS}
               style={enterStyle(460)}
+              href="/sales/orders"
+              icon={<Truck className="h-4 w-4" />}
               label={t('dash.pendingDeliveries')}
-              value={String(pendingDeliveryCount)}
+              value={<AnimatedNumber value={pendingDeliveryCount} />}
               tone={pendingDeliveryCount > 0 ? 'warning' : 'success'}
             />
           )}
@@ -308,8 +379,10 @@ export default async function DashboardPage() {
             <StatCard
               className={ENTER_CLASS}
               style={enterStyle(500)}
+              href="/payroll"
+              icon={<Wallet className="h-4 w-4" />}
               label={t('dash.payrollApprovals')}
-              value={String(payrollApprovalCount)}
+              value={<AnimatedNumber value={payrollApprovalCount} />}
               tone={payrollApprovalCount > 0 ? 'warning' : 'success'}
             />
           )}
