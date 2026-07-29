@@ -96,7 +96,7 @@ export function AppShell({
   return (
     <div className="flex min-h-screen bg-background">
       {/* Sidebar (desktop) */}
-      <aside className="hidden w-64 shrink-0 flex-col bg-[hsl(208_18%_13%)] py-5 lg:flex">
+      <aside className="hidden w-64 shrink-0 flex-col bg-[hsl(208_18%_13%)] py-5 lg:flex print:hidden">
         <div className="mb-6 px-5">
           <ZysteelLogo invert />
         </div>
@@ -118,7 +118,7 @@ export function AppShell({
 
       <div className="flex min-w-0 flex-1 flex-col">
         {/* Topbar */}
-        <header className="sticky top-0 z-30 flex h-14 items-center gap-3 border-b bg-card/95 px-4 backdrop-blur">
+        <header className="sticky top-0 z-30 flex h-14 items-center gap-3 border-b bg-card/95 px-4 backdrop-blur print:hidden">
           <Button
             variant="ghost"
             size="icon"
@@ -145,7 +145,7 @@ export function AppShell({
           </div>
         </header>
 
-        <main className="min-w-0 flex-1 p-4 sm:p-6">{children}</main>
+        <main className="min-w-0 flex-1 p-4 sm:p-6 print:p-0">{children}</main>
       </div>
     </div>
   );

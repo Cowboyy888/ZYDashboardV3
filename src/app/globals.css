@@ -89,3 +89,15 @@
 .zy-accent-bar {
   background: linear-gradient(180deg, hsl(var(--primary)) 0%, hsl(354 74% 38%) 100%);
 }
+
+/* Printed documents (e.g. sales order letterhead) must keep their brand-red
+   bars — browsers otherwise strip background colors from print by default. */
+@media print {
+  @page {
+    margin: 12mm;
+  }
+  * {
+    print-color-adjust: exact;
+    -webkit-print-color-adjust: exact;
+  }
+}

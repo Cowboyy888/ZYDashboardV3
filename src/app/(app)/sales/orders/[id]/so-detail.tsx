@@ -23,8 +23,9 @@ import {
 } from '@/lib/domain/sales';
 import { formatDateTime, formatDDMMYYYY } from '@/lib/domain/datetime';
 import type { SalesOrderRow } from '@/lib/domain/sales-view';
-import type { SalesOrderRow as SoRow, StockMovementRow } from '@/lib/db/types';
+import type { SalesOrderRow as SoRow, StockMovementRow, CustomerRow } from '@/lib/db/types';
 import { DeliverForm } from './deliver-form';
+import { SoPrint } from './so-print';
 
 const STATUS_VARIANT = {
   draft: 'outline',
@@ -37,6 +38,7 @@ const STATUS_VARIANT = {
 export function SoDetail({
   row,
   so,
+  customer,
   locationName,
   deliveries,
   profileName,
@@ -46,6 +48,7 @@ export function SoDetail({
 }: {
   row: SalesOrderRow;
   so: SoRow;
+  customer: CustomerRow | null;
   locationName: Record<string, string>;
   deliveries: StockMovementRow[];
   profileName: Record<string, string>;
@@ -59,7 +62,8 @@ export function SoDetail({
 
   return (
     <div className="space-y-4">
-      <Card>
+      <SoPrint row={row} so={so} customer={customer} locale={locale} />
+      <Card className="print:hidden">
         <CardHeader className="flex flex-row items-start justify-between">
           <div>
             <CardTitle className="flex items-center gap-2 text-base">
@@ -136,7 +140,7 @@ export function SoDetail({
         </CardContent>
       </Card>
 
-      <Card>
+      <Card className="print:hidden">
         <CardHeader>
           <CardTitle className="text-base">{t('sal.lineItems')}</CardTitle>
         </CardHeader>
