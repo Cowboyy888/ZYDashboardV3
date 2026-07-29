@@ -1,5 +1,5 @@
 'use client';
-import { useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { AlertTriangle } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 import { Card, CardContent } from '@/components/ui/card';
@@ -60,6 +60,7 @@ export function AttendanceBoard({
 }) {
   const { t, locale } = useT();
   const [shift, setShift] = useState<Shift>('morning');
+  const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
   const activeIds = employees.map((e) => e.id);
   const asRecords: AttendanceRecord[] = records.map((r) => ({
     employeeId: r.employee_id,
@@ -72,6 +73,25 @@ export function AttendanceBoard({
     return rec?.status ?? 'unmarked';
   };
   const summary = summarizeShift(activeIds, asRecords, date, shift);
+
+  const allSelected = employees.length > 0 && selectedIds.size === employees.length;
+  const someSelected = selectedIds.size > 0 && !allSelected;
+  const headerCheckboxRef = useRef<HTMLInputElement>(null);
+  useEffect(() => {
+    if (headerCheckboxRef.current) headerCheckboxRef.current.indeterminate = someSelected;
+  }, [someSelected]);
+
+  function toggleAll() {
+    setSelectedIds(allSelected ? new Set() : new Set(activeIds));
+  }
+  function toggleOne(id: string) {
+    setSelectedIds((prev) => {
+      const next = new Set(prev);
+      if (next.has(id)) next.delete(id);
+      else next.add(id);
+      return next;
+    });
+  }
 
   return (
     <div className="space-y-4">
@@ -122,10 +142,12 @@ export function AttendanceBoard({
               <ActionForm action={bulkMarkPresent} className="space-y-0">
                 <input type="hidden" name="businessDate" value={date} />
                 <input type="hidden" name="shift" value={shift} />
-                {activeIds.map((id) => (
+                {[...selectedIds].map((id) => (
                   <input key={id} type="hidden" name="employeeIds" value={id} />
                 ))}
-                <SubmitButton variant="secondary">{t('att.markAllPresent')}</SubmitButton>
+                <SubmitButton variant="secondary" disabled={selectedIds.size === 0}>
+                  {t('att.markNPresent').replace('{n}', String(selectedIds.size))}
+                </SubmitButton>
               </ActionForm>
             )}
 
@@ -134,6 +156,17 @@ export function AttendanceBoard({
                 <Table>
                   <TableHeader>
                     <TableRow>
+                      {canManage && (
+                        <TableHead className="w-10">
+                          <input
+                            ref={headerCheckboxRef}
+                            type="checkbox"
+                            aria-label={t('att.selectAll')}
+                            checked={allSelected}
+                            onChange={toggleAll}
+                          />
+                        </TableHead>
+                      )}
                       <TableHead>{t('att.employee')}</TableHead>
                       <TableHead>{t('common.status')}</TableHead>
                       {canManage && <TableHead>{t('att.set')}</TableHead>}
@@ -144,6 +177,16 @@ export function AttendanceBoard({
                       const current = statusFor(e.id);
                       return (
                         <TableRow key={e.id}>
+                          {canManage && (
+                            <TableCell>
+                              <input
+                                type="checkbox"
+                                aria-label={e.display_name || e.employee_code}
+                                checked={selectedIds.has(e.id)}
+                                onChange={() => toggleOne(e.id)}
+                              />
+                            </TableCell>
+                          )}
                           <TableCell>
                             <div className="font-medium">
                               {e.display_name ||
@@ -192,7 +235,7 @@ export function AttendanceBoard({
                     {employees.length === 0 && (
                       <TableRow>
                         <TableCell
-                          colSpan={canManage ? 3 : 2}
+                          colSpan={canManage ? 4 : 2}
                           className="text-center text-muted-foreground"
                         >
                           {t('att.noActive')}
