@@ -78,6 +78,7 @@ export const dictionary = {
   'common.low': { en: 'Low', zh: '低' },
   'common.select': { en: 'Select…', zh: '请选择…' },
   'common.sendNow': { en: 'Send now', zh: '立即发送' },
+  'common.exportExcel': { en: 'Export to Excel', zh: '导出 Excel' },
   'common.loading': { en: 'Loading…', zh: '加载中…' },
   'common.saved': { en: 'Saved', zh: '已保存' },
 

@@ -13,6 +13,7 @@ import { formatDDMMYYYY } from '@/lib/domain/datetime';
 import { getLocale } from '@/lib/i18n/locale';
 import { translator } from '@/lib/i18n';
 import { PageHeader } from '@/components/page-header';
+import { buttonVariants } from '@/components/ui/button-variants';
 import { RunDetail } from './run-detail';
 
 export const dynamic = 'force-dynamic';
@@ -45,6 +46,11 @@ export default async function PayrollRunDetailPage({
       <PageHeader
         title={`${t('pay.title')}: ${formatDDMMYYYY(row.periodStart)} – ${formatDDMMYYYY(row.periodEnd)}`}
         description={t('pay.payDate') + ': ' + formatDDMMYYYY(row.payDate)}
+        actions={
+          <a href={`/api/export/payroll/${id}`} className={buttonVariants({ variant: 'outline' })}>
+            {t('common.exportExcel')}
+          </a>
+        }
       />
       <RunDetail
         row={row}

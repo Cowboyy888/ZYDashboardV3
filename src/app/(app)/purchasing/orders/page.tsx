@@ -50,11 +50,16 @@ export default async function PurchaseOrdersPage() {
         title={t('pur.orders')}
         description={t('pur.dashDesc')}
         actions={
-          hasPermission(user.role, 'purchasing:manage') ? (
-            <Link href="/purchasing/orders/new" className={buttonVariants()}>
-              {t('pur.newPo')}
-            </Link>
-          ) : undefined
+          <>
+            <a href="/api/export/purchasing" className={buttonVariants({ variant: 'outline' })}>
+              {t('common.exportExcel')}
+            </a>
+            {hasPermission(user.role, 'purchasing:manage') && (
+              <Link href="/purchasing/orders/new" className={buttonVariants()}>
+                {t('pur.newPo')}
+              </Link>
+            )}
+          </>
         }
       />
       <PurchasingNav active="orders" />

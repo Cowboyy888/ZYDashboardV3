@@ -50,11 +50,16 @@ export default async function SalesOrdersPage() {
         title={t('sal.orders')}
         description={t('sal.dashDesc')}
         actions={
-          hasPermission(user.role, 'sales:manage') ? (
-            <Link href="/sales/orders/new" className={buttonVariants()}>
-              {t('sal.newSo')}
-            </Link>
-          ) : undefined
+          <>
+            <a href="/api/export/sales" className={buttonVariants({ variant: 'outline' })}>
+              {t('common.exportExcel')}
+            </a>
+            {hasPermission(user.role, 'sales:manage') && (
+              <Link href="/sales/orders/new" className={buttonVariants()}>
+                {t('sal.newSo')}
+              </Link>
+            )}
+          </>
         }
       />
       <SalesNav active="orders" />
