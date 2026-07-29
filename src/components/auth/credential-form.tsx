@@ -14,7 +14,14 @@ export function CredentialForm({ mode }: { mode: 'signin' | 'signup' }) {
   const [password, setPassword] = useState('');
   const [fullName, setFullName] = useState('');
   const [error, setError] = useState<string | null>(null);
+  const [errorNonce, setErrorNonce] = useState(0);
   const [pending, setPending] = useState(false);
+
+  function fail(message: string) {
+    setError(message);
+    setErrorNonce((n) => n + 1);
+    setPending(false);
+  }
 
   const configured = !!env.supabaseUrl() && !!env.supabaseAnonKey();
 
@@ -22,7 +29,7 @@ export function CredentialForm({ mode }: { mode: 'signin' | 'signup' }) {
     e.preventDefault();
     setError(null);
     if (!configured) {
-      setError(t('auth.notConfigured'));
+      fail(t('auth.notConfigured'));
       return;
     }
     setPending(true);
@@ -37,14 +44,12 @@ export function CredentialForm({ mode }: { mode: 'signin' | 'signup' }) {
               options: { data: { full_name: fullName } },
             });
       if (result.error) {
-        setError(result.error.message);
-        setPending(false);
+        fail(result.error.message);
         return;
       }
       window.location.assign('/dashboard');
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Unexpected error');
-      setPending(false);
+      fail(err instanceof Error ? err.message : 'Unexpected error');
     }
   }
 
@@ -55,6 +60,7 @@ export function CredentialForm({ mode }: { mode: 'signin' | 'signup' }) {
           <Label htmlFor="fullName">{t('auth.name')}</Label>
           <Input
             id="fullName"
+            className="transition-shadow duration-200 focus-visible:shadow-[0_0_0_4px_hsl(var(--primary)/0.15)]"
             value={fullName}
             onChange={(e) => setFullName(e.target.value)}
             required
@@ -67,6 +73,7 @@ export function CredentialForm({ mode }: { mode: 'signin' | 'signup' }) {
           id="email"
           type="email"
           autoComplete="email"
+          className="transition-shadow duration-200 focus-visible:shadow-[0_0_0_4px_hsl(var(--primary)/0.15)]"
           value={email}
           onChange={(e) => setEmail(e.target.value)}
           required
@@ -78,6 +85,7 @@ export function CredentialForm({ mode }: { mode: 'signin' | 'signup' }) {
           id="password"
           type="password"
           autoComplete={mode === 'signin' ? 'current-password' : 'new-password'}
+          className="transition-shadow duration-200 focus-visible:shadow-[0_0_0_4px_hsl(var(--primary)/0.15)]"
           value={password}
           onChange={(e) => setPassword(e.target.value)}
           minLength={8}
@@ -85,9 +93,18 @@ export function CredentialForm({ mode }: { mode: 'signin' | 'signup' }) {
         />
       </div>
       {error && (
-        <p className="rounded-md bg-destructive/10 px-3 py-2 text-sm text-destructive">{error}</p>
+        <p
+          key={errorNonce}
+          className="rounded-md bg-destructive/10 px-3 py-2 text-sm text-destructive motion-safe:animate-zy-shake"
+        >
+          {error}
+        </p>
       )}
-      <Button type="submit" className="w-full" disabled={pending}>
+      <Button
+        type="submit"
+        className="w-full transition-all active:scale-[0.98]"
+        disabled={pending}
+      >
         {pending && <Loader2 className="h-4 w-4 animate-spin" />}
         {mode === 'signin' ? t('auth.signIn') : t('auth.createOwner')}
       </Button>

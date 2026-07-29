@@ -82,10 +82,25 @@ const config: Config = {
           from: { height: 'var(--radix-accordion-content-height)' },
           to: { height: '0' },
         },
+        // Slow ambient drift for the login screen's background glow — opacity +
+        // transform only (GPU-composited), never layout-affecting properties.
+        'zy-glow': {
+          '0%, 100%': { transform: 'translate3d(0, 0, 0) scale(1)', opacity: '0.5' },
+          '50%': { transform: 'translate3d(4%, -6%, 0) scale(1.15)', opacity: '0.85' },
+        },
+        // One-shot attention shake for a rejected sign-in.
+        'zy-shake': {
+          '10%, 90%': { transform: 'translateX(-1px)' },
+          '20%, 80%': { transform: 'translateX(2px)' },
+          '30%, 50%, 70%': { transform: 'translateX(-4px)' },
+          '40%, 60%': { transform: 'translateX(4px)' },
+        },
       },
       animation: {
         'accordion-down': 'accordion-down 0.2s ease-out',
         'accordion-up': 'accordion-up 0.2s ease-out',
+        'zy-glow': 'zy-glow 12s ease-in-out infinite',
+        'zy-shake': 'zy-shake 0.5s cubic-bezier(0.36, 0.07, 0.19, 0.97) both',
       },
     },
   },
