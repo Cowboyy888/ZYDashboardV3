@@ -234,6 +234,14 @@ check(
   /status in \('present', 'late'\)/i.test(sql),
   "daily-rate pay counts 'present'/'late' attendance as a worked day (confirmed rule)",
 );
+check(
+  /add constraint employees_pay_type_check check \(pay_type = 'daily'\)/i.test(sql),
+  'monthly-salary pay removed — employees.pay_type constrained to daily only',
+);
+check(
+  /add constraint payroll_items_pay_type_check check \(pay_type = 'daily'\)/i.test(sql),
+  'monthly-salary pay removed — payroll_items.pay_type constrained to daily only',
+);
 
 // --- Sensitive-data protection ----------------------------------------------
 check(

@@ -92,9 +92,9 @@ insert into public.employees
 values
   (1, 'សុខ ដារ៉ា',   'Sok Dara',    '苏达拉', 'Production', 'Operator',   'daily',   date '2025-01-06',
     (select id from public.attendance_groups where name = '焊网机员工'), 'Sok Dara',    '焊网机员工'),
-  (2, 'ចាន់ ធីតា',   'Chan Thida',  '陈提达', 'Warehouse',  'Storekeeper','monthly', date '2024-11-01',
+  (2, 'ចាន់ ធីតា',   'Chan Thida',  '陈提达', 'Warehouse',  'Storekeeper','daily', date '2024-11-01',
     (select id from public.attendance_groups where name = '采买配件房'), 'Chan Thida',  '配件采买'),
-  (3, 'លី សុភா',     'Ly Sophea',   '李苏帕', 'Sales',      'Sales Rep',  'monthly', date '2025-03-17',
+  (3, 'លី សុភா',     'Ly Sophea',   '李苏帕', 'Sales',      'Sales Rep',  'daily', date '2025-03-17',
     (select id from public.attendance_groups where name = '老板助理'), 'Ly Sophea',   '老板助理'),
   (4, 'ហេង វិចិត្រ', 'Heng Vichet', '亨维吉', 'Production', 'Operator',   'daily',   date '2025-05-02',
     (select id from public.attendance_groups where name = '调直机员工'), 'Heng Vichet', '调直机员工')
@@ -104,11 +104,8 @@ on conflict (employee_code) do nothing;
 select setval('public.employee_seq', greatest((select coalesce(max(seq_no), 0) from public.employees), 1));
 
 -- Demonstration sensitive payroll rows (visible only to Owner/System/Payroll).
-insert into public.employee_private (employee_id, base_salary, daily_rate, emergency_contact)
-select e.id,
-       case when e.pay_type = 'monthly' then 450 else null end,
-       case when e.pay_type = 'daily'   then 18  else null end,
-       '012 345 678'
+insert into public.employee_private (employee_id, daily_rate, emergency_contact)
+select e.id, 18, '012 345 678'
 from public.employees e
 on conflict (employee_id) do nothing;
 

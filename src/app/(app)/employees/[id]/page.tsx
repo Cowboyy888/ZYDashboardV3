@@ -90,7 +90,7 @@ export default async function EmployeeDetailPage({ params }: { params: Promise<{
               <dt className="text-muted-foreground">{t('emp.startDate')}</dt>
               <dd>{employee.start_date ? formatDDMMYYYY(employee.start_date) : '—'}</dd>
               <dt className="text-muted-foreground">{t('emp.payType')}</dt>
-              <dd>{employee.pay_type === 'monthly' ? t('emp.monthly') : t('emp.daily')}</dd>
+              <dd>{t('emp.daily')}</dd>
             </dl>
           </CardContent>
         </Card>

@@ -29,7 +29,6 @@ export async function createEmployee(_prev: ActionState, formData: FormData): Pr
     department: formData.get('department'),
     position: formData.get('position'),
     startDate: formData.get('startDate') || undefined,
-    payType: formData.get('payType') || 'monthly',
     notes: formData.get('notes'),
   });
   if (!parsed.success) {
@@ -56,7 +55,8 @@ export async function createEmployee(_prev: ActionState, formData: FormData): Pr
       department: d.department ?? null,
       position: d.position ?? null,
       start_date: d.startDate ?? businessDate(), // default to today
-      pay_type: d.payType,
+      // pay_type has only ever been 'daily' since migration 0016; the column
+      // still defaults to it, so it is not set explicitly here.
       notes: d.notes ?? null,
       is_active: true,
     })
@@ -100,14 +100,12 @@ export async function saveEmployeePrivate(
 ): Promise<ActionState> {
   const user = await assertPermission('employee_sensitive:view');
   const employeeId = String(formData.get('employeeId') ?? '');
-  const baseSalary = formData.get('baseSalary');
   const dailyRate = formData.get('dailyRate');
   const emergencyContact = formData.get('emergencyContact');
 
   const supabase = await createSupabaseServerClient();
   const { error } = await supabase.from('employee_private').upsert({
     employee_id: employeeId,
-    base_salary: baseSalary ? Number(baseSalary) : null,
     daily_rate: dailyRate ? Number(dailyRate) : null,
     emergency_contact: emergencyContact ? String(emergencyContact) : null,
   });
@@ -201,7 +199,6 @@ export async function updateEmployeeDetails(
     phone: formData.get('phone'),
     department: formData.get('department'),
     startDate: formData.get('startDate') || undefined,
-    payType: formData.get('payType') || 'monthly',
     notes: formData.get('notes'),
   });
   if (!parsed.success) return fail('Validation failed', zodFieldErrors(parsed.error.issues));
@@ -216,7 +213,6 @@ export async function updateEmployeeDetails(
       phone: d.phone ?? null,
       department: d.department ?? null,
       start_date: d.startDate ?? null,
-      pay_type: d.payType,
       notes: d.notes ?? null,
     })
     .eq('id', employeeId);

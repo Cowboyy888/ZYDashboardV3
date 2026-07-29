@@ -133,13 +133,13 @@ export type SetStockTotalInput = z.infer<typeof setStockTotalSchema>;
 
 // --- Employees ---------------------------------------------------------------
 
-export const payTypeSchema = z.enum(['monthly', 'daily']);
-
 /**
  * Create-employee input. Only three fields are required — Display name,
  * Attendance group, and Job title. The Employee ID is NOT entered here; it is
  * generated atomically in the database. Every other field is optional.
  * Messages are plain English; the UI localises them (see i18n PHRASES).
+ * Pay is always daily (see employees_pay_type_check) — there is no pay-type
+ * field here to set.
  */
 export const employeeSchema = z.object({
   displayName: z.string().trim().min(1, 'English name is required'),
@@ -159,7 +159,6 @@ export const employeeSchema = z.object({
   department: optionalText,
   position: optionalText,
   startDate: isoDate.optional(),
-  payType: payTypeSchema.default('monthly'),
   notes: optionalText,
 });
 export type EmployeeInput = z.infer<typeof employeeSchema>;
@@ -187,7 +186,6 @@ export const employeeDetailsSchema = z.object({
   phone: optionalText,
   department: optionalText,
   startDate: isoDate.optional(),
-  payType: payTypeSchema.default('monthly'),
   notes: optionalText,
 });
 export type EmployeeDetailsInput = z.infer<typeof employeeDetailsSchema>;

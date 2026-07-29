@@ -25,7 +25,6 @@ describe('create-employee schema — root cause of "Validation failed" fixed', (
     });
     expect(r.success).toBe(true);
     if (r.success) {
-      expect(r.data.payType).toBe('monthly'); // sensible default
       expect(r.data.startDate).toBeUndefined(); // action defaults it to today
     }
   });

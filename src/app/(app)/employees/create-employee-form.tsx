@@ -23,7 +23,6 @@ const BLANK = {
   phone: '',
   department: '',
   startDate: '',
-  payType: 'monthly',
   notes: '',
 };
 
@@ -213,19 +212,6 @@ export function CreateEmployeeForm({ groups }: { groups: AttendanceGroupRow[] })
               onChange={set('label')}
               placeholder="备用"
             />
-          </div>
-          <div className="space-y-1.5">
-            <Label htmlFor="ce-pay">{t('emp.payType')}</Label>
-            <select
-              id="ce-pay"
-              name="payType"
-              value={v.payType}
-              onChange={set('payType')}
-              className={selectCls}
-            >
-              <option value="monthly">{t('emp.monthly')}</option>
-              <option value="daily">{t('emp.daily')}</option>
-            </select>
           </div>
           <div className="space-y-1.5">
             <Label htmlFor="ce-zh">{t('emp.chinese')}</Label>

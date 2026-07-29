@@ -20,16 +20,6 @@ export function PrivateForm({
       <input type="hidden" name="employeeId" value={employeeId} />
       <div className="grid gap-3 sm:grid-cols-2">
         <div className="space-y-1.5">
-          <Label htmlFor="baseSalary">{t('emp.baseSalary')}</Label>
-          <Input
-            id="baseSalary"
-            name="baseSalary"
-            type="number"
-            step="0.01"
-            defaultValue={data?.base_salary ?? ''}
-          />
-        </div>
-        <div className="space-y-1.5">
           <Label htmlFor="dailyRate">{t('emp.dailyRate')}</Label>
           <Input
             id="dailyRate"

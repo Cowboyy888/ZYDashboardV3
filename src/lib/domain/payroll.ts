@@ -2,10 +2,11 @@
  * Payroll — pure, no-I/O business rules.
  *
  * Confirmed rules (explicit product decisions, not guessed):
- *   - Daily-rate pay = daily_rate × count of DISTINCT business dates in the
- *     period with a 'present' or 'late' attendance status (either shift
- *     counts — a day is never double-counted across morning + afternoon).
- *   - Monthly-salary pay = base_salary in full, unaffected by attendance.
+ *   - Every employee is paid daily: daily_rate × count of DISTINCT business
+ *     dates in the period with a 'present' or 'late' attendance status
+ *     (either shift counts — a day is never double-counted across morning +
+ *     afternoon). Monthly-salary pay was removed (employees.pay_type is
+ *     constrained to 'daily' — see migration 0016).
  *   - USD only — no currency field, matching employee_private.
  *   - Deductions/advances are simple named line items per run; no
  *     cross-period running balance.

@@ -43,13 +43,8 @@ export function EmployeesClient({
     // numbers, despite the TS type — coerce before formatting (same pattern
     // used everywhere else this app does arithmetic on a numeric column).
     const priv = privateByEmployee.get(e.id);
-    if (e.pay_type === 'daily') {
-      return priv?.daily_rate != null
-        ? `$${Number(priv.daily_rate).toFixed(2)}${t('emp.perDay')}`
-        : '—';
-    }
-    return priv?.base_salary != null
-      ? `$${Number(priv.base_salary).toFixed(2)}${t('emp.perMonth')}`
+    return priv?.daily_rate != null
+      ? `$${Number(priv.daily_rate).toFixed(2)}${t('emp.perDay')}`
       : '—';
   }
 
@@ -110,9 +105,7 @@ export function EmployeesClient({
                     {(e.attendance_group_id && groupName.get(e.attendance_group_id)) || '—'}
                   </TableCell>
                   <TableCell>
-                    <Badge variant="outline">
-                      {e.pay_type === 'monthly' ? t('emp.monthly') : t('emp.daily')}
-                    </Badge>
+                    <Badge variant="outline">{t('emp.daily')}</Badge>
                   </TableCell>
                   {canSensitive && (
                     <TableCell className="text-sm tabular-nums">{rateLabel(e)}</TableCell>

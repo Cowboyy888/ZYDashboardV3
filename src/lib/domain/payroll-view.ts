@@ -17,7 +17,7 @@ export interface PayrollItemLike {
   id: string;
   payroll_run_id: string;
   employee_id: string;
-  pay_type: 'monthly' | 'daily';
+  pay_type: 'daily';
   days_worked: number | null;
   rate: number;
   base_amount: number;
@@ -61,7 +61,7 @@ export interface PayrollItemRow {
   employeeId: string;
   employeeCode: string;
   employeeName: string;
-  payType: 'monthly' | 'daily';
+  payType: 'daily';
   daysWorked: number | null;
   rate: number;
   baseAmount: number;

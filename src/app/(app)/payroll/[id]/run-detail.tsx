@@ -141,11 +141,9 @@ export function RunDetail({
                       {item.employeeName}
                       <div className="text-xs text-muted-foreground">{item.employeeCode}</div>
                     </TableCell>
-                    <TableCell>
-                      {item.payType === 'monthly' ? t('pay.monthly') : t('pay.daily')}
-                    </TableCell>
+                    <TableCell>{t('pay.daily')}</TableCell>
                     <TableCell className="text-right tabular-nums">
-                      {item.payType === 'daily' ? (item.daysWorked ?? 0) : '—'}
+                      {item.daysWorked ?? 0}
                     </TableCell>
                     <TableCell className="text-right tabular-nums">
                       ${item.baseAmount.toFixed(2)}

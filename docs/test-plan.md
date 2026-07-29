@@ -60,7 +60,7 @@ CI stays green; run it locally/staging with `PLAYWRIGHT=1 npm run verify` after
 | 26 | Sales order prices visible only to Owner/System Admin/Sales Admin | `tests/unit/rbac.test.ts`; RLS on `customers`/`sales_orders`/`sales_order_items`; schema check |
 | 27 | Committed stock = physical − outstanding ordered, kept separate from physical | `tests/unit/sales.test.ts` (`computeCommittedStock`) |
 | 28 | Daily-rate pay = daily_rate × distinct present/late attendance dates (not double-counted across shifts) | `tests/unit/payroll.test.ts`; `tests/integration/payroll-flows.test.ts`; DB function `create_draft_payroll_run` |
-| 29 | Monthly-salary pay = base_salary in full, unaffected by attendance | `tests/unit/payroll.test.ts`; `tests/integration/payroll-flows.test.ts` |
+| 29 | Every employee is paid daily — `pay_type` is constrained to `'daily'` (monthly-salary pay removed) | `employees_pay_type_check`/`payroll_items_pay_type_check`; DB function `create_draft_payroll_run`; schema check |
 | 30 | Net pay = base amount − sum of deduction/advance lines, never a stored total | `tests/unit/payroll.test.ts` (`computeNetAmount`); view `payroll_item_deductions` |
 | 31 | A payroll run can only be approved by an Owner | `tests/unit/rbac.test.ts`; DB trigger `enforce_payroll_run_immutable` (`PAYROLL_APPROVE_OWNER_ONLY`); schema check |
 | 32 | An Approved payroll run is permanently immutable (items/lines locked) | `tests/unit/payroll.test.ts` (`canEditRun`); DB triggers `enforce_payroll_item_immutable`/`enforce_payroll_item_line_immutable`; schema check |

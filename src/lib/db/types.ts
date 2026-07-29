@@ -98,7 +98,7 @@ export interface EmployeeRow {
   position: string | null;
   start_date: string | null;
   is_active: boolean;
-  pay_type: 'monthly' | 'daily';
+  pay_type: 'daily';
   photo_path: string | null;
   notes: string | null;
   // Attendance-group profile fields (used by the grouped report).
@@ -311,7 +311,7 @@ export interface PayrollItemRow {
   id: string;
   payroll_run_id: string;
   employee_id: string;
-  pay_type: 'monthly' | 'daily';
+  pay_type: 'daily';
   days_worked: number | null;
   rate: number;
   base_amount: number;

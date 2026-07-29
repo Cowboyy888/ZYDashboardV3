@@ -7,9 +7,6 @@ import { useT } from '@/components/i18n-provider';
 import { updateEmployeeDetails } from '@/lib/actions/employees';
 import type { EmployeeRow } from '@/lib/db/types';
 
-const selectCls =
-  'flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring';
-
 export function EmployeeDetailsForm({ employee }: { employee: EmployeeRow }) {
   const { t } = useT();
   return (
@@ -40,13 +37,6 @@ export function EmployeeDetailsForm({ employee }: { employee: EmployeeRow }) {
             type="date"
             defaultValue={employee.start_date ?? ''}
           />
-        </div>
-        <div className="space-y-1.5">
-          <Label htmlFor="df-pay">{t('emp.payType')}</Label>
-          <select id="df-pay" name="payType" className={selectCls} defaultValue={employee.pay_type}>
-            <option value="monthly">{t('emp.monthly')}</option>
-            <option value="daily">{t('emp.daily')}</option>
-          </select>
         </div>
         <div className="space-y-1.5 sm:col-span-2">
           <Label htmlFor="df-notes">{t('common.notes')}</Label>

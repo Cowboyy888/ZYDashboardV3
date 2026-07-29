@@ -109,21 +109,21 @@ Seeded opening stock (Storage Room): 拔丝料 10厘 = 10 捆; 拔丝料 6厘 = 
   tests.
 - **Fourth pass — Payroll (built):** payroll runs over a period (default
   semi-monthly, 1st–15th / 16th–end), Draft → Approved → Paid/Cancelled.
-  Generating a draft snapshots one payslip per active employee: monthly
-  employees get `base_salary` in full (attendance does not affect it); daily
-  employees get `daily_rate × count(DISTINCT business dates with a 'present'
-  or 'late' attendance row in the period)` — a day with either shift marked
-  present/late counts once, never double-counted across morning + afternoon.
-  Deductions/advances are simple named line items per payslip (no cross-period
-  running balance). USD only — no currency field, matching
-  `employee_private`. Only Draft is editable; **Approved is permanently
-  immutable and requires an Owner** (enforced by the app AND a DB trigger as
-  the ultimate authority — belt & suspenders, same shape as the negative-stock
-  and over-receipt/over-delivery guards). No bank payments (Paid is a
-  bookkeeping marker only). Salary figures are restricted to Owner/System
-  Admin/Payroll Admin and are **never written to the audit log** (only
-  metadata like status transitions and line labels/kinds — see AGENTS.md).
-  These four rules (worked-day counting, monthly pro-ration, currency,
+  Every employee is paid daily (`pay_type` is constrained to `'daily'` —
+  monthly-salary pay was removed, see migration 0016); generating a draft
+  snapshots one payslip per active employee as `daily_rate × count(DISTINCT
+  business dates with a 'present' or 'late' attendance row in the period)` —
+  a day with either shift marked present/late counts once, never
+  double-counted across morning + afternoon. Deductions/advances are simple
+  named line items per payslip (no cross-period running balance). USD only —
+  no currency field, matching `employee_private`. Only Draft is editable;
+  **Approved is permanently immutable and requires an Owner** (enforced by
+  the app AND a DB trigger as the ultimate authority — belt & suspenders,
+  same shape as the negative-stock and over-receipt/over-delivery guards).
+  No bank payments (Paid is a bookkeeping marker only). Salary figures are
+  restricted to Owner/System Admin/Payroll Admin and are **never written to
+  the audit log** (only metadata like status transitions and line
+  labels/kinds — see AGENTS.md). These rules (worked-day counting, currency,
   deduction structure) were explicit product decisions, not inferred — see
   `docs/data-dictionary.md` and `docs/test-plan.md` for the schema and tests.
 

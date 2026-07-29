@@ -17,7 +17,9 @@ whenever the schema changes (AGENTS.md rule 5).
 - **Attendance status**: `present`, `late`, `leave`, `absent` (+ derived `unmarked`).
   In the grouped Telegram report "实到" (actual present) = present + late; exception
   sections render as 请假 (leave) · 缺勤 (absent) · 迟到 (late) · 未打卡 (unmarked).
-- **Shift**: `morning`, `afternoon`. **Pay type**: `monthly`, `daily`.
+- **Shift**: `morning`, `afternoon`. **Pay type**: `daily` (the only value —
+  `employees.pay_type`/`payroll_items.pay_type` are constrained to it; see
+  migration 0016).
 - **Payroll run status**: `draft`, `approved`, `paid`, `cancelled`. **Payroll
   deduction/advance line kind**: `deduction`, `advance`. Payroll amounts are
   USD only (no currency field, matching `employee_private`).
@@ -93,8 +95,11 @@ exception list (请假/缺勤/迟到/未打卡) — the report body itself shows
 `{display name} {job title}`, not the number or label.
 
 ### employee_private  *(SENSITIVE)*
-`employee_id → employees (PK)`, `base_salary`, `daily_rate`, `emergency_contact`,
-`updated_at`. RLS: Owner / System Admin / Payroll Admin only.
+`employee_id → employees (PK)`, `base_salary` (unused — kept only because
+dropping the column is a larger, unneeded change for a value nothing
+references since monthly-salary pay was removed), `daily_rate`,
+`emergency_contact`, `updated_at`. RLS: Owner / System Admin / Payroll Admin
+only.
 
 ### attendance
 `id`, `employee_id → employees`, `business_date`, `shift`, `status`, `notes`,
@@ -201,10 +206,9 @@ quantity is derived, never stored (see `sales_order_item_delivered` above).
 
 ### payroll_items  *(Fourth pass — one payslip line per employee per run)*
 `id`, `payroll_run_id → payroll_runs` (cascade), `employee_id → employees`
-(restrict), `pay_type` (**snapshot** of the employee's pay_type at generation
-time), `days_worked` (snapshot, null for monthly employees), `rate` (snapshot
-of `base_salary`/`daily_rate`), `base_amount` (snapshot — monthly = `rate`;
-daily = `round(rate * days_worked, 2)`), `created_at`. Unique
+(restrict), `pay_type` (**snapshot**, always `'daily'`), `days_worked`
+(snapshot), `rate` (snapshot of `daily_rate`), `base_amount` (snapshot —
+`round(rate * days_worked, 2)`), `created_at`. Unique
 `(payroll_run_id, employee_id)`.
 - Unlike stock/received/delivered quantities, these ARE stored rather than
   purely derived — this is deliberate: an APPROVED payslip must stay fixed
@@ -294,8 +298,8 @@ warehouse/sales/admins/viewer, write by warehouse/sales/admins.
   — lock payslip items and their deduction/advance lines once the parent run
   leaves Draft.
 - `create_draft_payroll_run(p_period_start, p_period_end, p_pay_date, p_notes)`
-  — atomic: one `payroll_items` row per active employee, with `base_amount`
-  computed from `employee_private` (monthly) or `daily_rate × distinct
-  present/late attendance dates in the period` (daily). `SECURITY INVOKER`;
-  RLS on `payroll_runs`/`payroll_items`/`employee_private`/`attendance` still
+  — atomic: one `payroll_items` row per active employee, with `base_amount =
+  daily_rate × distinct present/late attendance dates in the period`.
+  `SECURITY INVOKER`; RLS on
+  `payroll_runs`/`payroll_items`/`employee_private`/`attendance` still
   governs who may call it and what it can see.
