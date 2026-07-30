@@ -82,12 +82,6 @@ const config: Config = {
           from: { height: 'var(--radix-accordion-content-height)' },
           to: { height: '0' },
         },
-        // Slow ambient drift for the login screen's background glow — opacity +
-        // transform only (GPU-composited), never layout-affecting properties.
-        'zy-glow': {
-          '0%, 100%': { transform: 'translate3d(0, 0, 0) scale(1)', opacity: '0.5' },
-          '50%': { transform: 'translate3d(4%, -6%, 0) scale(1.15)', opacity: '0.85' },
-        },
         // One-shot attention shake for a rejected sign-in.
         'zy-shake': {
           '10%, 90%': { transform: 'translateX(-1px)' },
@@ -95,19 +89,26 @@ const config: Config = {
           '30%, 50%, 70%': { transform: 'translateX(-4px)' },
           '40%, 60%': { transform: 'translateX(4px)' },
         },
-        // Drifts the .zy-mesh background by exactly one 40px tile, so the
-        // loop wraps seamlessly back to its starting position.
-        'zy-mesh-drift': {
-          '0%': { transform: 'translate3d(0, 0, 0)' },
-          '100%': { transform: 'translate3d(-40px, -40px, 0)' },
+        // Rising welding-spark ember for the login screen's background — a nod
+        // to ZY Steel's own welded-mesh production floor. Per-particle
+        // duration/delay/drift come from CSS custom properties set inline, so
+        // one keyframe drives many independently-timed embers. Transform +
+        // opacity only (GPU-composited), never layout-affecting properties.
+        'zy-ember': {
+          '0%': { transform: 'translate3d(0, 0, 0)', opacity: '0' },
+          '15%': { opacity: 'var(--ember-opacity, 0.8)' },
+          '80%': { opacity: 'var(--ember-opacity, 0.8)' },
+          '100%': {
+            transform: 'translate3d(var(--ember-drift, 0), -110vh, 0)',
+            opacity: '0',
+          },
         },
       },
       animation: {
         'accordion-down': 'accordion-down 0.2s ease-out',
         'accordion-up': 'accordion-up 0.2s ease-out',
-        'zy-glow': 'zy-glow 12s ease-in-out infinite',
         'zy-shake': 'zy-shake 0.5s cubic-bezier(0.36, 0.07, 0.19, 0.97) both',
-        'zy-mesh-drift': 'zy-mesh-drift 25s linear infinite',
+        'zy-ember': 'zy-ember 12s linear infinite',
       },
     },
   },
