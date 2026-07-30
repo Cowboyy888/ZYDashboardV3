@@ -149,7 +149,11 @@ function DestinationCard({
           {chatIdValue && <p className="text-xs text-muted-foreground">{t('tg.testsTypedNote')}</p>}
         </div>
 
-        <SendNowButton action={() => testAction(chatIdValue)} label={t('tg.testConnection')} />
+        <SendNowButton
+          action={() => testAction(chatIdValue)}
+          label={t('tg.testConnection')}
+          confirmText={t('tg.confirmTest')}
+        />
         <LastSendStatus dest={dest} />
 
         <div className="space-y-3 border-t pt-3">{children}</div>
@@ -353,9 +357,21 @@ export function TelegramForm({
         </CardHeader>
         <CardContent className="space-y-3">
           <p className="text-sm text-muted-foreground">{t('tg.sendNowDesc')}</p>
-          <SendNowButton action={sendMorningNow} label={t('tg.morningAtt')} />
-          <SendNowButton action={sendAfternoonNow} label={t('tg.afternoonAtt')} />
-          <SendNowButton action={sendInventoryNow} label={t('tg.inventoryReport')} />
+          <SendNowButton
+            action={sendMorningNow}
+            label={t('tg.morningAtt')}
+            confirmText={t('common.confirmSendReport')}
+          />
+          <SendNowButton
+            action={sendAfternoonNow}
+            label={t('tg.afternoonAtt')}
+            confirmText={t('common.confirmSendReport')}
+          />
+          <SendNowButton
+            action={sendInventoryNow}
+            label={t('tg.inventoryReport')}
+            confirmText={t('common.confirmSendReport')}
+          />
         </CardContent>
       </Card>
 

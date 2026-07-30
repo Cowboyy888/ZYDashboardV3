@@ -70,6 +70,10 @@ export const dictionary = {
   'common.low': { en: 'Low', zh: '低' },
   'common.select': { en: 'Select…', zh: '请选择…' },
   'common.sendNow': { en: 'Send now', zh: '立即发送' },
+  'common.confirmSendReport': {
+    en: 'Send this report to the configured Telegram chat now?',
+    zh: '确定立即将此报告发送至已配置的 Telegram 会话？',
+  },
   'common.exportExcel': { en: 'Export to Excel', zh: '导出 Excel' },
 
   'cs.comingSoon': { en: 'Coming soon', zh: '即将推出' },
@@ -383,6 +387,10 @@ export const dictionary = {
   'tg.testsTypedNote': {
     en: '"Test connection" will send to this ID (whether or not you\'ve saved it yet).',
     zh: '“测试连接”将发送到此 ID（无论是否已保存）。',
+  },
+  'tg.confirmTest': {
+    en: 'Send a test message to this chat now?',
+    zh: '确定立即向此会话发送测试消息？',
   },
   'tg.neverSent': { en: 'Never sent', zh: '从未发送' },
   'tg.lastSent': { en: 'Last sent', zh: '最近发送' },

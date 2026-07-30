@@ -99,7 +99,13 @@ export function InventoryClient({
           {canRecord && <TabsTrigger value="record">{t('inv.recordTab')}</TabsTrigger>}
           <TabsTrigger value="ledger">{t('inv.ledgerTab')}</TabsTrigger>
         </TabsList>
-        {canSend && <SendNowButton action={sendInventoryNow} label={t('inv.sendInventory')} />}
+        {canSend && (
+          <SendNowButton
+            action={sendInventoryNow}
+            label={t('inv.sendInventory')}
+            confirmText={t('common.confirmSendReport')}
+          />
+        )}
       </div>
 
       {/* --- Stock balances --- */}

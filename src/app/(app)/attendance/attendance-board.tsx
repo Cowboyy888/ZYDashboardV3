@@ -105,6 +105,7 @@ export function AttendanceBoard({
             <SendNowButton
               action={shift === 'morning' ? sendMorningNow : sendAfternoonNow}
               label={t('att.sendReport')}
+              confirmText={t('common.confirmSendReport')}
             />
           )}
         </div>

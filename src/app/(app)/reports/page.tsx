@@ -45,7 +45,13 @@ export default async function ReportsPage({
     <Card>
       <CardHeader className="flex-row items-center justify-between space-y-0">
         <CardTitle className="text-base">{title}</CardTitle>
-        {canSend && isToday && <SendNowButton action={action} label={t('common.sendNow')} />}
+        {canSend && isToday && (
+          <SendNowButton
+            action={action}
+            label={t('common.sendNow')}
+            confirmText={t('common.confirmSendReport')}
+          />
+        )}
       </CardHeader>
       <CardContent>
         <pre className="overflow-x-auto whitespace-pre-wrap rounded-md bg-[hsl(208_18%_13%)] p-4 font-mono text-[13px] leading-relaxed text-slate-100">
