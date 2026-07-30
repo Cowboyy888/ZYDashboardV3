@@ -233,7 +233,7 @@ export const telegramSettingsSchema = z.object({
   morningEnabled: z.boolean().default(true),
   afternoonEnabled: z.boolean().default(true),
   inventoryEnabled: z.boolean().default(true),
-  // All three report times are editable (Asia/Phnom_Penh). Defaults match the
+  // All three report times are editable (Asia/Bangkok). Defaults match the
   // historical fixed schedule but are no longer hard-coded in the scheduler.
   morningTime: hhmm.default('08:00'),
   afternoonTime: hhmm.default('13:00'),

@@ -44,7 +44,7 @@ export default async function AuthLayout({ children }: { children: React.ReactNo
             className="mt-6 text-center text-xs text-white/50 motion-safe:duration-700 motion-safe:animate-in motion-safe:fade-in motion-safe:fill-mode-both"
             style={{ animationDelay: '350ms' }}
           >
-            中粤铁网 Zysteel · Operations — Asia/Phnom_Penh
+            中粤铁网 Zysteel · Operations — Asia/Bangkok
           </p>
         </div>
       </div>

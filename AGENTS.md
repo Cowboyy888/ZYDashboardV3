@@ -52,7 +52,7 @@ are more important than speed. When in doubt, prefer the safe, traceable option.
   total. Negative stock is blocked unless an **Owner** overrides with a recorded
   reason (enforced in the DB trigger `enforce_stock_rules` and mirrored in
   `src/lib/domain/stock-ledger.ts`).
-- **Timezone.** All schedules and displayed times use **Asia/Phnom_Penh**. The DB
+- **Timezone.** All schedules and displayed times use **Asia/Bangkok**. The DB
   stores UTC instants (`timestamptz`) but every operational row also carries a
   local `business_date`. Dates render as **dd/mm/yyyy**.
 - **RBAC is defined once** in `src/lib/domain/rbac.ts` and mirrored by Postgres

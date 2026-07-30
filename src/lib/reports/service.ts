@@ -220,7 +220,7 @@ export interface DispatchResult {
 
 /**
  * Scheduler entry point. Reads the SAVED report times dynamically (never
- * hard-coded), figures out which reports are due at the current Asia/Phnom_Penh
+ * hard-coded), figures out which reports are due at the current Asia/Bangkok
  * time and not yet sent today, and sends them idempotently. Point an external
  * cron at /api/cron/dispatch on a short interval (e.g. every 5 min); each report
  * still fires at most once per Cambodia business date, even if a time is edited

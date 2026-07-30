@@ -42,7 +42,7 @@
 - **RBAC single source + RLS mirror.** `src/lib/domain/rbac.ts` is authoritative
   for the app and unit-tested; `0003_rls.sql` mirrors it in the DB.
 - **Timezone: UTC storage + local `business_date`.** Avoids day-boundary
-  ambiguity; display + scheduling in Asia/Phnom_Penh; dd/mm/yyyy formatting.
+  ambiguity; display + scheduling in Asia/Bangkok; dd/mm/yyyy formatting.
 - **Adapters behind interfaces.** Telegram mock by default → the whole app runs &
   tests with **no credentials and no network**. Real Bot API via env.
 - **Idempotent reports.** `sent_reports.report_key` unique + `sendReportOnce`;

@@ -35,7 +35,7 @@ export function isSupabaseConfigured(): boolean {
 }
 
 export const env = {
-  appTimezone: () => optionalEnv('APP_TIMEZONE') ?? 'Asia/Phnom_Penh',
+  appTimezone: () => optionalEnv('APP_TIMEZONE') ?? 'Asia/Bangkok',
   appUrl: () => optionalEnv('NEXT_PUBLIC_APP_URL') ?? 'http://localhost:3000',
   // Static literal access required for client-bundle inlining — see
   // isSupabaseConfigured above.

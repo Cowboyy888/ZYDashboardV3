@@ -25,7 +25,7 @@ the other group keeps sending normally.
 All three send times are **editable in Settings → Telegram** (Owner / System
 Admin only) and stored on `telegram_settings` as `morning_time`,
 `afternoon_time`, and `inventory_time` (`HH:mm`). All times are
-**Asia/Phnom_Penh (Cambodia)**. The scheduler reads these saved times
+**Asia/Bangkok (UTC+7)**. The scheduler reads these saved times
 dynamically — no time is hard-coded in code. The bot token is a **server-only
 secret** and is never exposed to the browser; neither is either group's full
 chat ID — Settings → Telegram only ever shows a masked value
@@ -67,7 +67,7 @@ The app talks to Telegram through a `TelegramClient` interface:
 
    Each card's chat id is always shown **masked** (e.g. `••••7890`) — the full
    value never reaches the browser. Also set which reports are enabled and
-   each report's send time (`HH:mm`, Asia/Phnom_Penh) — these live inside
+   each report's send time (`HH:mm`, Asia/Bangkok) — these live inside
    their group's card (morning/afternoon under Attendance, the daily report
    under Inventory). Setting a time earlier than the normal manual-entry time
    (morning **07:30**, afternoon **12:30**) warns and asks for confirmation but
@@ -79,7 +79,7 @@ The app talks to Telegram through a `TelegramClient` interface:
 
 Point a scheduler at **`/api/cron/dispatch`** on a short, fixed interval (e.g.
 every 5 minutes). Each tick reads the **saved** report times, works out which
-reports are due at the current Asia/Phnom_Penh time and not yet sent today, and
+reports are due at the current Asia/Bangkok time and not yet sent today, and
 sends them. Because the app owns the times, **you never edit cron when an admin
 changes a time**.
 

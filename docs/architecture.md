@@ -52,7 +52,7 @@ not depend on the app being bug-free.
 - **Timezone strategy.** Instants are stored UTC (`timestamptz`); every
   operational row also stores a local `business_date` (a plain `date`) so "which
   day" is unambiguous across the UTC boundary. All display + scheduling use
-  Asia/Phnom_Penh; helpers in `src/lib/domain/datetime.ts` derive the offset from
+  Asia/Bangkok; helpers in `src/lib/domain/datetime.ts` derive the offset from
   the IANA zone (correct even if DST rules change).
 - **Adapters behind interfaces.** `TelegramClient` has `MockTelegramClient`
   (default, no network) and `HttpTelegramClient` (real Bot API), chosen by env.

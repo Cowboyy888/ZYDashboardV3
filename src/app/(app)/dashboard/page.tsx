@@ -147,10 +147,7 @@ export default async function DashboardPage() {
 
   return (
     <div>
-      <PageHeader
-        title={t('dash.title')}
-        description={`${formatDDMMYYYY(today)} · Asia/Phnom_Penh`}
-      />
+      <PageHeader title={t('dash.title')} description={`${formatDDMMYYYY(today)} · Asia/Bangkok`} />
 
       <div className="grid grid-cols-2 gap-3 lg:grid-cols-4">
         <StatCard

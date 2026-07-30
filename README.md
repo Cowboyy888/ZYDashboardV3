@@ -3,7 +3,7 @@
 Production-oriented operations app for Zysteel (中粤铁网): **employee attendance**,
 an **append-only stock ledger**, and **Telegram reporting** — bilingual
 (**English default / 中文**, switchable in-app via an `EN | 中文` control),
-Khmer-name aware, `dd/mm/yyyy` dates, all schedules in **Asia/Phnom_Penh**.
+Khmer-name aware, `dd/mm/yyyy` dates, all schedules in **Asia/Bangkok**.
 
 > **Status: First pass (Operations MVP).** Purchasing, Sales, Payroll, and full
 > Reports are scoped for later passes and appear as navigation placeholders. See

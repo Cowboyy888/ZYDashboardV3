@@ -2,26 +2,27 @@
  * Date/time helpers.
  *
  * Business rules:
- *  - All schedules and displayed times use APP_TIMEZONE (Asia/Phnom_Penh).
+ *  - All schedules and displayed times use APP_TIMEZONE (Asia/Bangkok).
  *  - The database stores absolute instants in UTC (timestamptz), but each
  *    operational record ALSO carries a `business_date` (a local calendar date,
  *    stored as a plain `date`) so that "which day did this belong to" is never
  *    ambiguous across the UTC boundary.
  *  - Human-facing dates render as dd/mm/yyyy.
  *
- * Phnom Penh is UTC+7 year-round (no DST), but every function below derives the
- * offset from the IANA zone via Intl so the logic stays correct if the zone or
- * DST rules ever change.
+ * Bangkok is UTC+7 year-round (no DST) — the same offset as the business's
+ * home city, Phnom Penh — but every function below derives the offset from
+ * the IANA zone via Intl so the logic stays correct if the zone or DST rules
+ * ever change.
  */
 
-export const APP_TIMEZONE = process.env.APP_TIMEZONE ?? 'Asia/Phnom_Penh';
+export const APP_TIMEZONE = process.env.APP_TIMEZONE ?? 'Asia/Bangkok';
 
 /** A local calendar date in ISO `YYYY-MM-DD` form (no time, no zone). */
 export type BusinessDate = string;
 
 /**
  * Offset in minutes to ADD to a UTC time to get local wall-clock time in `tz`.
- * e.g. Asia/Phnom_Penh -> +420.
+ * e.g. Asia/Bangkok -> +420.
  */
 export function tzOffsetMinutes(instant: Date, tz: string = APP_TIMEZONE): number {
   // Format the instant as if reading a wall clock in `tz`, then compare to the

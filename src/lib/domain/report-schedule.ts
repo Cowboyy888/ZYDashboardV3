@@ -2,7 +2,7 @@
  * Telegram report scheduling — pure, timezone-agnostic logic.
  *
  * The three scheduled reports (morning attendance, afternoon attendance, daily
- * inventory) each have an admin-editable send time (`HH:mm`, Asia/Phnom_Penh).
+ * inventory) each have an admin-editable send time (`HH:mm`, Asia/Bangkok).
  * This module answers two questions with no I/O so it is fully unit-testable:
  *
  *   1. Which reports are DUE right now? (`dueReports`) — used by the scheduler,
@@ -16,7 +16,7 @@
  *      (`isBeforeManualEntry`) — used to warn (not block) the admin.
  *
  * Times are compared as minutes-since-midnight in the SAME timezone
- * (Asia/Phnom_Penh); callers pass the current local `HH:mm` (see
+ * (Asia/Bangkok); callers pass the current local `HH:mm` (see
  * `currentLocalTime` in domain/datetime.ts) so the timezone lives in one place.
  */
 
@@ -141,7 +141,7 @@ export function isBeforeManualEntry(type: ScheduledReportType, hhmm: string): bo
 }
 
 export interface DueInput {
-  /** Current local wall-clock time, `HH:mm`, in Asia/Phnom_Penh. */
+  /** Current local wall-clock time, `HH:mm`, in Asia/Bangkok. */
   nowLocal: string;
   settings: ScheduleSettings;
   /** Report types already sent for the current business date (canonical sends). */

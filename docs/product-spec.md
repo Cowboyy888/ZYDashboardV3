@@ -30,7 +30,7 @@ Role-based access control (see `docs/data-dictionary.md` for the full matrix):
 - Product-domain terms (钢筋网, 螺纹盘圆, 拔丝料, units 张 / 捆, conditions 旧 /
   错毛边) render verbatim in both languages.
 - **Khmer** employee names render with a Khmer font stack.
-- Dates display as **dd/mm/yyyy**. All schedules/times use **Asia/Phnom_Penh**.
+- Dates display as **dd/mm/yyyy**. All schedules/times use **Asia/Bangkok**.
 
 ## First pass — Operations MVP (this release)
 
@@ -82,7 +82,7 @@ Seeded opening stock (Storage Room): 拔丝料 10厘 = 10 捆; 拔丝料 6厘 = 
   without a record.
 - One record per (employee, business_date, shift). Admin bulk-marks Present, then
   edits exceptions. Unmarked employees are flagged before a report is sent.
-- Reports: morning at **08:00**, afternoon at **13:00** (Asia/Phnom_Penh), with
+- Reports: morning at **08:00**, afternoon at **13:00** (Asia/Bangkok), with
   totals + exceptions. Admin can resend a corrected report. Scheduled sends are
   idempotent (no duplicates).
 

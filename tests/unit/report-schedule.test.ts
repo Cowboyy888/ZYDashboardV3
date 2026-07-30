@@ -113,8 +113,8 @@ describe('idempotency — at most once per Cambodia business date', () => {
   });
 });
 
-describe('timezone handling — Asia/Phnom_Penh drives "now"', () => {
-  // Phnom Penh is UTC+7 year-round.
+describe('timezone handling — Asia/Bangkok drives "now"', () => {
+  // Bangkok is UTC+7 year-round.
   const at = (iso: string): string => currentLocalTime(APP_TIMEZONE, new Date(iso));
 
   it('derives the correct local HH:mm from a UTC instant', () => {

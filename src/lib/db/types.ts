@@ -163,9 +163,9 @@ export interface TelegramSettingsRow {
   morning_enabled: boolean;
   afternoon_enabled: boolean;
   inventory_enabled: boolean;
-  morning_time: string; // HH:mm (Asia/Phnom_Penh) — attendance morning
-  afternoon_time: string; // HH:mm (Asia/Phnom_Penh) — attendance afternoon
-  inventory_time: string; // HH:mm (Asia/Phnom_Penh) — daily inventory
+  morning_time: string; // HH:mm (Asia/Bangkok) — attendance morning
+  afternoon_time: string; // HH:mm (Asia/Bangkok) — attendance afternoon
+  inventory_time: string; // HH:mm (Asia/Bangkok) — daily inventory
   report_language: 'en' | 'zh'; // future-ready; reports currently always Chinese
   // --- Attendance Group destination (morning + afternoon reports) -----------
   attendance_chat_id: string | null;

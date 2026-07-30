@@ -100,8 +100,8 @@ export const dictionary = {
   // Attendance
   'att.title': { en: 'Attendance', zh: '考勤' },
   'att.shifts': {
-    en: 'morning & afternoon shifts (Asia/Phnom_Penh)',
-    zh: '上午与下午班次（Asia/Phnom_Penh）',
+    en: 'morning & afternoon shifts (Asia/Bangkok)',
+    zh: '上午与下午班次（Asia/Bangkok）',
   },
   'att.morning': { en: 'Morning', zh: '上午' },
   'att.afternoon': { en: 'Afternoon', zh: '下午' },
@@ -355,8 +355,8 @@ export const dictionary = {
 
   // Telegram
   'tg.desc': {
-    en: 'Automated attendance and inventory reports at admin-configurable times (Asia/Phnom_Penh). Token stays server-side.',
-    zh: '在管理员可配置的时间（Asia/Phnom_Penh）自动发送考勤与库存报告。令牌仅存于服务端。',
+    en: 'Automated attendance and inventory reports at admin-configurable times (Asia/Bangkok). Token stays server-side.',
+    zh: '在管理员可配置的时间（Asia/Bangkok）自动发送考勤与库存报告。令牌仅存于服务端。',
   },
   'tg.config': { en: 'Configuration', zh: '配置' },
   'tg.adapter': { en: 'Adapter', zh: '适配器' },
@@ -389,7 +389,7 @@ export const dictionary = {
   'tg.statusSent': { en: 'Sent', zh: '已发送' },
   'tg.statusFailed': { en: 'Failed', zh: '失败' },
   'tg.reportTime': { en: 'Report time (HH:mm)', zh: '报告时间（HH:mm）' },
-  'tg.timezone': { en: 'Asia/Phnom_Penh (Cambodia)', zh: 'Asia/Phnom_Penh（柬埔寨）' },
+  'tg.timezone': { en: 'Asia/Bangkok (UTC+7)', zh: 'Asia/Bangkok（UTC+7）' },
   'tg.timezoneLabel': { en: 'Timezone', zh: '时区' },
   'tg.scheduleNote': {
     en: 'The scheduler reads these saved times. Each report sends once per Cambodia business date, even if a time is changed later that day.',

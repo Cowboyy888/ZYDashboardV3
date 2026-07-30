@@ -10,9 +10,9 @@ import {
   tzOffsetMinutes,
 } from '@/lib/domain/datetime';
 
-const TZ = 'Asia/Phnom_Penh'; // UTC+7, no DST
+const TZ = 'Asia/Bangkok'; // UTC+7, no DST
 
-describe('timezone handling (Asia/Phnom_Penh)', () => {
+describe('timezone handling (Asia/Bangkok)', () => {
   it('offset is +420 minutes', () => {
     expect(tzOffsetMinutes(new Date('2026-07-24T00:00:00Z'), TZ)).toBe(420);
   });

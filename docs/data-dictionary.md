@@ -122,7 +122,7 @@ triggers. Never store secrets or raw salary values here.
 `chat_id`, `morning_enabled`, `afternoon_enabled`, `inventory_enabled`,
 `morning_time` (HH:mm, default `08:00`), `afternoon_time` (HH:mm, default
 `13:00`), `inventory_time` (HH:mm, default `18:00`) — all editable send times in
-Asia/Phnom_Penh, checked by `telegram_settings_times_chk`; the scheduler reads
+Asia/Bangkok, checked by `telegram_settings_times_chk`; the scheduler reads
 them dynamically. `report_language` (`'en'`/`'zh'`, default `'zh'` — future-ready;
 the attendance report is currently always sent in Chinese), `updated_at`.
 
