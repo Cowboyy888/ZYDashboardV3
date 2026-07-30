@@ -65,6 +65,8 @@ export type Permission =
   | 'purchasing:manage'
   | 'sales:view'
   | 'sales:manage'
+  | 'inquiries:view'
+  | 'inquiries:manage'
   | 'payroll:view'
   | 'payroll:manage'
   | 'payroll:approve';
@@ -95,6 +97,8 @@ const ROLE_PERMISSIONS: Record<Role, Permission[]> = {
     'inventory:view',
     'purchasing:view',
     'sales:view',
+    'inquiries:view',
+    'inquiries:manage',
     'payroll:view',
   ],
   attendance_admin: [
@@ -117,7 +121,15 @@ const ROLE_PERMISSIONS: Record<Role, Permission[]> = {
     'purchasing:manage',
     'telegram:send',
   ],
-  sales_admin: [...EVERYONE, 'products:view', 'inventory:view', 'sales:view', 'sales:manage'],
+  sales_admin: [
+    ...EVERYONE,
+    'products:view',
+    'inventory:view',
+    'sales:view',
+    'sales:manage',
+    'inquiries:view',
+    'inquiries:manage',
+  ],
   payroll_admin: [
     ...EVERYONE,
     'employees:view',

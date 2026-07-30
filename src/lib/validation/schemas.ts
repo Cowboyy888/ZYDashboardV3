@@ -387,3 +387,69 @@ export const addPayrollLineSchema = z.object({
   amount: z.coerce.number().positive('Amount must be greater than zero'),
 });
 export type AddPayrollLineInput = z.infer<typeof addPayrollLineSchema>;
+
+// --- Customer price inquiries (quotation tracking) -------------------------------
+
+// Empty form fields ('') become undefined before coercion/validation.
+const optionalNumber = z.preprocess(
+  (v) => (v === '' || v == null ? undefined : v),
+  z.coerce.number().optional(),
+);
+const optionalIsoDate = z.preprocess(
+  (v) => (v === '' || v == null ? undefined : v),
+  isoDate.optional(),
+);
+
+export const INQUIRY_STATUS_CATEGORIES = ['open', 'won', 'lost'] as const;
+
+/** Create/edit an inquiry. Only the customer name is required. */
+export const inquirySchema = z.object({
+  inquiryDate: optionalIsoDate,
+  salespersonId: optionalUuid,
+  customerId: optionalUuid,
+  customerName: nonEmpty.max(120),
+  companyName: optionalText,
+  contact: optionalText,
+  customerTypeId: optionalUuid,
+  familyId: optionalUuid,
+  specification: optionalText,
+  diameter: optionalText,
+  sheetSize: optionalText,
+  areaPerSheet: optionalNumber,
+  meshOpening: optionalText,
+  quantity: optionalNumber,
+  deliveryLocation: optionalText,
+  factoryCost: optionalNumber,
+  quotedPrice: optionalNumber,
+  targetPrice: optionalNumber,
+  finalPrice: optionalNumber,
+  statusId: optionalUuid,
+  followUpDate: optionalIsoDate,
+  followUpNotes: optionalText,
+  nextAction: optionalText,
+  remarks: optionalText,
+});
+export type InquiryInput = z.infer<typeof inquirySchema>;
+
+export const inquiryUpdateSchema = inquirySchema.extend({ id: z.string().uuid() });
+export type InquiryUpdateInput = z.infer<typeof inquiryUpdateSchema>;
+
+export const inquiryFollowupSchema = z.object({
+  inquiryId: z.string().uuid(),
+  followUpDate: optionalIsoDate,
+  previousAction: optionalText,
+  customerResponse: optionalText,
+  nextFollowUpDate: optionalIsoDate,
+  responsibleId: optionalUuid,
+  statusId: optionalUuid,
+});
+export type InquiryFollowupInput = z.infer<typeof inquiryFollowupSchema>;
+
+export const inquiryCustomerTypeSchema = z.object({ name: nonEmpty.max(80) });
+export type InquiryCustomerTypeInput = z.infer<typeof inquiryCustomerTypeSchema>;
+
+export const inquiryStatusSchema = z.object({
+  name: nonEmpty.max(80),
+  category: z.enum(INQUIRY_STATUS_CATEGORIES).default('open'),
+});
+export type InquiryStatusInput = z.infer<typeof inquiryStatusSchema>;

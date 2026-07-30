@@ -7,6 +7,9 @@ import type {
   CustomerRow,
   EmployeeRow,
   EmployeePrivateRow,
+  InquiryCustomerTypeRow,
+  InquiryFollowupRow,
+  InquiryStatusRow,
   LocationRow,
   PayrollItemDeductionsRow,
   PayrollItemLineRow,
@@ -17,6 +20,7 @@ import type {
   PurchaseOrderItemReceivedRow,
   PurchaseOrderItemRow,
   PurchaseOrderRow,
+  SalesInquiryRow,
   SalesOrderItemDeliveredRow,
   SalesOrderItemRow,
   SalesOrderRow,
@@ -679,6 +683,66 @@ export async function getPayrollRunLines(itemIds: string[]): Promise<PayrollItem
     return (data as PayrollItemLineRow[]) ?? [];
   } catch (e) {
     console.error('[queries] getPayrollRunLines', e);
+    return [];
+  }
+}
+
+// --- Customer price inquiries -------------------------------------------------
+
+export async function getInquiryCustomerTypes(
+  includeArchived = false,
+): Promise<InquiryCustomerTypeRow[]> {
+  try {
+    const supabase = await client();
+    let q = supabase.from('inquiry_customer_types').select('*').order('sort_order').order('name');
+    if (!includeArchived) q = q.eq('is_active', true);
+    const { data } = await q;
+    return (data as InquiryCustomerTypeRow[]) ?? [];
+  } catch (e) {
+    console.error('[queries] getInquiryCustomerTypes', e);
+    return [];
+  }
+}
+
+export async function getInquiryStatuses(includeArchived = false): Promise<InquiryStatusRow[]> {
+  try {
+    const supabase = await client();
+    let q = supabase.from('inquiry_statuses').select('*').order('sort_order').order('name');
+    if (!includeArchived) q = q.eq('is_active', true);
+    const { data } = await q;
+    return (data as InquiryStatusRow[]) ?? [];
+  } catch (e) {
+    console.error('[queries] getInquiryStatuses', e);
+    return [];
+  }
+}
+
+export async function getInquiries(): Promise<SalesInquiryRow[]> {
+  try {
+    const supabase = await client();
+    const { data } = await supabase
+      .from('sales_inquiries')
+      .select('*')
+      .order('inquiry_date', { ascending: false })
+      .order('created_at', { ascending: false });
+    return (data as SalesInquiryRow[]) ?? [];
+  } catch (e) {
+    console.error('[queries] getInquiries', e);
+    return [];
+  }
+}
+
+export async function getInquiryFollowups(): Promise<InquiryFollowupRow[]> {
+  try {
+    const supabase = await client();
+    const { data } = await supabase
+      .from('inquiry_followups')
+      .select('*')
+      .order('follow_up_date', { ascending: false })
+      .order('created_at', { ascending: false });
+    return (data as InquiryFollowupRow[]) ?? [];
+  } catch (e) {
+    console.error('[queries] getInquiryFollowups', e);
     return [];
   }
 }

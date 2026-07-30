@@ -158,6 +158,72 @@ export interface SentReportRow {
   created_at: string;
 }
 
+export interface InquiryCustomerTypeRow {
+  id: string;
+  name: string;
+  sort_order: number;
+  is_active: boolean;
+  created_at: string;
+}
+
+export interface InquiryStatusRow {
+  id: string;
+  name: string;
+  category: 'open' | 'won' | 'lost';
+  sort_order: number;
+  is_active: boolean;
+  created_at: string;
+}
+
+export interface SalesInquiryRow {
+  id: string;
+  inquiry_no: string | null;
+  inquiry_date: string;
+  salesperson_id: string | null;
+  customer_id: string | null;
+  customer_name: string;
+  company_name: string | null;
+  contact: string | null;
+  customer_type_id: string | null;
+  family_id: string | null;
+  specification: string | null;
+  diameter: string | null;
+  sheet_size: string | null;
+  area_per_sheet: number | null;
+  mesh_opening: string | null;
+  quantity: number | null;
+  delivery_location: string | null;
+  factory_cost: number | null;
+  quoted_price: number | null;
+  target_price: number | null;
+  final_price: number | null;
+  status_id: string | null;
+  follow_up_date: string | null;
+  follow_up_notes: string | null;
+  next_action: string | null;
+  remarks: string | null;
+  // Generated (derived) columns.
+  price_difference: number | null;
+  quotation_value: number | null;
+  estimated_profit: number | null;
+  created_by: string | null;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface InquiryFollowupRow {
+  id: string;
+  inquiry_id: string;
+  follow_up_date: string;
+  previous_action: string | null;
+  customer_response: string | null;
+  next_follow_up_date: string | null;
+  responsible_id: string | null;
+  status_id: string | null;
+  created_by: string | null;
+  created_at: string;
+}
+
 export interface TelegramSettingsRow {
   id: number;
   morning_enabled: boolean;

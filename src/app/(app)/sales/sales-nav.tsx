@@ -4,10 +4,15 @@ import { useT } from '@/components/i18n-provider';
 import { cn } from '@/lib/utils';
 
 /** Small sub-nav shared across the Sales section's pages. */
-export function SalesNav({ active }: { active: 'dashboard' | 'orders' | 'customers' }) {
+export function SalesNav({
+  active,
+}: {
+  active: 'dashboard' | 'orders' | 'inquiries' | 'customers';
+}) {
   const { t } = useT();
   const items = [
     { key: 'dashboard' as const, href: '/sales', label: t('sal.dashboard') },
+    { key: 'inquiries' as const, href: '/sales/inquiries', label: t('sal.inquiries') },
     { key: 'orders' as const, href: '/sales/orders', label: t('sal.orders') },
     { key: 'customers' as const, href: '/sales/customers', label: t('sal.customers') },
   ];
