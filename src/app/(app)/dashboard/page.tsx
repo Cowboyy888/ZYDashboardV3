@@ -5,7 +5,7 @@ import {
   Boxes,
   AlertTriangle,
   Sun,
-  MoonStar,
+  CloudSun,
   TrendingUp,
   Factory,
   ShoppingCart,
@@ -171,7 +171,7 @@ export default async function DashboardPage() {
           className={ENTER_CLASS}
           style={enterStyle(60)}
           href="/attendance"
-          icon={<MoonStar className="h-4 w-4" />}
+          icon={<CloudSun className="h-4 w-4" />}
           label={t('dash.afternoonAtt')}
           value={
             <>

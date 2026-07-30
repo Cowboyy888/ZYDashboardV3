@@ -42,3 +42,4 @@ yarn-error.log*
 tsconfig.tsbuildinfo
 .vercel
 .env*
+.claude/scheduled_tasks.lock
