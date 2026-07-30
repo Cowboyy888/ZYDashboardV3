@@ -12,6 +12,7 @@ import {
   ClipboardList,
   Truck,
   Wallet,
+  Inbox,
 } from 'lucide-react';
 import { requireUser } from '@/lib/auth';
 import { hasPermission } from '@/lib/domain/rbac';
@@ -38,6 +39,7 @@ import {
   getSalesOrderTodayCount,
   getPendingDeliveryOrderCount,
   getDraftPayrollRunCount,
+  getOpenInquiryCount,
 } from '@/lib/db/queries';
 import { PageHeader } from '@/components/page-header';
 import { StatCard } from '@/components/stat-card';
@@ -83,6 +85,7 @@ export default async function DashboardPage() {
   const canSales = hasPermission(user.role, 'sales:view');
   const canPurchasing = hasPermission(user.role, 'purchasing:view');
   const canPayroll = hasPermission(user.role, 'payroll:view');
+  const canInquiries = hasPermission(user.role, 'inquiries:view');
   const canLogProduction = hasPermission(user.role, 'stock:production');
 
   const [
@@ -98,6 +101,7 @@ export default async function DashboardPage() {
     salesTodayCount,
     pendingDeliveryCount,
     payrollApprovalCount,
+    openInquiryCount,
   ] = await Promise.all([
     getEmployees(),
     getAttendanceForDate(today),
@@ -111,6 +115,7 @@ export default async function DashboardPage() {
     canSales ? getSalesOrderTodayCount(today) : Promise.resolve(0),
     canSales ? getPendingDeliveryOrderCount() : Promise.resolve(0),
     canPayroll ? getDraftPayrollRunCount() : Promise.resolve(0),
+    canInquiries ? getOpenInquiryCount() : Promise.resolve(0),
   ]);
 
   const activeIds = employees.map((e) => e.id);
@@ -329,7 +334,7 @@ export default async function DashboardPage() {
         </Card>
       </Link>
 
-      {(canSales || canPurchasing || canPayroll) && (
+      {(canSales || canPurchasing || canPayroll || canInquiries) && (
         <div className="mt-4 grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
           {canSales && (
             <StatCard
@@ -340,6 +345,17 @@ export default async function DashboardPage() {
               label={t('dash.salesToday')}
               value={<AnimatedNumber value={salesTodayCount} />}
               tone="primary"
+            />
+          )}
+          {canInquiries && (
+            <StatCard
+              className={ENTER_CLASS}
+              style={enterStyle(400)}
+              href="/sales/inquiries"
+              icon={<Inbox className="h-4 w-4" />}
+              label={t('dash.openInquiries')}
+              value={<AnimatedNumber value={openInquiryCount} />}
+              tone={openInquiryCount > 0 ? 'warning' : 'success'}
             />
           )}
           {canPurchasing && (

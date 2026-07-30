@@ -95,6 +95,7 @@ export const dictionary = {
   'dash.openPOs': { en: 'Open POs', zh: '采购订单' },
   'dash.pendingDeliveries': { en: 'Pending deliveries', zh: '待交付' },
   'dash.payrollApprovals': { en: 'Payroll approvals', zh: '待审工资' },
+  'dash.openInquiries': { en: 'Open inquiries', zh: '待跟进询价' },
   'dash.logProduction': { en: 'Log production', zh: '登记生产' },
 
   // Attendance
@@ -563,6 +564,8 @@ export const dictionary = {
   'inq.tabFollowups': { en: 'Follow-ups', zh: '跟进' },
   'inq.tabLists': { en: 'Lists', zh: '列表设置' },
   'inq.new': { en: 'New inquiry', zh: '新增询价' },
+  'inq.downloadExcel': { en: 'Download Excel', zh: '下载 Excel' },
+  'inq.downloadPdf': { en: 'Download PDF', zh: '下载 PDF' },
   'inq.edit': { en: 'Edit inquiry', zh: '编辑询价' },
   'inq.none': { en: 'No inquiries yet.', zh: '暂无询价。' },
   'inq.formHint': {

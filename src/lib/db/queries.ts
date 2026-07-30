@@ -746,3 +746,28 @@ export async function getInquiryFollowups(): Promise<InquiryFollowupRow[]> {
     return [];
   }
 }
+
+/**
+ * Count-only (no row data transferred) — for the dashboard's "Open inquiries"
+ * tile. Open = status unset or its category is neither won nor lost (mirrors
+ * summarizeInquiries' pendingFollowups in src/lib/domain/sales-inquiry.ts).
+ */
+export async function getOpenInquiryCount(): Promise<number> {
+  try {
+    const supabase = await client();
+    const { data: decided } = await supabase
+      .from('inquiry_statuses')
+      .select('id')
+      .in('category', ['won', 'lost']);
+    const decidedIds = (decided ?? []).map((s) => s.id as string);
+    let q = supabase.from('sales_inquiries').select('id', { count: 'exact', head: true });
+    if (decidedIds.length > 0) {
+      q = q.or(`status_id.is.null,status_id.not.in.(${decidedIds.join(',')})`);
+    }
+    const { count } = await q;
+    return count ?? 0;
+  } catch (e) {
+    console.error('[queries] getOpenInquiryCount', e);
+    return 0;
+  }
+}
