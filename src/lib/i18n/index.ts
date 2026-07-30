@@ -215,6 +215,7 @@ export const dictionary = {
     zh: '上传照片需工资/管理员权限。',
   },
   'emp.uploadPhoto': { en: 'Upload photo', zh: '上传照片' },
+  'emp.viewPhoto': { en: 'View photo', zh: '查看照片' },
   'emp.saveProfile': { en: 'Save report profile', zh: '保存报告信息' },
   'emp.savePayroll': { en: 'Save payroll details', zh: '保存工资信息' },
   'emp.dailyRate': { en: 'Daily rate', zh: '日薪' },

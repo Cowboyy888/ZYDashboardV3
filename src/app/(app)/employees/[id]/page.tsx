@@ -15,6 +15,7 @@ import { PageHeader } from '@/components/page-header';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { PhotoUpload } from './photo-upload';
+import { PhotoViewer } from './photo-viewer';
 import { PrivateForm } from './private-form';
 import { EmployeeProfileForm } from './profile-form';
 import { EmployeeDetailsForm } from './details-form';
@@ -34,18 +35,15 @@ export default async function EmployeeDetailPage({ params }: { params: Promise<{
   const priv = canSensitive ? await getEmployeePrivate(id) : null;
   const photoUrl = canSensitive ? await getSignedPhotoUrl(employee.photo_path) : null;
   const groupName = groups.find((g) => g.id === employee.attendance_group_id)?.name ?? '—';
+  const displayName =
+    employee.display_name ||
+    employee.name_english ||
+    employee.name_chinese ||
+    employee.employee_code;
 
   return (
     <div>
-      <PageHeader
-        title={
-          employee.display_name ||
-          employee.name_english ||
-          employee.name_chinese ||
-          employee.employee_code
-        }
-        description={`${t('emp.empId')} ${employee.employee_code}`}
-      />
+      <PageHeader title={displayName} description={`${t('emp.empId')} ${employee.employee_code}`} />
 
       <div className="grid gap-4 lg:grid-cols-3">
         <Card className="lg:col-span-1">
@@ -54,14 +52,13 @@ export default async function EmployeeDetailPage({ params }: { params: Promise<{
           </CardHeader>
           <CardContent className="space-y-3">
             <div className="flex items-center gap-3">
-              <div className="flex h-16 w-16 items-center justify-center overflow-hidden rounded-full bg-muted">
-                {photoUrl ? (
-                  // eslint-disable-next-line @next/next/no-img-element
-                  <img src={photoUrl} alt="" className="h-full w-full object-cover" />
-                ) : (
+              {photoUrl ? (
+                <PhotoViewer photoUrl={photoUrl} name={displayName} />
+              ) : (
+                <div className="flex h-16 w-16 shrink-0 items-center justify-center overflow-hidden rounded-full bg-muted">
                   <User className="h-7 w-7 text-muted-foreground" />
-                )}
-              </div>
+                </div>
+              )}
               <div>
                 {employee.name_khmer && (
                   <div className="name-khmer font-medium">{employee.name_khmer}</div>
