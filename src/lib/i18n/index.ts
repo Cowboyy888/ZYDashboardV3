@@ -527,6 +527,11 @@ export const dictionary = {
   'pur.attachment': { en: 'Attachment', zh: '附件' },
   'pur.lineItems': { en: 'Line items', zh: '明细项' },
   'pur.addItem': { en: 'Add line', zh: '新增一行' },
+  'pur.newSpec': { en: 'New specification', zh: '新增规格' },
+  'pur.newSpecHint': {
+    en: "Not in the catalog yet? Add it here — it's saved to inventory and available for future orders too.",
+    zh: '目录中还没有此规格？可在此新增——将保存到库存目录，供以后下单使用。',
+  },
   'pur.orderedQty': { en: 'Ordered qty', zh: '订购数量' },
   'pur.unitCost': { en: 'Unit cost', zh: '单价' },
   'pur.lineTotal': { en: 'Line total', zh: '小计' },

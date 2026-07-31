@@ -8,6 +8,7 @@ import {
   supplierUpdateSchema,
   createPurchaseOrderSchema,
   receiveGoodsSchema,
+  skuSchema,
 } from '@/lib/validation/schemas';
 import { evaluateOverReceiptGuard, canReceiveAgainst, canCancel } from '@/lib/domain/purchasing';
 import { canOverrideNegativeStock } from '@/lib/domain/rbac';
@@ -166,6 +167,72 @@ export async function deleteSupplier(_prev: ActionState, formData: FormData): Pr
   });
   revalidatePath('/purchasing/suppliers');
   return ok('Supplier deleted');
+}
+
+/**
+ * Quick-add a new specification (SKU) from the "New purchase order" form, for
+ * when the item being ordered isn't in the catalog yet. Gated by
+ * purchasing:manage (not products:manage) — creating a spec as part of
+ * placing an order is a purchasing action; Settings > Products stays
+ * products:manage-only for general catalog upkeep. Otherwise identical to
+ * createSku in lib/actions/settings.ts (same table, same duplicate rule).
+ */
+export async function createSkuForPurchaseOrder(
+  _prev: ActionState,
+  formData: FormData,
+): Promise<ActionState> {
+  const user = await assertPermission('purchasing:manage');
+  const parsed = skuSchema.safeParse({
+    familyId: formData.get('familyId'),
+    diameter: formData.get('diameter'),
+    size: formData.get('size'),
+    hole: formData.get('hole'),
+    rodCount: formData.get('rodCount'),
+    extra: formData.get('extra'),
+    condition: formData.get('condition'),
+    unit: formData.get('unit'),
+    minimumLevel: 0,
+    isActive: true,
+    notes: null,
+  });
+  if (!parsed.success)
+    return fail('Please check the highlighted fields', zodFieldErrors(parsed.error.issues));
+  const d = parsed.data;
+
+  const supabase = await createSupabaseServerClient();
+  const { data, error } = await supabase
+    .from('skus')
+    .insert({
+      family_id: d.familyId,
+      diameter: d.diameter ?? null,
+      size: d.size ?? null,
+      hole: d.hole ?? null,
+      rod_count: d.rodCount ?? null,
+      extra: d.extra ?? null,
+      condition: d.condition,
+      unit: d.unit,
+      minimum_level: 0,
+      is_active: true,
+    })
+    .select('id, unit')
+    .single();
+  if (error) {
+    if (error.code === '23505')
+      return fail(
+        'A specification with these exact attributes already exists — pick it from the list instead.',
+      );
+    return fail(error.message);
+  }
+
+  await writeAudit(user, {
+    action: 'sku.create',
+    entity: 'skus',
+    entityId: data.id,
+    newValue: { ...d, viaPurchaseOrder: true },
+  });
+  revalidatePath('/settings/products');
+  revalidatePath('/inventory');
+  return ok('Specification added', { id: data.id, unit: data.unit });
 }
 
 // --- Purchase orders -------------------------------------------------------------

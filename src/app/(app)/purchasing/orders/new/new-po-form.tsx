@@ -11,6 +11,7 @@ import { useT } from '@/components/i18n-provider';
 import { createDraftPurchaseOrder } from '@/lib/actions/purchasing';
 import { CURRENCIES, type Currency } from '@/lib/domain/purchasing';
 import type { ActionState } from '@/lib/actions/types';
+import { NewSpecDialog, type NewSkuOption } from './new-spec-dialog';
 
 const selectCls =
   'flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring';
@@ -28,6 +29,11 @@ interface SkuOpt {
   id: string;
   unit: string;
   label: string;
+}
+interface FamilyOpt {
+  id: string;
+  name: string;
+  defaultUnit: string;
 }
 
 interface ItemRow {
@@ -47,11 +53,13 @@ export function NewPoForm({
   suppliers,
   locations,
   skuOptions,
+  families,
   today,
 }: {
   suppliers: SupplierOpt[];
   locations: LocationOpt[];
   skuOptions: SkuOpt[];
+  families: FamilyOpt[];
   today: string;
 }) {
   const { t, m } = useT();
@@ -62,6 +70,7 @@ export function NewPoForm({
   );
   const [items, setItems] = useState<ItemRow[]>([emptyRow()]);
   const [currency, setCurrency] = useState<Currency>(suppliers[0]?.defaultCurrency ?? 'USD');
+  const [extraSkuOptions, setExtraSkuOptions] = useState<SkuOpt[]>([]);
   const formRef = useRef<HTMLFormElement>(null);
 
   useEffect(() => {
@@ -70,7 +79,15 @@ export function NewPoForm({
     }
   }, [state, router]);
 
-  const unitFor = (skuId: string) => skuOptions.find((s) => s.id === skuId)?.unit ?? '';
+  // Specs added via "+ New specification" mid-form, merged with the catalog
+  // fetched at page load — both selectable the same way in every row.
+  const allSkuOptions = [...skuOptions, ...extraSkuOptions];
+  const unitFor = (skuId: string) => allSkuOptions.find((s) => s.id === skuId)?.unit ?? '';
+
+  function onSpecCreated(rowKey: number, sku: NewSkuOption) {
+    setExtraSkuOptions((prev) => [...prev, sku]);
+    updateItem(rowKey, { skuId: sku.id });
+  }
   const lineTotal = (row: ItemRow) => {
     const qty = Number(row.orderedQty) || 0;
     const cost = Number(row.unitCost) || 0;
@@ -180,12 +197,16 @@ export function NewPoForm({
                   <option value="" disabled>
                     {t('common.select')}
                   </option>
-                  {skuOptions.map((s) => (
+                  {allSkuOptions.map((s) => (
                     <option key={s.id} value={s.id}>
                       {s.label}
                     </option>
                   ))}
                 </select>
+                <NewSpecDialog
+                  families={families}
+                  onCreated={(sku) => onSpecCreated(row.key, sku)}
+                />
               </div>
               <div className="col-span-6 space-y-1.5 sm:col-span-3">
                 <Label>{t('common.location')}</Label>

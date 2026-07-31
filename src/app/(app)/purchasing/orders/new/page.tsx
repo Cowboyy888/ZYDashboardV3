@@ -52,6 +52,9 @@ export default async function NewPurchaseOrderPage() {
         }))}
         locations={locations.map((l) => ({ id: l.id, name: l.name }))}
         skuOptions={skuOptions}
+        families={families
+          .filter((f) => f.is_active)
+          .map((f) => ({ id: f.id, name: f.name, defaultUnit: f.default_unit }))}
         today={businessDate()}
       />
     </div>
