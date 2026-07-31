@@ -16,8 +16,8 @@ Role-based access control (see `docs/data-dictionary.md` for the full matrix):
   config; views (not manage) suppliers/purchase orders, including costs.
 - **Attendance Admin** — daily attendance entry & correction; send attendance reports.
 - **Warehouse Admin** — inventory: opening/production/stock-out/adjustment/
-  transfer; suppliers and purchase orders (create, issue, receive), no
-  approval workflow.
+  transfer; suppliers and purchase orders (create, issue, cancel — header-only
+  records, no receiving), no approval workflow.
 - **Sales Admin** — customers, sales orders (create, confirm, deliver), no
   approval workflow; read inventory.
 - **Payroll Admin** — generates/manages payroll runs, deduction/advance lines
@@ -88,12 +88,16 @@ Seeded opening stock (Storage Room): 拔丝料 10厘 = 10 捆; 拔丝料 6厘 = 
 
 ## Roadmap (later passes)
 
-- **Second pass — Purchasing (built):** suppliers, purchase orders (USD/KHR/CNY,
-  `PO-YYYY-####`, Draft → Ordered → Partially Received/Received/Cancelled),
-  goods receiving into a location (creates `purchase_receipt`, immutable
-  ledger), over-receipt blocked without Owner override, and a Purchasing
-  dashboard (open/overdue/due-this-week/partially-received, ordered vs.
-  received, projected stock). Costs restricted to Owner/System Admin/Warehouse
+- **Second pass — Purchasing (built, later simplified to header-only):**
+  suppliers, purchase orders (USD/KHR/CNY, `PO-YYYY-####`, Draft → Ordered →
+  Cancelled). Purchase orders are records that an order was placed — supplier,
+  dates, currency, notes, attachment — with no line items, no quantities, no
+  costs, and no structured receiving; nothing about a purchase updates
+  inventory automatically. (Line items + goods receiving + an over-receipt
+  guard were originally built, mirroring Sales below, then deliberately
+  removed at the user's request — the underlying DB tables/triggers/RPCs
+  remain in the schema, dormant, since migrations are additive-only; see
+  `docs/data-dictionary.md`.) Costs restricted to Owner/System Admin/Warehouse
   Admin. The Telegram inventory report does not include supplier/PO
   information — see `docs/data-dictionary.md` and `docs/test-plan.md` for the
   schema and tests.

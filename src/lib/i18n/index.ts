@@ -485,20 +485,7 @@ export const dictionary = {
   'pur.overdue': { en: 'Overdue purchase orders', zh: '逾期采购订单' },
   'pur.overdueBadge': { en: 'Overdue', zh: '已逾期' },
   'pur.dueThisWeekBadge': { en: 'Due this week', zh: '本周到货' },
-  'pur.partiallyReceived': { en: 'Partially received', zh: '部分收货' },
-  'pur.orderedVsReceived': { en: 'Ordered vs. received', zh: '订购与已收对比' },
-  'pur.projectedStock': { en: 'Projected Stock', zh: '预计库存' },
-  'pur.projectedNote': {
-    en: 'Projected stock = physical stock + outstanding ordered quantity. Always shown separately from physical stock.',
-    zh: '预计库存 = 实际库存 + 未到货订购数量。始终与实际库存分开显示。',
-  },
-  'pur.physicalStock': { en: 'Physical stock', zh: '实际库存' },
-  'pur.outstandingOrdered': { en: 'Outstanding ordered', zh: '未到货订购量' },
   'pur.noOpenOrders': { en: 'No open purchase orders.', zh: '暂无未结采购订单。' },
-  'pur.noProjected': {
-    en: 'Nothing outstanding — projected stock equals physical stock.',
-    zh: '无未到货订单 — 预计库存等于实际库存。',
-  },
 
   'pur.suppliersDesc': { en: 'Editable supplier list.', zh: '可编辑的供应商列表。' },
   'pur.addSupplier': { en: 'Add supplier', zh: '新增供应商' },
@@ -516,8 +503,8 @@ export const dictionary = {
 
   'pur.newPo': { en: 'New purchase order', zh: '新建采购订单' },
   'pur.newPoDesc': {
-    en: 'Create a draft with supplier, dates, currency, and line items — nothing is ordered until you issue it.',
-    zh: '创建包含供应商、日期、货币与明细项的草稿 — 下单确认前不会生效。',
+    en: 'Create a record with supplier, dates, currency, and notes — nothing is ordered until you issue it.',
+    zh: '创建包含供应商、日期、货币与备注的记录 — 下单确认前不会生效。',
   },
   'pur.poNumber': { en: 'PO number', zh: '采购订单号' },
   'pur.supplier': { en: 'Supplier', zh: '供应商' },
@@ -525,17 +512,6 @@ export const dictionary = {
   'pur.expectedArrival': { en: 'Expected arrival date', zh: '预计到货日期' },
   'pur.currency': { en: 'Currency', zh: '货币' },
   'pur.attachment': { en: 'Attachment', zh: '附件' },
-  'pur.lineItems': { en: 'Line items', zh: '明细项' },
-  'pur.addItem': { en: 'Add line', zh: '新增一行' },
-  'pur.newSpec': { en: 'New specification', zh: '新增规格' },
-  'pur.newSpecHint': {
-    en: "Not in the catalog yet? Add it here — it's saved to inventory and available for future orders too.",
-    zh: '目录中还没有此规格？可在此新增——将保存到库存目录，供以后下单使用。',
-  },
-  'pur.orderedQty': { en: 'Ordered qty', zh: '订购数量' },
-  'pur.unitCost': { en: 'Unit cost', zh: '单价' },
-  'pur.lineTotal': { en: 'Line total', zh: '小计' },
-  'pur.outstandingQty': { en: 'Outstanding', zh: '未到货' },
   'pur.createDraft': { en: 'Create draft', zh: '创建草稿' },
 
   'pur.noOrders': { en: 'No purchase orders yet.', zh: '暂无采购订单。' },
@@ -543,30 +519,10 @@ export const dictionary = {
   'pur.cancel': { en: 'Cancel PO', zh: '取消订单' },
   'pur.print': { en: 'Print', zh: '打印' },
   'pur.confirmIssue': {
-    en: 'Issue this purchase order? Supplier, currency, and line items cannot be changed afterward.',
-    zh: '确认下单？下单后供应商、货币与明细项将无法更改。',
+    en: 'Issue this purchase order? Supplier and currency cannot be changed afterward.',
+    zh: '确认下单？下单后供应商与货币将无法更改。',
   },
   'pur.confirmCancel': { en: 'Cancel this purchase order?', zh: '确认取消此采购订单？' },
-  'pur.deleteLineItem': { en: 'Remove line item?', zh: '删除此明细项？' },
-  'pur.confirmDeleteLineItem': {
-    en: 'Remove this line item from the purchase order? This cannot be undone.',
-    zh: '确定要从此采购订单中删除该明细项吗？此操作无法撤销。',
-  },
-  'pur.receiveGoods': { en: 'Receive goods', zh: '收货' },
-  'pur.receivedDate': { en: 'Received date', zh: '收货日期' },
-  'pur.batchReference': { en: 'Batch / reference number', zh: '批次 / 单据号' },
-  'pur.deliveryPhoto': { en: 'Delivery note / invoice photo', zh: '送货单 / 发票照片' },
-  'pur.overrideLabel': {
-    en: 'Owner override reason (only if over-receiving)',
-    zh: '老板超收原因（仅当超额收货时）',
-  },
-  'pur.overridePlaceholder': {
-    en: 'Reason for receiving above the ordered quantity',
-    zh: '超过订购数量收货的原因',
-  },
-  'pur.receiptHistory': { en: 'Receipt history', zh: '收货记录' },
-  'pur.noReceipts': { en: 'No receipts recorded yet.', zh: '暂无收货记录。' },
-  'pur.receivedBy': { en: 'Received by', zh: '收货人' },
 
   // --- Sales (Third pass) ------------------------------------------------------
   'sal.dashboard': { en: 'Dashboard', zh: '仪表盘' },

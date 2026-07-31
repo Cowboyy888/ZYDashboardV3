@@ -283,13 +283,6 @@ export type SupplierInput = z.infer<typeof supplierSchema>;
 
 export const supplierUpdateSchema = supplierSchema.extend({ id: z.string().uuid() });
 
-const poItemInputSchema = z.object({
-  skuId: z.string().uuid(),
-  locationId: z.string().uuid(),
-  orderedQty: positiveQty,
-  unitCost: z.coerce.number().min(0, 'Unit cost cannot be negative'),
-});
-
 export const createPurchaseOrderSchema = z.object({
   supplierId: z.string().uuid(),
   orderDate: isoDate,
@@ -300,20 +293,8 @@ export const createPurchaseOrderSchema = z.object({
   currency: z.enum(CURRENCIES),
   notes: optionalText,
   attachmentPath: optionalText,
-  items: z.array(poItemInputSchema).min(1, 'Add at least one line item'),
 });
 export type CreatePurchaseOrderInput = z.infer<typeof createPurchaseOrderSchema>;
-
-export const receiveGoodsSchema = z.object({
-  itemId: z.string().uuid(),
-  quantity: positiveQty,
-  receivedDate: isoDate,
-  batchReference: optionalText,
-  notes: optionalText,
-  attachmentPath: optionalText,
-  overrideReason: optionalText,
-});
-export type ReceiveGoodsInput = z.infer<typeof receiveGoodsSchema>;
 
 // --- Sales (Third pass) --------------------------------------------------------
 

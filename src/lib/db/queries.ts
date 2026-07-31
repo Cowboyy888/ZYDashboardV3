@@ -17,8 +17,6 @@ import type {
   PayrollRunRow,
   ProductFamilyRow,
   ProfileRow,
-  PurchaseOrderItemReceivedRow,
-  PurchaseOrderItemRow,
   PurchaseOrderRow,
   SalesInquiryRow,
   SalesOrderItemDeliveredRow,
@@ -316,7 +314,7 @@ export async function getOpenPurchaseOrderCount(): Promise<number> {
     const { count } = await supabase
       .from('purchase_orders')
       .select('id', { count: 'exact', head: true })
-      .in('status', ['ordered', 'partially_received']);
+      .eq('status', 'ordered');
     return count ?? 0;
   } catch (e) {
     console.error('[queries] getOpenPurchaseOrderCount', e);
@@ -346,79 +344,6 @@ export async function getPurchaseOrder(id: string): Promise<PurchaseOrderRow | n
   } catch (e) {
     console.error('[queries] getPurchaseOrder', e);
     return null;
-  }
-}
-
-export async function getPurchaseOrderItems(
-  purchaseOrderId?: string,
-): Promise<PurchaseOrderItemRow[]> {
-  try {
-    const supabase = await client();
-    let q = supabase.from('purchase_order_items').select('*').order('created_at');
-    if (purchaseOrderId) q = q.eq('purchase_order_id', purchaseOrderId);
-    const { data } = await q;
-    return (data as PurchaseOrderItemRow[]) ?? [];
-  } catch (e) {
-    console.error('[queries] getPurchaseOrderItems', e);
-    return [];
-  }
-}
-
-/**
- * `purchase_order_item_received` aggregates (sums) over the whole
- * `stock_movements` ledger per item — pass `itemIds` (a single PO's item ids)
- * whenever the caller only needs one order, so the DB filters before
- * aggregating instead of scanning every receipt ever recorded company-wide.
- * Callers that genuinely need every order (the PO list, exports) omit it.
- */
-export async function getPurchaseOrderItemsReceived(
-  itemIds?: string[],
-): Promise<PurchaseOrderItemReceivedRow[]> {
-  if (itemIds && itemIds.length === 0) return [];
-  try {
-    const supabase = await client();
-    let q = supabase.from('purchase_order_item_received').select('*');
-    if (itemIds) q = q.in('item_id', itemIds);
-    const { data } = await q;
-    return (data as PurchaseOrderItemReceivedRow[]) ?? [];
-  } catch (e) {
-    console.error('[queries] getPurchaseOrderItemsReceived', e);
-    return [];
-  }
-}
-
-/** Receipt history (stock_movements) for one PO item — the receiving audit trail. */
-export async function getPurchaseOrderItemReceipts(itemId: string): Promise<StockMovementRow[]> {
-  try {
-    const supabase = await client();
-    const { data } = await supabase
-      .from('stock_movements')
-      .select('*')
-      .eq('purchase_order_item_id', itemId)
-      .eq('type', 'purchase_receipt')
-      .order('created_at', { ascending: false });
-    return (data as StockMovementRow[]) ?? [];
-  } catch (e) {
-    console.error('[queries] getPurchaseOrderItemReceipts', e);
-    return [];
-  }
-}
-
-/** All receipts across every item of one PO — for the detail page's receipt history. */
-export async function getPurchaseOrderReceipts(itemIds: string[]): Promise<StockMovementRow[]> {
-  if (itemIds.length === 0) return [];
-  try {
-    const supabase = await client();
-    const { data } = await supabase
-      .from('stock_movements')
-      .select('*')
-      .in('purchase_order_item_id', itemIds)
-      .eq('type', 'purchase_receipt')
-      .order('created_at', { ascending: false });
-    return (data as StockMovementRow[]) ?? [];
-  } catch (e) {
-    console.error('[queries] getPurchaseOrderReceipts', e);
-    return [];
   }
 }
 

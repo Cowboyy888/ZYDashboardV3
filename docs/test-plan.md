@@ -42,30 +42,25 @@ CI stays green; run it locally/staging with `PLAYWRIGHT=1 npm run verify` after
 | 8 | Telegram scheduled send does not duplicate a report | `tests/integration/telegram-idempotency.test.ts` |
 | 9 | Payroll draft reads attendance & respects the confirmed pay rules | `tests/unit/payroll.test.ts`; `tests/integration/payroll-flows.test.ts`; DB function `create_draft_payroll_run` |
 | 10 | Unauthorized users cannot access salary / private photos | `tests/unit/rbac.test.ts` (sensitive-data matrix); RLS on `employee_private` + private Storage buckets; schema check |
-| 11 | Create a purchase order (draft, header + line items) | `tests/integration/purchasing-flows.test.ts` |
-| 12 | Partial receipt updates status/outstanding, keeps PO open | `tests/unit/purchasing.test.ts`; `tests/integration/purchasing-flows.test.ts` |
-| 13 | Full receipt marks the PO Received | `tests/unit/purchasing.test.ts`; `tests/integration/purchasing-flows.test.ts` |
-| 14 | Receipt increases stock only at the selected location | `tests/integration/purchasing-flows.test.ts` (reuses `stock-ledger` balance helpers) |
-| 15 | Over-receipt blocked without an Owner override | `tests/unit/purchasing.test.ts` (`evaluateOverReceiptGuard`); DB trigger `enforce_purchase_receipt_rules`; schema check |
-| 16 | A cancelled PO cannot receive stock | `tests/unit/purchasing.test.ts` (`canReceiveAgainst`); DB trigger `enforce_purchase_receipt_rules`; schema check |
-| 17 | Purchase order costs visible only to Owner/System Admin/Warehouse Admin | `tests/unit/rbac.test.ts`; RLS on `suppliers`/`purchase_orders`/`purchase_order_items`; schema check |
-| 18 | Projected stock = physical + outstanding ordered, kept separate from physical | `tests/unit/purchasing.test.ts` (`computeProjectedStock`) |
-| 19 | Telegram inventory report never includes supplier/PO/cost information | `tests/integration/reports-render.test.ts` |
-| 20 | Create a sales order (draft, header + line items) | `tests/integration/sales-flows.test.ts` |
-| 21 | Partial delivery updates status/outstanding, keeps SO open | `tests/unit/sales.test.ts`; `tests/integration/sales-flows.test.ts` |
-| 22 | Full delivery marks the SO Delivered | `tests/unit/sales.test.ts`; `tests/integration/sales-flows.test.ts` |
-| 23 | Delivery decreases stock only at the selected location | `tests/integration/sales-flows.test.ts` (reuses `stock-ledger` balance helpers) |
-| 24 | Over-delivery blocked without an Owner override | `tests/unit/sales.test.ts` (`evaluateOverDeliveryGuard`); DB trigger `enforce_sale_delivery_rules`; schema check |
-| 25 | A cancelled SO cannot be delivered against | `tests/unit/sales.test.ts` (`canDeliverAgainst`); DB trigger `enforce_sale_delivery_rules`; schema check |
-| 26 | Sales order prices visible only to Owner/System Admin/Sales Admin | `tests/unit/rbac.test.ts`; RLS on `customers`/`sales_orders`/`sales_order_items`; schema check |
-| 27 | Committed stock = physical − outstanding ordered, kept separate from physical | `tests/unit/sales.test.ts` (`computeCommittedStock`) |
-| 28 | Daily-rate pay = daily_rate × distinct present/late attendance dates (not double-counted across shifts) | `tests/unit/payroll.test.ts`; `tests/integration/payroll-flows.test.ts`; DB function `create_draft_payroll_run` |
-| 29 | Every employee is paid daily — `pay_type` is constrained to `'daily'` (monthly-salary pay removed) | `employees_pay_type_check`/`payroll_items_pay_type_check`; DB function `create_draft_payroll_run`; schema check |
-| 30 | Net pay = base amount − sum of deduction/advance lines, never a stored total | `tests/unit/payroll.test.ts` (`computeNetAmount`); view `payroll_item_deductions` |
-| 31 | A payroll run can only be approved by an Owner | `tests/unit/rbac.test.ts`; DB trigger `enforce_payroll_run_immutable` (`PAYROLL_APPROVE_OWNER_ONLY`); schema check |
-| 32 | An Approved payroll run is permanently immutable (items/lines locked) | `tests/unit/payroll.test.ts` (`canEditRun`); DB triggers `enforce_payroll_item_immutable`/`enforce_payroll_item_line_immutable`; schema check |
-| 33 | Payroll figures visible only to Owner/System Admin/Payroll Admin | `tests/unit/rbac.test.ts`; RLS on `payroll_runs`/`payroll_items`/`payroll_item_lines`; schema check |
-| 34 | Salary/pay figures are never written to the audit log | `src/lib/actions/payroll.ts` (manual review — every `writeAudit` call omits amounts, matching `actions/employees.ts`'s `saveEmployeePrivate` precedent) |
+| 11 | Create, issue, and cancel a purchase order (header-only: supplier, dates, currency, notes — no line items, no receiving) | `tests/e2e/purchasing.spec.ts` |
+| 12 | A cancelled purchase order cannot be issued or re-cancelled | `tests/unit/purchasing.test.ts` (`canCancel`); DB trigger `enforce_po_header_immutable`; schema check |
+| 13 | Purchase order costs (if ever repopulated — `purchase_order_items` is currently dormant) visible only to Owner/System Admin/Warehouse Admin | `tests/unit/rbac.test.ts`; RLS on `suppliers`/`purchase_orders`; schema check |
+| 14 | Telegram inventory report never includes supplier/PO/cost information | `tests/integration/reports-render.test.ts` |
+| 15 | Create a sales order (draft, header + line items) | `tests/integration/sales-flows.test.ts` |
+| 16 | Partial delivery updates status/outstanding, keeps SO open | `tests/unit/sales.test.ts`; `tests/integration/sales-flows.test.ts` |
+| 17 | Full delivery marks the SO Delivered | `tests/unit/sales.test.ts`; `tests/integration/sales-flows.test.ts` |
+| 18 | Delivery decreases stock only at the selected location | `tests/integration/sales-flows.test.ts` (reuses `stock-ledger` balance helpers) |
+| 19 | Over-delivery blocked without an Owner override | `tests/unit/sales.test.ts` (`evaluateOverDeliveryGuard`); DB trigger `enforce_sale_delivery_rules`; schema check |
+| 20 | A cancelled SO cannot be delivered against | `tests/unit/sales.test.ts` (`canDeliverAgainst`); DB trigger `enforce_sale_delivery_rules`; schema check |
+| 21 | Sales order prices visible only to Owner/System Admin/Sales Admin | `tests/unit/rbac.test.ts`; RLS on `customers`/`sales_orders`/`sales_order_items`; schema check |
+| 22 | Committed stock = physical − outstanding ordered, kept separate from physical | `tests/unit/sales.test.ts` (`computeCommittedStock`) |
+| 23 | Daily-rate pay = daily_rate × distinct present/late attendance dates (not double-counted across shifts) | `tests/unit/payroll.test.ts`; `tests/integration/payroll-flows.test.ts`; DB function `create_draft_payroll_run` |
+| 24 | Every employee is paid daily — `pay_type` is constrained to `'daily'` (monthly-salary pay removed) | `employees_pay_type_check`/`payroll_items_pay_type_check`; DB function `create_draft_payroll_run`; schema check |
+| 25 | Net pay = base amount − sum of deduction/advance lines, never a stored total | `tests/unit/payroll.test.ts` (`computeNetAmount`); view `payroll_item_deductions` |
+| 26 | A payroll run can only be approved by an Owner | `tests/unit/rbac.test.ts`; DB trigger `enforce_payroll_run_immutable` (`PAYROLL_APPROVE_OWNER_ONLY`); schema check |
+| 27 | An Approved payroll run is permanently immutable (items/lines locked) | `tests/unit/payroll.test.ts` (`canEditRun`); DB triggers `enforce_payroll_item_immutable`/`enforce_payroll_item_line_immutable`; schema check |
+| 28 | Payroll figures visible only to Owner/System Admin/Payroll Admin | `tests/unit/rbac.test.ts`; RLS on `payroll_runs`/`payroll_items`/`payroll_item_lines`; schema check |
+| 29 | Salary/pay figures are never written to the audit log | `src/lib/actions/payroll.ts` (manual review — every `writeAudit` call omits amounts, matching `actions/employees.ts`'s `saveEmployeePrivate` precedent) |
 
 Additional coverage: `tests/unit/datetime.test.ts` (Asia/Bangkok ⇄ UTC,
 dd/mm/yyyy, business-date boundary), `tests/unit/inventory-view.test.ts`
@@ -80,11 +75,10 @@ The domain tests assert the rules; the database enforces them independently:
 - `prevent_update` / `prevent_delete` — ledger & audit log append-only;
   attendance/stock never hard-deleted.
 - RLS on `employee_private` + private buckets — salary/photos restricted.
-- `enforce_purchase_receipt_rules` — no receiving against a draft/cancelled PO;
-  no over-receipt without Owner override + reason.
-- `enforce_po_header_immutable` / `enforce_po_item_immutable` — a PO's
-  commercial terms and line items lock once issued (Draft only).
-- RLS on `suppliers`/`purchase_orders`/`purchase_order_items` — restricted to
+- `enforce_po_header_immutable` — a PO's commercial terms lock once issued
+  (Draft only). (`enforce_purchase_receipt_rules`/`enforce_po_item_immutable`
+  still exist but are dormant — Purchasing has no line items or receiving.)
+- RLS on `suppliers`/`purchase_orders` — restricted to
   owner/system_admin/warehouse_admin, which is also what keeps purchase costs
   out of every other role.
 - `enforce_sale_delivery_rules` — no delivering against a draft/cancelled SO;

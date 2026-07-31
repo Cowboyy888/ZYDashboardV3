@@ -66,8 +66,7 @@ export interface OverDeliveryGuardResult {
  * Decide whether a proposed delivery may be posted against a SO item. Blocks
  * any delivery that would push total delivered above the ordered quantity,
  * UNLESS the actor is an Owner overriding with a recorded reason — the exact
- * same shape as the negative-stock guard (`evaluateNegativeGuard`) and the
- * over-receipt guard (`evaluateOverReceiptGuard`, purchasing).
+ * same shape as the negative-stock guard (`evaluateNegativeGuard`).
  */
 export function evaluateOverDeliveryGuard(params: {
   orderedQty: number;

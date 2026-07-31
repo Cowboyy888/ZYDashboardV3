@@ -15,14 +15,9 @@ import { PO_STATUS_LABELS, type PoStatus } from '@/lib/domain/purchasing';
 import { formatDDMMYYYY } from '@/lib/domain/datetime';
 import type { PurchaseOrderRow } from '@/lib/domain/purchasing-view';
 
-const STATUS_VARIANT: Record<
-  PoStatus,
-  'secondary' | 'success' | 'warning' | 'destructive' | 'outline'
-> = {
+const STATUS_VARIANT: Record<PoStatus, 'secondary' | 'destructive' | 'outline'> = {
   draft: 'outline',
   ordered: 'secondary',
-  partially_received: 'warning',
-  received: 'success',
   cancelled: 'destructive',
 };
 
@@ -39,7 +34,6 @@ export function OrdersList({ rows }: { rows: PurchaseOrderRow[] }) {
               <TableHead>{t('pur.orderDate')}</TableHead>
               <TableHead>{t('pur.expectedArrival')}</TableHead>
               <TableHead>{t('common.status')}</TableHead>
-              <TableHead className="text-right">{t('pur.orderedVsReceived')}</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
@@ -69,18 +63,15 @@ export function OrdersList({ rows }: { rows: PurchaseOrderRow[] }) {
                   )}
                 </TableCell>
                 <TableCell>
-                  <Badge variant={STATUS_VARIANT[r.status]}>
-                    {PO_STATUS_LABELS[r.status][locale]}
+                  <Badge variant={STATUS_VARIANT[r.status] ?? 'outline'}>
+                    {PO_STATUS_LABELS[r.status]?.[locale] ?? r.status}
                   </Badge>
-                </TableCell>
-                <TableCell className="text-right tabular-nums">
-                  {r.receivedTotal} / {r.orderedTotal}
                 </TableCell>
               </TableRow>
             ))}
             {rows.length === 0 && (
               <TableRow>
-                <TableCell colSpan={6} className="text-center text-muted-foreground">
+                <TableCell colSpan={5} className="text-center text-muted-foreground">
                   {t('pur.noOrders')}
                 </TableCell>
               </TableRow>

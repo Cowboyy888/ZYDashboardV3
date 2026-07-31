@@ -30,7 +30,7 @@ export function DeliverForm({
   // Next.js re-render this route from the server regardless of anything done
   // here — so a lingering "success" message can't survive in this component.
   // Close on success and let the now-updated row (status/outstanding/delivery
-  // history) be the visible confirmation, matching ReceiveForm's pattern.
+  // history) be the visible confirmation.
   useEffect(() => {
     if (state?.ok) onDone();
   }, [state]); // eslint-disable-line react-hooks/exhaustive-deps
