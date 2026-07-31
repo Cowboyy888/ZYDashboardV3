@@ -547,6 +547,11 @@ export const dictionary = {
     zh: '确认下单？下单后供应商、货币与明细项将无法更改。',
   },
   'pur.confirmCancel': { en: 'Cancel this purchase order?', zh: '确认取消此采购订单？' },
+  'pur.deleteLineItem': { en: 'Remove line item?', zh: '删除此明细项？' },
+  'pur.confirmDeleteLineItem': {
+    en: 'Remove this line item from the purchase order? This cannot be undone.',
+    zh: '确定要从此采购订单中删除该明细项吗？此操作无法撤销。',
+  },
   'pur.receiveGoods': { en: 'Receive goods', zh: '收货' },
   'pur.receivedDate': { en: 'Received date', zh: '收货日期' },
   'pur.batchReference': { en: 'Batch / reference number', zh: '批次 / 单据号' },

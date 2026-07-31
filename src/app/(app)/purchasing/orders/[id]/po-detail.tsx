@@ -14,7 +14,11 @@ import {
 } from '@/components/ui/table';
 import { ConfirmActionButton } from '@/components/forms/confirm-action-button';
 import { useT } from '@/components/i18n-provider';
-import { issuePurchaseOrder, cancelPurchaseOrder } from '@/lib/actions/purchasing';
+import {
+  issuePurchaseOrder,
+  cancelPurchaseOrder,
+  deletePurchaseOrderItem,
+} from '@/lib/actions/purchasing';
 import {
   PO_STATUS_LABELS,
   CURRENCY_LABELS,
@@ -190,6 +194,16 @@ export function PoDetail({
                               {t('pur.receiveGoods')}
                             </Button>
                           )}
+                        {po.status === 'draft' && row.items.length > 1 && (
+                          <ConfirmActionButton
+                            action={deletePurchaseOrderItem}
+                            formData={{ itemId: item.itemId }}
+                            label={t('common.delete')}
+                            confirmText={t('pur.confirmDeleteLineItem')}
+                            variant="ghost"
+                            onSuccess={() => router.refresh()}
+                          />
+                        )}
                       </TableCell>
                     )}
                   </TableRow>

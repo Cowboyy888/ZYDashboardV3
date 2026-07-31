@@ -381,6 +381,60 @@ export async function cancelPurchaseOrder(
   return ok('Purchase order cancelled');
 }
 
+/**
+ * Remove one line item from a Draft PO. Mirrors the DB's own rule (a
+ * before-delete trigger on purchase_order_items, enforce_po_item_immutable,
+ * raises PO_ITEM_LOCKED once the PO leaves draft) — checked here first so the
+ * caller gets a friendly message instead of a raw Postgres exception. Never
+ * lets the last remaining item be removed, matching the "at least one line
+ * item" rule createDraftPurchaseOrder enforces at creation.
+ */
+export async function deletePurchaseOrderItem(
+  _prev: ActionState,
+  formData: FormData,
+): Promise<ActionState> {
+  const user = await assertPermission('purchasing:manage');
+  const itemId = String(formData.get('itemId') ?? '');
+  if (!itemId) return fail('Missing line item');
+
+  const supabase = await createSupabaseServerClient();
+  const { data: item } = await supabase
+    .from('purchase_order_items')
+    .select('id, purchase_order_id, sku_id')
+    .eq('id', itemId)
+    .maybeSingle();
+  if (!item) return fail('Line item not found');
+
+  const { data: po } = await supabase
+    .from('purchase_orders')
+    .select('status')
+    .eq('id', item.purchase_order_id)
+    .maybeSingle();
+  if (!po) return fail('Purchase order not found');
+  if (po.status !== 'draft')
+    return fail('Line items can only be removed while the purchase order is a Draft.');
+
+  const { count } = await supabase
+    .from('purchase_order_items')
+    .select('id', { count: 'exact', head: true })
+    .eq('purchase_order_id', item.purchase_order_id);
+  if ((count ?? 0) <= 1)
+    return fail('A purchase order needs at least one line item — delete the whole PO instead.');
+
+  const { error } = await supabase.from('purchase_order_items').delete().eq('id', itemId);
+  if (error) return fail(error.message);
+
+  await writeAudit(user, {
+    action: 'purchase_order_item.delete',
+    entity: 'purchase_order_items',
+    entityId: itemId,
+    oldValue: { purchaseOrderId: item.purchase_order_id, skuId: item.sku_id },
+  });
+  revalidatePath(`/purchasing/orders/${item.purchase_order_id}`);
+  revalidatePath('/purchasing/orders');
+  return ok('Line item removed');
+}
+
 // --- Goods receiving ---------------------------------------------------------
 
 export async function receiveGoods(_prev: ActionState, formData: FormData): Promise<ActionState> {
