@@ -89,26 +89,30 @@ const config: Config = {
           '30%, 50%, 70%': { transform: 'translateX(-4px)' },
           '40%, 60%': { transform: 'translateX(4px)' },
         },
-        // Rising welding-spark ember for the login screen's background — a nod
-        // to ZY Steel's own welded-mesh production floor. Per-particle
-        // duration/delay/drift come from CSS custom properties set inline, so
-        // one keyframe drives many independently-timed embers. Transform +
-        // opacity only (GPU-composited), never layout-affecting properties.
-        'zy-ember': {
-          '0%': { transform: 'translate3d(0, 0, 0)', opacity: '0' },
-          '15%': { opacity: 'var(--ember-opacity, 0.8)' },
-          '80%': { opacity: 'var(--ember-opacity, 0.8)' },
-          '100%': {
-            transform: 'translate3d(var(--ember-drift, 0), -110vh, 0)',
-            opacity: '0',
-          },
+        // Woven wire-mesh backdrop for the login screen — two hairline layers,
+        // each held at a fixed diagonal rotation while its own translate
+        // animates, so the rotation never resets each loop (rotate + translate
+        // must live in the SAME transform value; splitting them across a
+        // static class and a keyframe would let the keyframe's transform
+        // silently override the static rotate). The two layers drift at
+        // different speeds/directions so they visually cross like warp and
+        // weft threads instead of moving as one flat grid. GPU-composited
+        // (transform + opacity only).
+        'zy-weave-a': {
+          '0%': { transform: 'rotate(45deg) translate3d(0, 0, 0)' },
+          '100%': { transform: 'rotate(45deg) translate3d(0, -40px, 0)' },
+        },
+        'zy-weave-b': {
+          '0%': { transform: 'rotate(-45deg) translate3d(0, 0, 0)' },
+          '100%': { transform: 'rotate(-45deg) translate3d(0, 40px, 0)' },
         },
       },
       animation: {
         'accordion-down': 'accordion-down 0.2s ease-out',
         'accordion-up': 'accordion-up 0.2s ease-out',
         'zy-shake': 'zy-shake 0.5s cubic-bezier(0.36, 0.07, 0.19, 0.97) both',
-        'zy-ember': 'zy-ember 12s linear infinite',
+        'zy-weave-a': 'zy-weave-a 14s linear infinite',
+        'zy-weave-b': 'zy-weave-b 18s linear infinite',
       },
     },
   },
