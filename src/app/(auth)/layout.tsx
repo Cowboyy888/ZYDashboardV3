@@ -8,15 +8,16 @@ export default async function AuthLayout({ children }: { children: React.ReactNo
   return (
     <I18nProvider locale={locale}>
       <div className="relative flex min-h-screen items-center justify-center overflow-hidden bg-gradient-to-b from-[hsl(208_18%_13%)] to-[hsl(208_20%_9%)] p-4">
-        {/* Woven wire-mesh backdrop — a nod to ZY Steel's own welded-mesh
-            product. Two hairline layers, each rotated to a different
-            diagonal and drifting at its own speed, cross like warp and weft
-            threads. Sized well past the viewport so 45deg rotation never
-            reveals a corner gap. Purely decorative and motion-safe-gated
-            like every other looping animation in the app. */}
-        <div aria-hidden className="pointer-events-none absolute -inset-[80%]">
-          <div className="zy-weave-line absolute inset-0 motion-safe:animate-zy-weave-a" />
-          <div className="zy-weave-line-accent absolute inset-0 motion-safe:animate-zy-weave-b" />
+        {/* Flowing gradient wave — three large, softly blurred blobs (two
+            brand red, one cool steel-blue for contrast) drifting along slow,
+            independent loops, so their overlap keeps shifting into a calm
+            ambient wave of color rather than a busy pattern. Purely
+            decorative and motion-safe-gated like every other looping
+            animation in the app. */}
+        <div aria-hidden className="pointer-events-none absolute inset-0 overflow-hidden">
+          <div className="absolute left-[-10%] top-[-15%] h-[600px] w-[600px] rounded-full bg-primary/25 blur-[120px] motion-safe:animate-zy-wave-1" />
+          <div className="absolute left-[55%] top-[10%] h-[550px] w-[550px] rounded-full bg-[hsl(200_75%_50%/0.4)] blur-[100px] motion-safe:animate-zy-wave-2" />
+          <div className="absolute bottom-[-20%] left-[30%] h-[500px] w-[500px] rounded-full bg-primary/15 blur-[120px] motion-safe:animate-zy-wave-3" />
         </div>
         <div className="relative w-full max-w-md">
           <div className="mb-6 flex items-center justify-between motion-safe:duration-500 motion-safe:animate-in motion-safe:fade-in motion-safe:slide-in-from-top-2 motion-safe:fill-mode-both">

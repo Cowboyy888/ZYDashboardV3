@@ -87,30 +87,6 @@
   background: linear-gradient(180deg, hsl(var(--primary)) 0%, hsl(354 74% 38%) 100%);
 }
 
-/* Woven wire-mesh backdrop for the auth screen — one hairline pattern shared
-   by both diagonal layers (see zy-weave-a/b in tailwind.config.ts); each
-   layer rotates it to a different diagonal so together they cross like the
-   warp and weft of an actual woven mesh. Layer B carries a faint brand-red
-   tint so the crossing threads read as two distinct strands, not one grid. */
-.zy-weave-line {
-  background-image: repeating-linear-gradient(
-    0deg,
-    hsl(0 0% 100% / 0.09) 0px,
-    hsl(0 0% 100% / 0.09) 1.5px,
-    transparent 1.5px,
-    transparent 40px
-  );
-}
-.zy-weave-line-accent {
-  background-image: repeating-linear-gradient(
-    0deg,
-    hsl(var(--primary) / 0.18) 0px,
-    hsl(var(--primary) / 0.18) 1.5px,
-    transparent 1.5px,
-    transparent 40px
-  );
-}
-
 /* Printed documents (e.g. sales order letterhead) must keep their brand-red
    bars — browsers otherwise strip background colors from print by default. */
 @media print {

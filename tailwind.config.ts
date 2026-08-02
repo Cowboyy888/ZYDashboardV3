@@ -89,30 +89,32 @@ const config: Config = {
           '30%, 50%, 70%': { transform: 'translateX(-4px)' },
           '40%, 60%': { transform: 'translateX(4px)' },
         },
-        // Woven wire-mesh backdrop for the login screen — two hairline layers,
-        // each held at a fixed diagonal rotation while its own translate
-        // animates, so the rotation never resets each loop (rotate + translate
-        // must live in the SAME transform value; splitting them across a
-        // static class and a keyframe would let the keyframe's transform
-        // silently override the static rotate). The two layers drift at
-        // different speeds/directions so they visually cross like warp and
-        // weft threads instead of moving as one flat grid. GPU-composited
-        // (transform + opacity only).
-        'zy-weave-a': {
-          '0%': { transform: 'rotate(45deg) translate3d(0, 0, 0)' },
-          '100%': { transform: 'rotate(45deg) translate3d(0, -40px, 0)' },
+        // Flowing gradient wave for the login screen — three large, heavily
+        // blurred blobs drifting along slow, independent loops so their
+        // overlap keeps shifting, reading as one ambient wave of color
+        // rather than distinct shapes. Long durations (22-34s) and
+        // ease-in-out keep it calm rather than busy. GPU-composited
+        // (transform only — blur/opacity are static, not animated).
+        'zy-wave-1': {
+          '0%, 100%': { transform: 'translate3d(-8%, -6%, 0) scale(1)' },
+          '50%': { transform: 'translate3d(12%, 8%, 0) scale(1.15)' },
         },
-        'zy-weave-b': {
-          '0%': { transform: 'rotate(-45deg) translate3d(0, 0, 0)' },
-          '100%': { transform: 'rotate(-45deg) translate3d(0, 40px, 0)' },
+        'zy-wave-2': {
+          '0%, 100%': { transform: 'translate3d(8%, 10%, 0) scale(1.1)' },
+          '50%': { transform: 'translate3d(-12%, -6%, 0) scale(0.95)' },
+        },
+        'zy-wave-3': {
+          '0%, 100%': { transform: 'translate3d(0%, 4%, 0) scale(1)' },
+          '50%': { transform: 'translate3d(-10%, -10%, 0) scale(1.2)' },
         },
       },
       animation: {
         'accordion-down': 'accordion-down 0.2s ease-out',
         'accordion-up': 'accordion-up 0.2s ease-out',
         'zy-shake': 'zy-shake 0.5s cubic-bezier(0.36, 0.07, 0.19, 0.97) both',
-        'zy-weave-a': 'zy-weave-a 14s linear infinite',
-        'zy-weave-b': 'zy-weave-b 18s linear infinite',
+        'zy-wave-1': 'zy-wave-1 22s ease-in-out infinite',
+        'zy-wave-2': 'zy-wave-2 28s ease-in-out infinite',
+        'zy-wave-3': 'zy-wave-3 34s ease-in-out infinite',
       },
     },
   },
