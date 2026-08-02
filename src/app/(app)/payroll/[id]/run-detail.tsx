@@ -25,6 +25,7 @@ import {
 import { formatDDMMYYYY } from '@/lib/domain/datetime';
 import type { PayrollRunRow } from '@/lib/domain/payroll-view';
 import { ItemLines } from './item-lines';
+import { EditRunDialog } from './edit-run-dialog';
 
 const STATUS_VARIANT = {
   draft: 'outline',
@@ -56,6 +57,16 @@ export function RunDetail({
             </Badge>
           </CardTitle>
           <div className="flex gap-2 print:hidden">
+            {canManage && canEditRun(row.status) && (
+              <EditRunDialog
+                runId={row.runId}
+                periodStart={row.periodStart}
+                periodEnd={row.periodEnd}
+                payDate={row.payDate}
+                notes={row.notes}
+                onSaved={() => router.refresh()}
+              />
+            )}
             {canApprove && canApproveRun(row.status) && (
               <ConfirmActionButton
                 action={approvePayrollRun}

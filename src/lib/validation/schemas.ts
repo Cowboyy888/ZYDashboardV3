@@ -361,6 +361,11 @@ export const createPayrollRunSchema = z
   });
 export type CreatePayrollRunInput = z.infer<typeof createPayrollRunSchema>;
 
+export const updatePayrollRunSchema = createPayrollRunSchema.and(
+  z.object({ id: z.string().uuid() }),
+);
+export type UpdatePayrollRunInput = z.infer<typeof updatePayrollRunSchema>;
+
 export const addPayrollLineSchema = z.object({
   itemId: z.string().uuid(),
   kind: z.enum(DEDUCTION_KINDS),

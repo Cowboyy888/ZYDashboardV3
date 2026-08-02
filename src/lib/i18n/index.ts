@@ -730,6 +730,7 @@ export const dictionary = {
   'pay.confirmMarkPaid': { en: 'Mark this payroll run as Paid?', zh: '将此工资单标记为已发放？' },
   'pay.cancel': { en: 'Cancel run', zh: '取消工资单' },
   'pay.confirmCancel': { en: 'Cancel this payroll run?', zh: '确认取消此工资单？' },
+  'pay.editDates': { en: 'Edit dates', zh: '编辑日期' },
 } satisfies Record<string, Entry>;
 
 export type MessageKey = keyof typeof dictionary;

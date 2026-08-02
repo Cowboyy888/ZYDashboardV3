@@ -3,8 +3,18 @@ import { revalidatePath } from 'next/cache';
 import { createSupabaseServerClient } from '@/lib/supabase/server';
 import { assertPermission } from '@/lib/auth';
 import { writeAudit } from '@/lib/audit';
-import { createPayrollRunSchema, addPayrollLineSchema } from '@/lib/validation/schemas';
-import { canApproveRun, canMarkPaid, canCancelRun, type PayrollStatus } from '@/lib/domain/payroll';
+import {
+  createPayrollRunSchema,
+  updatePayrollRunSchema,
+  addPayrollLineSchema,
+} from '@/lib/validation/schemas';
+import {
+  canApproveRun,
+  canMarkPaid,
+  canCancelRun,
+  canEditRun,
+  type PayrollStatus,
+} from '@/lib/domain/payroll';
 import { fail, ok, zodFieldErrors, type ActionState } from './types';
 
 // --- Payroll runs ------------------------------------------------------------------
@@ -47,6 +57,60 @@ export async function createDraftPayrollRun(
   });
   revalidatePath('/payroll');
   return ok('Payroll run generated as Draft', { id: runId });
+}
+
+/**
+ * Correct a Draft run's period/pay dates or notes. The DB trigger
+ * (enforce_payroll_run_immutable, 0015_payroll.sql) already allows this while
+ * status = 'draft' and blocks it otherwise (PAYROLL_RUN_LOCKED) — checked here
+ * first for a friendly message.
+ */
+export async function updatePayrollRunDates(
+  _prev: ActionState,
+  formData: FormData,
+): Promise<ActionState> {
+  const user = await assertPermission('payroll:manage');
+  const parsed = updatePayrollRunSchema.safeParse({
+    id: formData.get('id'),
+    periodStart: formData.get('periodStart'),
+    periodEnd: formData.get('periodEnd'),
+    payDate: formData.get('payDate'),
+    notes: formData.get('notes'),
+  });
+  if (!parsed.success)
+    return fail('Please check the highlighted fields', zodFieldErrors(parsed.error.issues));
+  const d = parsed.data;
+
+  const supabase = await createSupabaseServerClient();
+  const { data: run } = await supabase
+    .from('payroll_runs')
+    .select('status')
+    .eq('id', d.id)
+    .maybeSingle();
+  if (!run) return fail('Payroll run not found');
+  if (!canEditRun(run.status as PayrollStatus))
+    return fail('Only a Draft payroll run can have its dates changed.');
+
+  const { error } = await supabase
+    .from('payroll_runs')
+    .update({
+      period_start: d.periodStart,
+      period_end: d.periodEnd,
+      pay_date: d.payDate,
+      notes: d.notes ?? null,
+    })
+    .eq('id', d.id);
+  if (error) return fail(error.message);
+
+  await writeAudit(user, {
+    action: 'payroll_run.update_dates',
+    entity: 'payroll_runs',
+    entityId: d.id,
+    newValue: { periodStart: d.periodStart, periodEnd: d.periodEnd, payDate: d.payDate },
+  });
+  revalidatePath(`/payroll/${d.id}`);
+  revalidatePath('/payroll');
+  return ok('Payroll run updated');
 }
 
 async function transitionRun(
