@@ -11,6 +11,8 @@ import type {
   InquiryFollowupRow,
   InquiryStatusRow,
   LocationRow,
+  OvertimeEntryRow,
+  OvertimeSettingsRow,
   PayrollItemDeductionsRow,
   PayrollItemLineRow,
   PayrollItemRow,
@@ -608,6 +610,36 @@ export async function getPayrollRunLines(itemIds: string[]): Promise<PayrollItem
     return (data as PayrollItemLineRow[]) ?? [];
   } catch (e) {
     console.error('[queries] getPayrollRunLines', e);
+    return [];
+  }
+}
+
+// --- Overtime 加班 --------------------------------------------------------------
+
+export async function getOvertimeSettings(): Promise<OvertimeSettingsRow | null> {
+  try {
+    const supabase = await client();
+    const { data } = await supabase.from('overtime_settings').select('*').eq('id', 1).maybeSingle();
+    return (data as OvertimeSettingsRow) ?? null;
+  } catch (e) {
+    console.error('[queries] getOvertimeSettings', e);
+    return null;
+  }
+}
+
+/** Overtime entries, optionally limited to a business-date range. */
+export async function getOvertimeEntries(from?: string, to?: string): Promise<OvertimeEntryRow[]> {
+  try {
+    const supabase = await client();
+    let q = supabase.from('overtime_entries').select('*');
+    if (from) q = q.gte('business_date', from);
+    if (to) q = q.lte('business_date', to);
+    const { data } = await q
+      .order('business_date', { ascending: false })
+      .order('created_at', { ascending: false });
+    return (data as OvertimeEntryRow[]) ?? [];
+  } catch (e) {
+    console.error('[queries] getOvertimeEntries', e);
     return [];
   }
 }

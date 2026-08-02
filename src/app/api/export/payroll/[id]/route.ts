@@ -20,6 +20,12 @@ const COLUMNS: XlsxColumn<PayrollItemRow>[] = [
   { header: 'Daily Rate 日薪', width: 12, value: (r) => r.rate, numFmt: '#,##0.00' },
   { header: 'Base Amount 基本工资', width: 14, value: (r) => r.baseAmount, numFmt: '#,##0.00' },
   {
+    header: 'Overtime 加班费',
+    width: 14,
+    value: (r) => r.overtimeAmount,
+    numFmt: '#,##0.00',
+  },
+  {
     header: 'Deductions 扣款',
     width: 14,
     value: (r) => r.deductionsTotal,

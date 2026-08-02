@@ -158,6 +158,36 @@ export interface SentReportRow {
   created_at: string;
 }
 
+export interface OvertimeSettingsRow {
+  id: number;
+  tier1_label: string;
+  tier1_rate: number;
+  tier2_label: string;
+  tier2_rate: number;
+  currency: string;
+  updated_at: string;
+}
+
+export interface OvertimeEntryRow {
+  id: string;
+  business_date: string;
+  employee_id: string;
+  description: string | null;
+  time_range: string | null;
+  tier1_hours: number;
+  tier2_hours: number;
+  tier1_rate: number;
+  tier2_rate: number;
+  // Generated columns (the 加班表 formula).
+  tier1_amount: number;
+  tier2_amount: number;
+  total_amount: number;
+  notes: string | null;
+  created_by: string | null;
+  created_at: string;
+  updated_at: string;
+}
+
 export interface InquiryCustomerTypeRow {
   id: string;
   name: string;

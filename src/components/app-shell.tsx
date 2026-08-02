@@ -5,6 +5,7 @@ import { usePathname } from 'next/navigation';
 import {
   LayoutDashboard,
   CalendarCheck,
+  Clock,
   Users,
   Boxes,
   ShoppingCart,
@@ -39,6 +40,7 @@ const NAV: NavItem[] = [
     icon: CalendarCheck,
     permission: 'attendance:view',
   },
+  { href: '/attendance/overtime', key: 'nav.overtime', icon: Clock, permission: 'overtime:view' },
   { href: '/employees', key: 'nav.employees', icon: Users, permission: 'employees:view' },
   { href: '/inventory', key: 'nav.inventory', icon: Boxes, permission: 'inventory:view' },
   { href: '/purchasing', key: 'nav.purchasing', icon: ShoppingCart, permission: 'purchasing:view' },

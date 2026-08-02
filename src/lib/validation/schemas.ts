@@ -374,6 +374,56 @@ export const addPayrollLineSchema = z.object({
 });
 export type AddPayrollLineInput = z.infer<typeof addPayrollLineSchema>;
 
+// --- Overtime 加班 ----------------------------------------------------------------
+
+const nonNegNumber = z.preprocess(
+  (v) => (v === '' || v == null ? 0 : v),
+  z.coerce.number().min(0, 'Must be zero or more'),
+);
+
+/** One overtime occasion. At least one tier must have hours. */
+export const overtimeEntrySchema = z
+  .object({
+    businessDate: isoDate,
+    employeeId: z.string().uuid('Employee is required'),
+    description: optionalText,
+    timeRange: optionalText,
+    tier1Hours: nonNegNumber,
+    tier2Hours: nonNegNumber,
+    notes: optionalText,
+  })
+  .refine((v) => v.tier1Hours > 0 || v.tier2Hours > 0, {
+    message: 'Enter hours for at least one tier',
+    path: ['tier1Hours'],
+  });
+export type OvertimeEntryInput = z.infer<typeof overtimeEntrySchema>;
+
+export const overtimeEntryUpdateSchema = z
+  .object({
+    id: z.string().uuid(),
+    businessDate: isoDate,
+    employeeId: z.string().uuid('Employee is required'),
+    description: optionalText,
+    timeRange: optionalText,
+    tier1Hours: nonNegNumber,
+    tier2Hours: nonNegNumber,
+    notes: optionalText,
+  })
+  .refine((v) => v.tier1Hours > 0 || v.tier2Hours > 0, {
+    message: 'Enter hours for at least one tier',
+    path: ['tier1Hours'],
+  });
+export type OvertimeEntryUpdateInput = z.infer<typeof overtimeEntryUpdateSchema>;
+
+/** Editable tier rates (defaults mirror the 加班表 sheet: 1.25 / 2.00). */
+export const overtimeSettingsSchema = z.object({
+  tier1Label: nonEmpty.max(40),
+  tier1Rate: z.coerce.number().min(0, 'Must be zero or more'),
+  tier2Label: nonEmpty.max(40),
+  tier2Rate: z.coerce.number().min(0, 'Must be zero or more'),
+});
+export type OvertimeSettingsInput = z.infer<typeof overtimeSettingsSchema>;
+
 // --- Customer price inquiries (quotation tracking) -------------------------------
 
 // Empty form fields ('') become undefined before coercion/validation.

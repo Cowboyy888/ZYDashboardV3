@@ -30,6 +30,7 @@ export const dictionary = {
   // Navigation
   'nav.dashboard': { en: 'Dashboard', zh: '仪表盘' },
   'nav.attendance': { en: 'Attendance', zh: '考勤' },
+  'nav.overtime': { en: 'Overtime', zh: '加班' },
   'nav.employees': { en: 'Employees', zh: '员工' },
   'nav.inventory': { en: 'Inventory', zh: '库存' },
   'nav.purchasing': { en: 'Purchasing', zh: '采购' },
@@ -358,6 +359,50 @@ export const dictionary = {
   'set.action': { en: 'Action', zh: '动作' },
   'set.entity': { en: 'Entity', zh: '实体' },
   'set.noAudit': { en: 'No audit entries yet.', zh: '暂无审计记录。' },
+
+  // Overtime 加班
+  'ot.title': { en: 'Overtime', zh: '加班' },
+  'ot.desc': {
+    en: 'Overtime hours and pay, calculated by tier. Amounts are derived — never typed by hand.',
+    zh: '按时段计算的加班工时与加班费。金额自动计算，无需手动输入。',
+  },
+  'ot.formula': { en: 'Formula', zh: '计算公式' },
+  'ot.add': { en: 'Record overtime', zh: '录入加班' },
+  'ot.none': { en: 'No overtime in this period.', zh: '此期间暂无加班记录。' },
+  'ot.date': { en: 'Date', zh: '日期' },
+  'ot.employee': { en: 'Employee', zh: '员工' },
+  'ot.task': { en: 'Task', zh: '工作内容' },
+  'ot.timeRange': { en: 'Time', zh: '时间段' },
+  'ot.rangeHint': {
+    en: 'e.g. 16:30-20:00 — fills the tier hours automatically.',
+    zh: '例如 16:30-20:00 — 自动填写各时段工时。',
+  },
+  'ot.hours': { en: 'Hours', zh: '工时' },
+  'ot.amount': { en: 'Amount', zh: '金额' },
+  'ot.totalAmount': { en: 'Total', zh: '合计' },
+  'ot.grandTotal': { en: 'Grand total', zh: '总计' },
+  'ot.tier1Hours': { en: 'Tier 1 hours', zh: '第一时段工时' },
+  'ot.tier2Hours': { en: 'Tier 2 hours', zh: '第二时段工时' },
+  'ot.from': { en: 'From', zh: '开始' },
+  'ot.to': { en: 'To', zh: '结束' },
+  'ot.apply': { en: 'Apply', zh: '应用' },
+  'ot.byEmployee': { en: 'By employee', zh: '按员工' },
+  'ot.byTask': { en: 'By task', zh: '按工作内容' },
+  'ot.kpiEntries': { en: 'Entries', zh: '记录数' },
+  'ot.kpiPeople': { en: 'People', zh: '人数' },
+  'ot.kpiHours': { en: 'Total hours', zh: '总工时' },
+  'ot.kpiTier1': { en: 'Tier 1', zh: '第一时段' },
+  'ot.kpiTier2': { en: 'Tier 2', zh: '第二时段' },
+  'ot.kpiTotal': { en: 'Overtime cost', zh: '加班费合计' },
+  'ot.rates': { en: 'Overtime rates', zh: '加班费率' },
+  'ot.tier1Label': { en: 'Tier 1 window', zh: '第一时段' },
+  'ot.tier1Rate': { en: 'Tier 1 rate ($/h)', zh: '第一时段费率($/小时)' },
+  'ot.tier2Label': { en: 'Tier 2 window', zh: '第二时段' },
+  'ot.tier2Rate': { en: 'Tier 2 rate ($/h)', zh: '第二时段费率($/小时)' },
+  'ot.ratesNote': {
+    en: 'Existing entries keep the rate they were recorded at — changing these never re-prices past overtime.',
+    zh: '已录入的记录保留当时的费率 — 修改此处不会影响历史加班费。',
+  },
 
   // Telegram
   'tg.desc': {
@@ -702,6 +747,7 @@ export const dictionary = {
   'pay.payDate': { en: 'Pay date', zh: '发放日期' },
   'pay.employeeCount': { en: 'Employees', zh: '员工数' },
   'pay.grossTotal': { en: 'Gross total', zh: '应发合计' },
+  'pay.overtimeTotal': { en: 'Overtime total', zh: '加班费合计' },
   'pay.netTotal': { en: 'Net total', zh: '实发合计' },
   'pay.noRuns': { en: 'No payroll runs yet.', zh: '暂无工资单。' },
   'pay.payslips': { en: 'Payslips', zh: '工资明细' },
@@ -710,6 +756,7 @@ export const dictionary = {
   'pay.daily': { en: 'Daily', zh: '日薪' },
   'pay.daysWorked': { en: 'Days worked', zh: '出勤天数' },
   'pay.baseAmount': { en: 'Base amount', zh: '基本金额' },
+  'pay.overtimeAmount': { en: 'Overtime', zh: '加班费' },
   'pay.deductions': { en: 'Deductions', zh: '扣除' },
   'pay.netAmount': { en: 'Net amount', zh: '实发金额' },
   'pay.noItems': { en: 'No payslips on this run.', zh: '该工资单暂无明细。' },
@@ -757,6 +804,15 @@ export function tf(locale: Locale, key: MessageKey, vars: Record<string, string 
  * unknown/interpolated phrases fall back to the original text.
  */
 const PHRASES: Record<string, string> = {
+  // Overtime
+  'Overtime recorded': '已录入加班',
+  'Overtime updated': '已更新加班',
+  'Overtime deleted': '已删除加班',
+  'Overtime rates saved': '已保存加班费率',
+  'Missing overtime entry': '缺少加班记录',
+  'Enter hours for at least one tier': '请至少填写一个时段的工时',
+  'Employee is required': '员工为必填',
+  'Must be zero or more': '不能小于零',
   // Customer inquiries
   'Inquiry updated': '已更新询价',
   'Inquiry deleted': '已删除询价',

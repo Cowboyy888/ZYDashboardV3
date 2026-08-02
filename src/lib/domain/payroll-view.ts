@@ -21,6 +21,8 @@ export interface PayrollItemLike {
   days_worked: number | null;
   rate: number;
   base_amount: number;
+  /** Overtime earned in the period (加班), snapshotted at generation time. */
+  overtime_amount?: number | null;
 }
 
 export interface DeductionsLike {
@@ -65,6 +67,7 @@ export interface PayrollItemRow {
   daysWorked: number | null;
   rate: number;
   baseAmount: number;
+  overtimeAmount: number;
   deductionsTotal: number;
   netAmount: number;
   lines: PayrollLineRow[];
@@ -80,6 +83,7 @@ export interface PayrollRunRow {
   items: PayrollItemRow[];
   itemCount: number;
   grossTotal: number;
+  overtimeTotal: number;
   deductionsTotal: number;
   netTotal: number;
 }
@@ -110,6 +114,7 @@ export function buildPayrollRunRows(
     const itemRows: PayrollItemRow[] = runItems.map((it) => {
       const employee = employeeById.get(it.employee_id);
       const deductionsTotal = round2(deductionsByItem.get(it.id) ?? 0);
+      const overtimeAmount = round2(Number(it.overtime_amount ?? 0));
       const itemLines = (linesByItem.get(it.id) ?? []).map((l) => ({
         lineId: l.id,
         kind: l.kind,
@@ -125,13 +130,16 @@ export function buildPayrollRunRows(
         daysWorked: it.days_worked,
         rate: it.rate,
         baseAmount: it.base_amount,
+        overtimeAmount,
         deductionsTotal,
-        netAmount: computeNetAmount(it.base_amount, deductionsTotal),
+        // Overtime is earned pay, so it is added to the base before deductions.
+        netAmount: computeNetAmount(round2(it.base_amount + overtimeAmount), deductionsTotal),
         lines: itemLines,
       };
     });
 
     const grossTotal = round2(itemRows.reduce((s, r) => s + r.baseAmount, 0));
+    const overtimeTotal = round2(itemRows.reduce((s, r) => s + r.overtimeAmount, 0));
     const deductionsTotal = round2(itemRows.reduce((s, r) => s + r.deductionsTotal, 0));
     const netTotal = round2(itemRows.reduce((s, r) => s + r.netAmount, 0));
 
@@ -145,6 +153,7 @@ export function buildPayrollRunRows(
       items: itemRows,
       itemCount: itemRows.length,
       grossTotal,
+      overtimeTotal,
       deductionsTotal,
       netTotal,
     };

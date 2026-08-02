@@ -97,7 +97,7 @@ export function RunDetail({
             )}
           </div>
         </CardHeader>
-        <CardContent className="grid gap-3 text-sm sm:grid-cols-4">
+        <CardContent className="grid gap-3 text-sm sm:grid-cols-5">
           <div>
             <div className="text-muted-foreground">{t('pay.period')}</div>
             <div className="font-medium">
@@ -113,11 +113,15 @@ export function RunDetail({
             <div className="tabular-nums">${row.grossTotal.toFixed(2)}</div>
           </div>
           <div>
+            <div className="text-muted-foreground">{t('pay.overtimeTotal')}</div>
+            <div className="tabular-nums">${row.overtimeTotal.toFixed(2)}</div>
+          </div>
+          <div>
             <div className="text-muted-foreground">{t('pay.netTotal')}</div>
             <div className="font-semibold tabular-nums">${row.netTotal.toFixed(2)}</div>
           </div>
           {row.notes && (
-            <div className="sm:col-span-4">
+            <div className="sm:col-span-5">
               <div className="text-muted-foreground">{t('common.notes')}</div>
               <div>{row.notes}</div>
             </div>
@@ -137,6 +141,7 @@ export function RunDetail({
                 <TableHead>{t('pay.payType')}</TableHead>
                 <TableHead className="text-right">{t('pay.daysWorked')}</TableHead>
                 <TableHead className="text-right">{t('pay.baseAmount')}</TableHead>
+                <TableHead className="text-right">{t('pay.overtimeAmount')}</TableHead>
                 <TableHead className="text-right">{t('pay.deductions')}</TableHead>
                 <TableHead className="text-right">{t('pay.netAmount')}</TableHead>
                 {canManage && canEditRun(row.status) && (
@@ -158,6 +163,9 @@ export function RunDetail({
                     </TableCell>
                     <TableCell className="text-right tabular-nums">
                       ${item.baseAmount.toFixed(2)}
+                    </TableCell>
+                    <TableCell className="text-right tabular-nums">
+                      {item.overtimeAmount > 0 ? `+$${item.overtimeAmount.toFixed(2)}` : '—'}
                     </TableCell>
                     <TableCell className="text-right tabular-nums text-warning">
                       {item.deductionsTotal > 0 ? `-$${item.deductionsTotal.toFixed(2)}` : '—'}
@@ -181,7 +189,7 @@ export function RunDetail({
                   </TableRow>
                   {expandedItem === item.itemId && (
                     <TableRow>
-                      <TableCell colSpan={canManage ? 7 : 6} className="bg-muted/30">
+                      <TableCell colSpan={canManage ? 8 : 7} className="bg-muted/30">
                         <ItemLines
                           runId={row.runId}
                           itemId={item.itemId}
@@ -196,7 +204,7 @@ export function RunDetail({
               {row.items.length === 0 && (
                 <TableRow>
                   <TableCell
-                    colSpan={canManage ? 7 : 6}
+                    colSpan={canManage ? 8 : 7}
                     className="text-center text-muted-foreground"
                   >
                     {t('pay.noItems')}

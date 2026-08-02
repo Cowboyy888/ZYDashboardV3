@@ -51,6 +51,8 @@ export type Permission =
   | 'employee_sensitive:view' // salary + private photos + documents
   | 'attendance:view'
   | 'attendance:manage'
+  | 'overtime:view'
+  | 'overtime:manage'
   | 'products:view'
   | 'products:manage'
   | 'locations:manage'
@@ -91,6 +93,8 @@ const ROLE_PERMISSIONS: Record<Role, Permission[]> = {
     'employees:manage',
     'employee_sensitive:view',
     'attendance:view',
+    'overtime:view',
+    'overtime:manage',
     'products:view',
     'products:manage',
     'locations:manage',
@@ -106,6 +110,8 @@ const ROLE_PERMISSIONS: Record<Role, Permission[]> = {
     'employees:view',
     'attendance:view',
     'attendance:manage',
+    'overtime:view',
+    'overtime:manage',
     'telegram:send',
   ],
   warehouse_admin: [
@@ -135,6 +141,7 @@ const ROLE_PERMISSIONS: Record<Role, Permission[]> = {
     'employees:view',
     'employee_sensitive:view',
     'attendance:view',
+    'overtime:view',
     'payroll:view',
     'payroll:manage',
   ],
