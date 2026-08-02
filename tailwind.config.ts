@@ -89,32 +89,30 @@ const config: Config = {
           '30%, 50%, 70%': { transform: 'translateX(-4px)' },
           '40%, 60%': { transform: 'translateX(4px)' },
         },
-        // Flowing gradient wave for the login screen — three large, heavily
-        // blurred blobs drifting along slow, independent loops so their
-        // overlap keeps shifting, reading as one ambient wave of color
-        // rather than distinct shapes. Long durations (22-34s) and
-        // ease-in-out keep it calm rather than busy. GPU-composited
-        // (transform only — blur/opacity are static, not animated).
-        'zy-wave-1': {
-          '0%, 100%': { transform: 'translate3d(-8%, -6%, 0) scale(1)' },
-          '50%': { transform: 'translate3d(12%, 8%, 0) scale(1.15)' },
+        // Steel-mill furnace for the login screen — a warm glow along the
+        // bottom edge that breathes like an open furnace, with sparks
+        // shooting up out of it. Both GPU-composited (opacity/transform only).
+        'zy-furnace-glow': {
+          '0%, 100%': { opacity: '0.55', transform: 'scale(1)' },
+          '50%': { opacity: '0.9', transform: 'scale(1.08)' },
         },
-        'zy-wave-2': {
-          '0%, 100%': { transform: 'translate3d(8%, 10%, 0) scale(1.1)' },
-          '50%': { transform: 'translate3d(-12%, -6%, 0) scale(0.95)' },
-        },
-        'zy-wave-3': {
-          '0%, 100%': { transform: 'translate3d(0%, 4%, 0) scale(1)' },
-          '50%': { transform: 'translate3d(-10%, -10%, 0) scale(1.2)' },
+        // Per-particle duration/delay/drift/color come from CSS custom
+        // properties set inline, so one keyframe drives many independently
+        // timed sparks — shorter travel and faster duration than a rising
+        // ember, closer to an actual shower of sparks off hot metal.
+        'zy-spark-rise': {
+          '0%': { transform: 'translate3d(0, 0, 0)', opacity: '0' },
+          '10%': { opacity: 'var(--spark-opacity, 0.9)' },
+          '70%': { opacity: 'var(--spark-opacity, 0.9)' },
+          '100%': { transform: 'translate3d(var(--spark-drift, 0), -70vh, 0)', opacity: '0' },
         },
       },
       animation: {
         'accordion-down': 'accordion-down 0.2s ease-out',
         'accordion-up': 'accordion-up 0.2s ease-out',
         'zy-shake': 'zy-shake 0.5s cubic-bezier(0.36, 0.07, 0.19, 0.97) both',
-        'zy-wave-1': 'zy-wave-1 22s ease-in-out infinite',
-        'zy-wave-2': 'zy-wave-2 28s ease-in-out infinite',
-        'zy-wave-3': 'zy-wave-3 34s ease-in-out infinite',
+        'zy-furnace-glow': 'zy-furnace-glow 5s ease-in-out infinite',
+        'zy-spark-rise': 'zy-spark-rise 5s linear infinite',
       },
     },
   },
