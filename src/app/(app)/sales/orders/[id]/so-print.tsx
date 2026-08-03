@@ -24,7 +24,7 @@ export function SoPrint({
   const currencyLabel =
     CURRENCY_LABELS[row.currency as keyof typeof CURRENCY_LABELS]?.[locale] ?? row.currency;
   const money = (n: number) => `${row.currency} ${n.toFixed(2)}`;
-  const grandTotal = row.items.reduce((sum, item) => sum + item.lineTotal, 0);
+  const grandTotal = row.grandTotal;
 
   return (
     <div className="hidden bg-white text-black print:block">

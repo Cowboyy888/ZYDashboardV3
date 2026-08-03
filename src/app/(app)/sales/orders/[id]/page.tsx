@@ -11,6 +11,7 @@ import {
   getFamilies,
   getLocations,
   getProfiles,
+  getDepositInvoiceForSo,
 } from '@/lib/db/queries';
 import { buildSalesOrderRows } from '@/lib/domain/sales-view';
 import { businessDate } from '@/lib/domain/datetime';
@@ -32,13 +33,14 @@ export default async function SalesOrderDetailPage({
   const so = await getSalesOrder(id);
   if (!so) notFound();
 
-  const [items, customer, skus, families, locations, profiles] = await Promise.all([
+  const [items, customer, skus, families, locations, profiles, depositInvoice] = await Promise.all([
     getSalesOrderItems(id),
     getCustomer(so.customer_id),
     getSkus(true),
     getFamilies(true),
     getLocations(true),
     getProfiles(),
+    getDepositInvoiceForSo(id),
   ]);
   const itemIds = items.map((i) => i.id);
   const [delivered, deliveries] = await Promise.all([
@@ -78,6 +80,7 @@ export default async function SalesOrderDetailPage({
         today={businessDate()}
         canManage={hasPermission(user.role, 'sales:manage')}
         canOverride={hasPermission(user.role, 'stock:override_negative')}
+        depositInvoice={depositInvoice}
       />
     </div>
   );

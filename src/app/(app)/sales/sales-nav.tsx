@@ -7,12 +7,13 @@ import { cn } from '@/lib/utils';
 export function SalesNav({
   active,
 }: {
-  active: 'dashboard' | 'orders' | 'inquiries' | 'customers';
+  active: 'dashboard' | 'orders' | 'inquiries' | 'quotations' | 'customers';
 }) {
   const { t } = useT();
   const items = [
     { key: 'dashboard' as const, href: '/sales', label: t('sal.dashboard') },
     { key: 'inquiries' as const, href: '/sales/inquiries', label: t('sal.inquiries') },
+    { key: 'quotations' as const, href: '/sales/quotations', label: t('sal.quotations') },
     { key: 'orders' as const, href: '/sales/orders', label: t('sal.orders') },
     { key: 'customers' as const, href: '/sales/customers', label: t('sal.customers') },
   ];

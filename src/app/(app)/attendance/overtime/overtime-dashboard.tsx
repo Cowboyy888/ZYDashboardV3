@@ -1,7 +1,7 @@
 'use client';
 import { useActionState, useEffect, useMemo, useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { Calculator, Loader2, Plus, Trash2, X } from 'lucide-react';
+import { Calculator, Download, Loader2, Plus, Trash2, X } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -183,6 +183,11 @@ export function OvertimeDashboard({
           </Button>
         </div>
         <div className="flex gap-2">
+          <Button asChild variant="outline">
+            <a href={`/api/export/overtime?from=${rangeFrom}&to=${rangeTo}`}>
+              <Download className="h-4 w-4" /> {t('ot.downloadExcel')}
+            </a>
+          </Button>
           {canEditRates && (
             <Button variant="outline" onClick={() => setShowRates((s) => !s)}>
               {showRates ? <X className="h-4 w-4" /> : null} {t('ot.rates')}

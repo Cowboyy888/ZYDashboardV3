@@ -15,6 +15,7 @@ import type { AttendanceStatus, Shift } from '@/lib/domain/attendance';
 import type { Currency, PoStatus } from '@/lib/domain/purchasing';
 import type { SoStatus } from '@/lib/domain/sales';
 import type { PayrollStatus, DeductionKind } from '@/lib/domain/payroll';
+import type { DepositInvoiceStatus, SoPaymentStatus } from '@/lib/domain/deposit-invoice';
 
 export interface ProfileRow {
   id: string;
@@ -155,6 +156,46 @@ export interface SentReportRow {
   destination_group: 'attendance' | 'inventory' | null;
   status: 'sent' | 'failed';
   detail: string | null;
+  created_at: string;
+}
+
+export interface QuotationRow {
+  id: string;
+  customer_id: string | null;
+  customer_name: string;
+  contact: string | null;
+  project_site: string | null;
+  quotation_date: string;
+  valid_days: number;
+  currency: string;
+  deposit_pct: number;
+  pricing_basis: string | null;
+  terms: string | null;
+  notes: string | null;
+  quotation_no: string | null;
+  quotation_issued_on: string | null;
+  deposit_no: string | null;
+  deposit_issued_on: string | null;
+  balance_no: string | null;
+  balance_issued_on: string | null;
+  deposit_paid_on: string | null;
+  balance_paid_on: string | null;
+  created_by: string | null;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface QuotationItemRow {
+  id: string;
+  quotation_id: string;
+  line_no: number;
+  description: string;
+  wire_dia: string | null;
+  steel_grade: string | null;
+  unit: string;
+  unit_price: number;
+  quantity: number;
+  amount: number; // generated
   created_at: string;
 }
 
@@ -341,6 +382,7 @@ export interface SalesOrderRow {
   expected_delivery_date: string | null;
   currency: Currency;
   status: SoStatus;
+  payment_status: SoPaymentStatus;
   notes: string | null;
   attachment_path: string | null;
   created_by: string | null;
@@ -359,12 +401,40 @@ export interface SalesOrderItemRow {
   ordered_qty: number;
   unit_price: number;
   line_total: number;
+  area_per_sheet: number | null;
+  price_per_sqm: number | null;
   created_at: string;
 }
 
 export interface SalesOrderItemDeliveredRow {
   item_id: string;
   delivered_qty: number;
+}
+
+export interface DepositInvoiceRow {
+  id: string;
+  invoice_number: string | null;
+  sales_order_id: string;
+  deposit_percentage: number;
+  total_order_amount: number;
+  deposit_amount: number;
+  remaining_balance: number;
+  currency: Currency;
+  status: DepositInvoiceStatus;
+  created_by: string | null;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface DepositInvoicePaymentRow {
+  id: string;
+  deposit_invoice_id: string;
+  amount: number;
+  paid_date: string;
+  method: string | null;
+  notes: string | null;
+  recorded_by: string | null;
+  created_at: string;
 }
 
 // --- Payroll (Fourth pass) -----------------------------------------------------

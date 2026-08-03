@@ -61,6 +61,10 @@ CI stays green; run it locally/staging with `PLAYWRIGHT=1 npm run verify` after
 | 27 | An Approved payroll run is permanently immutable (items/lines locked) | `tests/unit/payroll.test.ts` (`canEditRun`); DB triggers `enforce_payroll_item_immutable`/`enforce_payroll_item_line_immutable`; schema check |
 | 28 | Payroll figures visible only to Owner/System Admin/Payroll Admin | `tests/unit/rbac.test.ts`; RLS on `payroll_runs`/`payroll_items`/`payroll_item_lines`; schema check |
 | 29 | Salary/pay figures are never written to the audit log | `src/lib/actions/payroll.ts` (manual review — every `writeAudit` call omits amounts, matching `actions/employees.ts`'s `saveEmployeePrivate` precedent) |
+| 30 | A sales order item's `unit_price` is server-derived from Price/m² × Area/sheet when both are supplied (client value never trusted) | `tests/unit/deposit-invoice.test.ts` (`computeUnitPriceFromArea`); DB function `create_draft_sales_order`; `tests/e2e/deposit-invoice.spec.ts` |
+| 31 | A deposit invoice may only be generated for a confirmed SO, and only one active invoice per SO | `tests/unit/deposit-invoice.test.ts` (`canGenerateDepositInvoice`); partial unique index on `deposit_invoices`; schema check |
+| 32 | Deposit amount / remaining balance = total × percentage (and its complement) — generated columns, never hand-entered | `tests/unit/deposit-invoice.test.ts` (`computeDepositAmount`/`computeRemainingBalance`); generated columns on `deposit_invoices`; schema check |
+| 33 | A deposit invoice's status derives from its payments ledger, never set directly, and mirrors onto the sales order's `payment_status` | `tests/unit/deposit-invoice.test.ts` (`computeDepositInvoiceStatus`); DB triggers `recompute_deposit_invoice_status`/`mirror_deposit_invoice_status`; `tests/e2e/deposit-invoice.spec.ts` |
 
 Additional coverage: `tests/unit/datetime.test.ts` (Asia/Bangkok ⇄ UTC,
 dd/mm/yyyy, business-date boundary), `tests/unit/inventory-view.test.ts`

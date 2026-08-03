@@ -221,6 +221,8 @@ export async function createDraftSalesOrder(
       unit: unitBySku.get(i.skuId),
       orderedQty: i.orderedQty,
       unitPrice: i.unitPrice,
+      areaPerSheet: i.areaPerSheet ?? null,
+      pricePerSqm: i.pricePerSqm ?? null,
     })),
   });
   if (error) return fail(error.message);

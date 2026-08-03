@@ -130,6 +130,19 @@ Seeded opening stock (Storage Room): 拔丝料 10厘 = 10 捆; 拔丝料 6厘 = 
   labels/kinds — see AGENTS.md). These rules (worked-day counting, currency,
   deduction structure) were explicit product decisions, not inferred — see
   `docs/data-dictionary.md` and `docs/test-plan.md` for the schema and tests.
+- **Fifth pass — Sales Order Deposit Invoices (built):** a confirmed sales
+  order can generate one active `Deposit Invoice` for a chosen percentage
+  (10/30/50/custom) of its total. Sales order line items got an optional
+  per-m² pricing breakdown (Area/sheet, Price/m²) so the invoice can show
+  Price/m² × Area/sheet = Price/sheet alongside the total, deposit amount,
+  and remaining balance; `unit_price` stays the stored source of truth
+  either way. The invoice is printable (self-contained HTML → browser Save
+  as PDF, same pattern as the Customer Price Inquiry report). Payment status
+  (Pending Deposit → Partially Paid → Paid) is a new field on the sales
+  order, orthogonal to its delivery-tracking status, and is always derived
+  from an append-only payments ledger — never hand-set — via "Record
+  Payment" (amount + date). Reuses `sales:manage`, no new permission — see
+  `docs/data-dictionary.md` and `docs/test-plan.md` for the schema and tests.
 
 ## Explicit non-goals (v1)
 

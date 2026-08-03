@@ -10,6 +10,7 @@ import { AttachmentField } from '@/components/purchasing/attachment-field';
 import { useT } from '@/components/i18n-provider';
 import { createDraftSalesOrder } from '@/lib/actions/sales';
 import { CURRENCIES, type Currency } from '@/lib/domain/sales';
+import { computeUnitPriceFromArea } from '@/lib/domain/deposit-invoice';
 import type { ActionState } from '@/lib/actions/types';
 
 const selectCls =
@@ -36,11 +37,23 @@ interface ItemRow {
   locationId: string;
   orderedQty: string;
   unitPrice: string;
+  // Optional per-m² pricing breakdown — when both are set, unitPrice is
+  // computed from them (Price/m² × Area/sheet = Price/sheet) and read-only.
+  areaPerSheet: string;
+  pricePerSqm: string;
 }
 
 let nextKey = 1;
 function emptyRow(): ItemRow {
-  return { key: nextKey++, skuId: '', locationId: '', orderedQty: '', unitPrice: '' };
+  return {
+    key: nextKey++,
+    skuId: '',
+    locationId: '',
+    orderedQty: '',
+    unitPrice: '',
+    areaPerSheet: '',
+    pricePerSqm: '',
+  };
 }
 
 export function NewSoForm({
@@ -78,7 +91,18 @@ export function NewSoForm({
   };
 
   function updateItem(key: number, patch: Partial<ItemRow>) {
-    setItems((prev) => prev.map((r) => (r.key === key ? { ...r, ...patch } : r)));
+    setItems((prev) =>
+      prev.map((r) => {
+        if (r.key !== key) return r;
+        const next = { ...r, ...patch };
+        const area = Number(next.areaPerSheet);
+        const priceSqm = Number(next.pricePerSqm);
+        if (next.areaPerSheet && next.pricePerSqm && area > 0 && priceSqm >= 0) {
+          next.unitPrice = String(computeUnitPriceFromArea(priceSqm, area));
+        }
+        return next;
+      }),
+    );
   }
 
   function onSubmit(e: React.FormEvent<HTMLFormElement>) {
@@ -90,6 +114,8 @@ export function NewSoForm({
       locationId: r.locationId,
       orderedQty: Number(r.orderedQty),
       unitPrice: Number(r.unitPrice),
+      areaPerSheet: r.areaPerSheet ? Number(r.areaPerSheet) : undefined,
+      pricePerSqm: r.pricePerSqm ? Number(r.pricePerSqm) : undefined,
     }));
     const fd = new FormData(formRef.current!);
     fd.set('itemsJson', JSON.stringify(payload));
@@ -229,6 +255,8 @@ export function NewSoForm({
                   data-testid="so-item-price"
                   value={row.unitPrice}
                   onChange={(e) => updateItem(row.key, { unitPrice: e.target.value })}
+                  readOnly={!!(row.areaPerSheet && row.pricePerSqm)}
+                  className={row.areaPerSheet && row.pricePerSqm ? 'bg-muted' : undefined}
                   required
                 />
               </div>
@@ -247,6 +275,35 @@ export function NewSoForm({
                   <Trash2 className="h-4 w-4" />
                 </Button>
               </div>
+              <div className="col-span-6 space-y-1.5 sm:col-span-3">
+                <Label>{t('sal.areaPerSheet')}</Label>
+                <Input
+                  type="number"
+                  step="0.001"
+                  min="0"
+                  data-testid="so-item-area"
+                  value={row.areaPerSheet}
+                  onChange={(e) => updateItem(row.key, { areaPerSheet: e.target.value })}
+                  placeholder="m²"
+                />
+              </div>
+              <div className="col-span-6 space-y-1.5 sm:col-span-3">
+                <Label>{t('sal.pricePerSqm')}</Label>
+                <Input
+                  type="number"
+                  step="0.0001"
+                  min="0"
+                  data-testid="so-item-price-sqm"
+                  value={row.pricePerSqm}
+                  onChange={(e) => updateItem(row.key, { pricePerSqm: e.target.value })}
+                  placeholder={`$/m²`}
+                />
+              </div>
+              {!!(row.areaPerSheet && row.pricePerSqm) && (
+                <p className="col-span-12 text-xs text-muted-foreground sm:col-span-6">
+                  {t('sal.pricePerSqmHint')}
+                </p>
+              )}
             </div>
           ))}
           <Button

@@ -171,12 +171,12 @@ Trigger `enforce_po_item_immutable` (UPDATE + DELETE) is likewise dormant.
 history cannot be hard-deleted (archive instead); `deleteCustomer` pre-checks
 this and the FK is the backstop.
 
-### sales_orders  *(Third pass)*
+### sales_orders  *(Third pass; `payment_status` added Fifth pass)*
 `id`, `so_number` (unique, auto `SO-YYYY-####` — atomic per-calendar-year
 counter via `sales_order_seq` + `assign_so_number` trigger), `customer_id →
 customers`, `order_date`, `expected_delivery_date`, `currency`, `status`,
-`notes`, `attachment_path`, `created_by → profiles`, `confirmed_at`,
-`cancelled_at`, `created_at`, `updated_at`.
+`payment_status`, `notes`, `attachment_path`, `created_by → profiles`,
+`confirmed_at`, `cancelled_at`, `created_at`, `updated_at`.
 - One currency per SO; no exchange-rate conversion.
 - Trigger `enforce_so_header_immutable`: once `status <> 'draft'`, `customer_id`
   /`currency`/`order_date` can no longer change (`expected_delivery_date`,
@@ -184,17 +184,61 @@ customers`, `order_date`, `expected_delivery_date`, `currency`, `status`,
 - `status` is the one sales field that IS stored (not derived): set by the app
   on Confirm/Cancel, and recomputed by `post_sale_delivery` after each delivery
   from `SUM(ordered) vs SUM(delivered)` across all of the SO's items.
+- `payment_status` (`none`/`pending_deposit`/`partially_paid`/`paid`) is
+  orthogonal to `status` — it tracks the SO's deposit invoice, not delivery.
+  Mirrored by trigger `mirror_deposit_invoice_status` from the SO's active
+  `deposit_invoices.status`; the app never writes it directly.
 
-### sales_order_items  *(Third pass)*
+### sales_order_items  *(Third pass; `area_per_sheet`/`price_per_sqm` added Fifth pass)*
 `id`, `sales_order_id → sales_orders` (cascade), `sku_id → skus`,
 `location_id → locations` (which location this line delivers out of), `unit`
 (copied from the SKU at insert time — never user-chosen, so there is no
 unit-conversion path to get wrong), `ordered_qty`, `unit_price`, `line_total`
-(**generated always as** `ordered_qty * unit_price`). Delivered/outstanding
-quantity is derived, never stored (see `sales_order_item_delivered` above).
+(**generated always as** `ordered_qty * unit_price`), `area_per_sheet`
+(nullable), `price_per_sqm` (nullable). Delivered/outstanding quantity is
+derived, never stored (see `sales_order_item_delivered` above).
 - Triggers `enforce_so_item_immutable` (UPDATE + DELETE): items are freely
   editable while the parent SO is `draft`; once confirmed they are permanently
   immutable, matching the ledger's append-only philosophy.
+- `area_per_sheet`/`price_per_sqm` are an optional per-m² pricing breakdown.
+  `unit_price` stays the money source of truth: `create_draft_sales_order`
+  derives it server-side (`price_per_sqm × area_per_sheet`) when both are
+  supplied, and ignores any client-computed `unit_price` in that case; when
+  either is absent, `unit_price` is taken as entered (the legacy flat-price
+  path). Used to display Price/m² and Area/sheet on a Deposit Invoice.
+
+### deposit_invoices  *(Fifth pass)*
+`id`, `invoice_number` (unique, auto `DI-YYYY-####`, same numbering shape as
+`so_number`/`po_number` via `deposit_invoice_seq` +
+`assign_deposit_invoice_number`), `sales_order_id → sales_orders` (restrict),
+`deposit_percentage`, `total_order_amount` (snapshot of the SO's line-total
+sum at generation time), `deposit_amount`/`remaining_balance` (**generated
+always as** `total_order_amount * deposit_percentage / 100` and its
+complement), `currency`, `status`
+(`pending_deposit`/`partially_paid`/`paid`/`void`), `created_by → profiles`,
+`created_at`, `updated_at`.
+- Only generatable once the SO is confirmed (`status not in ('draft',
+  'cancelled')`) — SO items are already immutable past draft, so the snapshot
+  total can't drift.
+- Partial unique index on `sales_order_id where status <> 'void'`: at most one
+  active deposit invoice per SO.
+- `status` is never set directly by the app — trigger
+  `recompute_deposit_invoice_status` derives it from the
+  `deposit_invoice_payments` ledger after every payment insert (see below).
+
+### deposit_invoice_payments  *(Fifth pass — append-only ledger)*
+`id`, `deposit_invoice_id → deposit_invoices` (restrict), `amount`,
+`paid_date`, `method`, `notes`, `recorded_by → profiles`, `created_at`. No
+UPDATE/DELETE path from the app — matches `stock_movements`' posture: a
+mistake gets a correcting entry, not an edit.
+- `amount_paid` for an invoice is always `SUM(amount)` over this table, never
+  a stored balance ("ledger, not totals").
+- Trigger `recompute_deposit_invoice_status` (AFTER INSERT) sums payments for
+  the invoice and sets `deposit_invoices.status`: `pending_deposit` if
+  paid = 0, `partially_paid` if `0 < paid < deposit_amount`, `paid` if
+  `paid >= deposit_amount`. A second trigger,
+  `mirror_deposit_invoice_status`, then mirrors that status onto
+  `sales_orders.payment_status`.
 
 ### payroll_runs  *(Fourth pass)*
 `id`, `period_start`, `period_end`, `pay_date`, `status`, `notes`,

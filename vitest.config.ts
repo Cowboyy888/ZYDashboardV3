@@ -7,6 +7,10 @@ export default defineConfig({
   resolve: {
     alias: {
       '@': fileURLToPath(new URL('./src', import.meta.url)),
+      // `server-only` throws when imported outside a React Server Component.
+      // Tests run in plain Node, so point it at a no-op stub — this lets the
+      // report builders (which are legitimately server-only) be unit-tested.
+      'server-only': fileURLToPath(new URL('./tests/stubs/server-only.ts', import.meta.url)),
     },
   },
   test: {

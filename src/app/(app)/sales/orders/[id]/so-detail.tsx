@@ -21,11 +21,25 @@ import {
   canDeliverAgainst,
   canCancel,
 } from '@/lib/domain/sales';
+import {
+  DEPOSIT_INVOICE_STATUS_LABELS,
+  SO_PAYMENT_STATUS_LABELS,
+  canGenerateDepositInvoice,
+  canRecordPayment,
+} from '@/lib/domain/deposit-invoice';
 import { formatDateTime, formatDDMMYYYY } from '@/lib/domain/datetime';
 import type { SalesOrderRow } from '@/lib/domain/sales-view';
-import type { SalesOrderRow as SoRow, StockMovementRow, CustomerRow } from '@/lib/db/types';
+import type {
+  SalesOrderRow as SoRow,
+  StockMovementRow,
+  CustomerRow,
+  DepositInvoiceRow,
+} from '@/lib/db/types';
 import { DeliverForm } from './deliver-form';
 import { SoPrint } from './so-print';
+import { GenerateDepositInvoiceDialog } from './generate-deposit-invoice-dialog';
+import { RecordPaymentDialog } from './record-payment-dialog';
+import { PrintDepositInvoiceButton } from './print-deposit-invoice-button';
 
 const STATUS_VARIANT = {
   draft: 'outline',
@@ -33,6 +47,13 @@ const STATUS_VARIANT = {
   partially_delivered: 'warning',
   delivered: 'success',
   cancelled: 'destructive',
+} as const;
+
+const DEPOSIT_STATUS_VARIANT = {
+  pending_deposit: 'warning',
+  partially_paid: 'secondary',
+  paid: 'success',
+  void: 'destructive',
 } as const;
 
 export function SoDetail({
@@ -45,6 +66,7 @@ export function SoDetail({
   today,
   canManage,
   canOverride,
+  depositInvoice,
 }: {
   row: SalesOrderRow;
   so: SoRow;
@@ -55,6 +77,7 @@ export function SoDetail({
   today: string;
   canManage: boolean;
   canOverride: boolean;
+  depositInvoice: DepositInvoiceRow | null;
 }) {
   const { t, locale } = useT();
   const router = useRouter();
@@ -71,6 +94,11 @@ export function SoDetail({
               <Badge variant={STATUS_VARIANT[row.status]}>
                 {SO_STATUS_LABELS[row.status][locale]}
               </Badge>
+              {so.payment_status !== 'none' && (
+                <Badge variant={DEPOSIT_STATUS_VARIANT[so.payment_status]}>
+                  {SO_PAYMENT_STATUS_LABELS[so.payment_status][locale]}
+                </Badge>
+              )}
               {row.isOverdue && <Badge variant="destructive">{t('sal.overdueBadge')}</Badge>}
             </CardTitle>
           </div>
@@ -78,6 +106,14 @@ export function SoDetail({
             <Button variant="outline" size="sm" onClick={() => window.print()}>
               {t('sal.print')}
             </Button>
+            {canManage && canGenerateDepositInvoice(so.status, !!depositInvoice) && (
+              <GenerateDepositInvoiceDialog
+                soId={so.id}
+                grandTotal={row.grandTotal}
+                currency={row.currency}
+                onGenerated={() => router.refresh()}
+              />
+            )}
             {canManage && so.status === 'draft' && (
               <ConfirmActionButton
                 action={confirmSalesOrder}
@@ -139,6 +175,53 @@ export function SoDetail({
           )}
         </CardContent>
       </Card>
+
+      {depositInvoice && (
+        <Card className="print:hidden">
+          <CardHeader className="flex flex-row items-start justify-between">
+            <CardTitle className="flex items-center gap-2 text-base">
+              {depositInvoice.invoice_number}
+              <Badge variant={DEPOSIT_STATUS_VARIANT[depositInvoice.status]}>
+                {DEPOSIT_INVOICE_STATUS_LABELS[depositInvoice.status][locale]}
+              </Badge>
+            </CardTitle>
+            <div className="flex gap-2">
+              <PrintDepositInvoiceButton invoice={depositInvoice} row={row} customer={customer} />
+              {canManage && canRecordPayment(depositInvoice.status) && (
+                <RecordPaymentDialog
+                  depositInvoiceId={depositInvoice.id}
+                  today={today}
+                  onRecorded={() => router.refresh()}
+                />
+              )}
+            </div>
+          </CardHeader>
+          <CardContent className="grid gap-3 text-sm sm:grid-cols-4">
+            <div>
+              <div className="text-muted-foreground">{t('sal.totalOrderAmount')}</div>
+              <div className="tabular-nums">
+                {depositInvoice.currency} {depositInvoice.total_order_amount.toFixed(2)}
+              </div>
+            </div>
+            <div>
+              <div className="text-muted-foreground">{t('sal.depositPercentage')}</div>
+              <div className="tabular-nums">{depositInvoice.deposit_percentage}%</div>
+            </div>
+            <div>
+              <div className="text-muted-foreground">{t('sal.depositAmount')}</div>
+              <div className="font-medium tabular-nums">
+                {depositInvoice.currency} {depositInvoice.deposit_amount.toFixed(2)}
+              </div>
+            </div>
+            <div>
+              <div className="text-muted-foreground">{t('sal.remainingBalance')}</div>
+              <div className="tabular-nums">
+                {depositInvoice.currency} {depositInvoice.remaining_balance.toFixed(2)}
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+      )}
 
       <Card className="print:hidden">
         <CardHeader>

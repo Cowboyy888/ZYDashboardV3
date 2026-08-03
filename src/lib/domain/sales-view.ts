@@ -32,6 +32,8 @@ export interface SoItemLike {
   ordered_qty: number;
   unit_price: number;
   line_total: number;
+  area_per_sheet: number | null;
+  price_per_sqm: number | null;
 }
 
 export interface DeliveredLike {
@@ -72,6 +74,8 @@ export interface SoItemRow {
   outstandingQty: number;
   unitPrice: number;
   lineTotal: number;
+  areaPerSheet: number | null;
+  pricePerSqm: number | null;
 }
 
 export interface SalesOrderRow {
@@ -87,6 +91,7 @@ export interface SalesOrderRow {
   orderedTotal: number;
   deliveredTotal: number;
   outstandingTotal: number;
+  grandTotal: number;
   isOverdue: boolean;
   isDueThisWeek: boolean;
 }
@@ -144,12 +149,15 @@ export function buildSalesOrderRows(
         outstandingQty: computeOutstanding(it.ordered_qty, deliveredQty),
         unitPrice: it.unit_price,
         lineTotal: it.line_total,
+        areaPerSheet: it.area_per_sheet,
+        pricePerSqm: it.price_per_sqm,
       };
     });
 
     const orderedTotal = round3(itemRows.reduce((s, r) => s + r.orderedQty, 0));
     const deliveredTotal = round3(itemRows.reduce((s, r) => s + r.deliveredQty, 0));
     const outstandingTotal = round3(itemRows.reduce((s, r) => s + r.outstandingQty, 0));
+    const grandTotal = itemRows.reduce((s, r) => s + r.lineTotal, 0);
 
     return {
       soId: so.id,
@@ -164,6 +172,7 @@ export function buildSalesOrderRows(
       orderedTotal,
       deliveredTotal,
       outstandingTotal,
+      grandTotal,
       isOverdue:
         (so.status === 'confirmed' || so.status === 'partially_delivered') &&
         isOverdue(so.expected_delivery_date, today),

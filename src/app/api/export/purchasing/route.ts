@@ -25,9 +25,24 @@ const COLUMNS: XlsxColumn<PurchaseOrderRow>[] = [
 export async function GET() {
   await requirePermission('purchasing:view');
 
+  const today = businessDate();
   const [pos, suppliers] = await Promise.all([getPurchaseOrders(), getSuppliers(true)]);
-  const rows = buildPurchaseOrderRows(pos, suppliers, businessDate());
+  const rows = buildPurchaseOrderRows(pos, suppliers, today);
 
-  const buffer = await buildXlsxBuffer('Purchase Orders', COLUMNS, rows);
-  return xlsxResponse(buffer, `purchase-orders-${businessDate()}.xlsx`);
+  const open = rows.filter((r) => r.status !== 'cancelled').length;
+
+  const buffer = await buildXlsxBuffer('Purchase Orders', COLUMNS, rows, {
+    title: 'PURCHASE ORDERS REPORT · 采购订单报表',
+    metaLeft: [{ label: 'REPORT:', value: 'Purchase Orders 采购订单' }],
+    metaRight: [
+      { label: 'Generated:', value: formatDDMMYYYY(today) },
+      { label: 'Orders:', value: String(rows.length) },
+      { label: 'Open:', value: String(open) },
+    ],
+    totals: [
+      { label: 'Total orders 订单总数:', value: rows.length },
+      { label: 'Open orders 未完成:', value: open, highlight: true },
+    ],
+  });
+  return xlsxResponse(buffer, `purchase-orders-${today}.xlsx`);
 }

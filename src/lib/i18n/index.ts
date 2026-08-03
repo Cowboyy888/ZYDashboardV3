@@ -394,6 +394,7 @@ export const dictionary = {
   'ot.kpiTier1': { en: 'Tier 1', zh: '第一时段' },
   'ot.kpiTier2': { en: 'Tier 2', zh: '第二时段' },
   'ot.kpiTotal': { en: 'Overtime cost', zh: '加班费合计' },
+  'ot.downloadExcel': { en: 'Download Excel', zh: '下载 Excel' },
   'ot.rates': { en: 'Overtime rates', zh: '加班费率' },
   'ot.tier1Label': { en: 'Tier 1 window', zh: '第一时段' },
   'ot.tier1Rate': { en: 'Tier 1 rate ($/h)', zh: '第一时段费率($/小时)' },
@@ -574,6 +575,51 @@ export const dictionary = {
   'sal.customers': { en: 'Customers', zh: '客户' },
   'sal.orders': { en: 'Sales Orders', zh: '销售订单' },
   'sal.inquiries': { en: 'Inquiries', zh: '询价' },
+  'sal.quotations': { en: 'Quotations', zh: '报价单' },
+
+  // Quotations / deposit + balance invoices
+  'quo.title': { en: 'Quotations & Invoices', zh: '报价单与发票' },
+  'quo.desc': {
+    en: 'Create a quotation, then generate the Quotation, Deposit Invoice and Balance Invoice PDFs.',
+    zh: '创建报价单，然后生成报价单、订金发票与尾款发票 PDF。',
+  },
+  'quo.new': { en: 'New quotation', zh: '新增报价单' },
+  'quo.edit': { en: 'Edit quotation', zh: '编辑报价单' },
+  'quo.none': { en: 'No quotations yet.', zh: '暂无报价单。' },
+  'quo.customer': { en: 'Customer', zh: '客户' },
+  'quo.linkCustomer': { en: 'Link to customer record', zh: '关联客户档案' },
+  'quo.contact': { en: 'Contact / Tel', zh: '联系电话' },
+  'quo.projectSite': { en: 'Project / Site', zh: '项目 / 工地' },
+  'quo.date': { en: 'Date', zh: '日期' },
+  'quo.validDays': { en: 'Valid (days)', zh: '有效期（天）' },
+  'quo.validUntil': { en: 'Valid until', zh: '有效期至' },
+  'quo.depositPct': { en: 'Deposit %', zh: '订金比例 %' },
+  'quo.pricingBasis': { en: 'Pricing basis', zh: '计价方式' },
+  'quo.lineItems': { en: 'Line items', zh: '明细' },
+  'quo.addLine': { en: 'Add line', zh: '新增明细' },
+  'quo.lines': { en: 'lines', zh: '条明细' },
+  'quo.description': { en: 'Product description', zh: '产品描述' },
+  'quo.wireDia': { en: 'Wire dia.', zh: '直径' },
+  'quo.steelGrade': { en: 'Steel grade', zh: '钢材等级' },
+  'quo.unitPrice': { en: 'Unit price', zh: '单价' },
+  'quo.quantity': { en: 'Quantity', zh: '数量' },
+  'quo.amount': { en: 'Amount', zh: '金额' },
+  'quo.subtotal': { en: 'Contract subtotal', zh: '合同小计' },
+  'quo.deposit': { en: 'Deposit', zh: '订金' },
+  'quo.balance': { en: 'Balance', zh: '尾款' },
+  'quo.documents': { en: 'Documents', zh: '单据' },
+  'quo.generatePdf': { en: 'Generate PDF', zh: '生成 PDF' },
+  'quo.docQuotation': { en: 'Quotation', zh: '报价单' },
+  'quo.docDeposit': { en: 'Deposit', zh: '订金发票' },
+  'quo.docBalance': { en: 'Balance', zh: '尾款发票' },
+  'quo.paid': { en: 'paid', zh: '已付' },
+  'quo.markDepositPaid': { en: 'Deposit paid', zh: '订金已付' },
+  'quo.markBalancePaid': { en: 'Balance paid', zh: '尾款已付' },
+  'quo.deleteTitle': { en: 'Delete this quotation?', zh: '删除该报价单？' },
+  'quo.deleteBody': {
+    en: 'This permanently removes the quotation and its line items for',
+    zh: '此操作将永久删除该报价单及其明细：',
+  },
 
   // Customer price inquiries (quotation tracking)
   'inq.desc': {
@@ -725,6 +771,27 @@ export const dictionary = {
   'sal.noDeliveries': { en: 'No deliveries recorded yet.', zh: '暂无发货记录。' },
   'sal.deliveredBy': { en: 'Delivered by', zh: '发货人' },
 
+  // --- Sales order line items: optional per-m² pricing breakdown -----------------
+  'sal.areaPerSheet': { en: 'Area/sheet (m²)', zh: '单张面积 (m²)' },
+  'sal.pricePerSqm': { en: 'Price/m²', zh: '单价 ($/m²)' },
+  'sal.pricePerSqmHint': {
+    en: 'Unit price is computed as Price/m² × Area/sheet.',
+    zh: '单价将按 单价($/m²) × 单张面积 自动计算。',
+  },
+
+  // --- Deposit invoices ------------------------------------------------------------
+  'sal.generateDepositInvoice': { en: 'Generate Deposit Invoice', zh: '生成定金发票' },
+  'sal.depositPercentage': { en: 'Deposit percentage', zh: '定金比例' },
+  'sal.totalOrderAmount': { en: 'Total order amount', zh: '订单总额' },
+  'sal.depositAmount': { en: 'Deposit amount', zh: '定金金额' },
+  'sal.remainingBalance': { en: 'Remaining balance', zh: '尾款余额' },
+  'sal.recordPayment': { en: 'Record payment', zh: '记录付款' },
+  'sal.paymentAmount': { en: 'Amount', zh: '金额' },
+  'sal.paymentDate': { en: 'Payment date', zh: '付款日期' },
+  'sal.paymentMethod': { en: 'Method', zh: '付款方式' },
+  'sal.paymentMethodPlaceholder': { en: 'e.g. Bank transfer, Cash', zh: '例如：银行转账、现金' },
+  'sal.printInvoice': { en: 'Print invoice', zh: '打印发票' },
+
   // --- Payroll (Fourth pass) ----------------------------------------------------
   'pay.title': { en: 'Payroll', zh: '工资' },
   'pay.desc': {
@@ -804,6 +871,17 @@ export function tf(locale: Locale, key: MessageKey, vars: Record<string, string 
  * unknown/interpolated phrases fall back to the original text.
  */
 const PHRASES: Record<string, string> = {
+  // Quotations
+  'Quotation created': '已创建报价单',
+  'Quotation updated': '已更新报价单',
+  'Quotation deleted': '已删除报价单',
+  'Document issued': '已生成单据',
+  'Deposit marked paid': '订金已标记为已付',
+  'Balance marked paid': '尾款已标记为已付',
+  'Add at least one line item': '请至少添加一条明细',
+  'Missing quotation': '缺少报价单',
+  'Invalid document request': '无效的单据请求',
+  'Invalid payment request': '无效的付款请求',
   // Overtime
   'Overtime recorded': '已录入加班',
   'Overtime updated': '已更新加班',

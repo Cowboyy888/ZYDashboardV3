@@ -109,12 +109,15 @@ describe('buildInquiryReportHtml', () => {
       rows: [toReportRow(inquiry(), resolvers)],
     });
     expect(html.startsWith('<!doctype html>')).toBe(true);
-    expect(html).toContain('ZY Steels');
+    // Letterhead matches the printed invoice: "ZY STEEL" over 中粤铁网.
+    expect(html).toContain('ZY STEEL');
     expect(html).toContain('中粤铁网');
+    expect(html).toContain('Steel Mesh &amp; Wire Drawing Manufacturer');
     expect(html).toContain('CUSTOMER PRICE INQUIRY REPORT');
     expect(html).toContain('print-color-adjust: exact');
     expect(html).toContain('Galleria Tile'); // a data row
     expect(html).toContain('21/07/2026'); // generated date
+    expect(html).toContain('Thank you for your business'); // red footer strip
   });
 
   it('escapes HTML-special characters in data', () => {
@@ -133,6 +136,6 @@ describe('buildInquiryReportHtml', () => {
       summary: summarizeInquiries([]),
       rows: [],
     });
-    expect(html).toContain('No inquiries');
+    expect(html).toContain('No records for this report');
   });
 });

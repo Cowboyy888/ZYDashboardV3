@@ -1,57 +1,34 @@
 import 'server-only';
-import ExcelJS from 'exceljs';
+import { buildBrandedXlsx, type BrandedColumn, type BrandedReportSpec } from './branded-xlsx';
 
-/** Brand red (matches `--primary: 354 74% 45%` in globals.css) as an ARGB hex. */
-const BRAND_RED = 'FFC81E2F';
+export type { BrandedColumn, BrandedReportSpec, MetaPair, TotalRow } from './branded-xlsx';
+export { buildBrandedXlsx, USD_FMT, NUM_FMT } from './branded-xlsx';
 
-export interface XlsxColumn<T> {
-  header: string;
-  width?: number;
-  numFmt?: string;
-  value: (row: T) => string | number | Date | null;
-}
+/** Column definition for a generated report (alias kept for existing callers). */
+export type XlsxColumn<T> = BrandedColumn<T>;
 
 /**
- * Build a single-sheet .xlsx workbook buffer from typed rows — used by the
- * `/api/export/*` route handlers backing each module's "Export to Excel"
- * button. Header row gets the brand-red fill so exported reports read as
- * clearly ZY Steel's, matching the printed sales-order letterhead.
+ * Build a single-sheet .xlsx workbook buffer from typed rows.
+ *
+ * Thin wrapper over the branded template (see branded-xlsx.ts) so every export
+ * — including older callers that only pass a sheet name — renders with the ZY
+ * Steel letterhead, red title bar and footer used by the printed invoice.
+ * Prefer calling `buildBrandedXlsx` directly when the report has a proper
+ * title, meta block, or totals to show.
  */
 export async function buildXlsxBuffer<T>(
   sheetName: string,
   columns: XlsxColumn<T>[],
   rows: T[],
+  extras: Partial<Omit<BrandedReportSpec<T>, 'sheetName' | 'columns' | 'rows'>> = {},
 ): Promise<Buffer> {
-  const workbook = new ExcelJS.Workbook();
-  workbook.creator = 'Zysteel Operations';
-  workbook.created = new Date();
-
-  // Excel sheet names: no *?:\/[] and a 31-char cap — strip/truncate rather
-  // than let a caller-supplied date-formatted title (e.g. "16/07/2026") crash
-  // the whole export.
-  const safeSheetName = sheetName.replace(/[*?:\\/[\]]/g, '-').slice(0, 31);
-  const sheet = workbook.addWorksheet(safeSheetName, {
-    views: [{ state: 'frozen', ySplit: 1 }],
+  return buildBrandedXlsx({
+    sheetName,
+    title: extras.title ?? `${sheetName.toUpperCase()} · 报表`,
+    columns,
+    rows,
+    ...extras,
   });
-  sheet.columns = columns.map((c) => ({ header: c.header, width: c.width ?? 18 }));
-
-  const headerRow = sheet.getRow(1);
-  headerRow.font = { bold: true, color: { argb: 'FFFFFFFF' } };
-  headerRow.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: BRAND_RED } };
-  headerRow.alignment = { vertical: 'middle' };
-
-  for (const row of rows) {
-    const values = columns.map((c) => c.value(row));
-    const excelRow = sheet.addRow(values);
-    columns.forEach((c, i) => {
-      if (c.numFmt) excelRow.getCell(i + 1).numFmt = c.numFmt;
-    });
-  }
-
-  sheet.autoFilter = { from: { row: 1, column: 1 }, to: { row: 1, column: columns.length } };
-
-  const arrayBuffer = await workbook.xlsx.writeBuffer();
-  return Buffer.from(arrayBuffer);
 }
 
 /** Wrap a generated buffer as a downloadable .xlsx HTTP response. */

@@ -5,6 +5,8 @@ import type {
   AttendanceRow,
   AuditLogRow,
   CustomerRow,
+  DepositInvoicePaymentRow,
+  DepositInvoiceRow,
   EmployeeRow,
   EmployeePrivateRow,
   InquiryCustomerTypeRow,
@@ -13,6 +15,8 @@ import type {
   LocationRow,
   OvertimeEntryRow,
   OvertimeSettingsRow,
+  QuotationItemRow,
+  QuotationRow,
   PayrollItemDeductionsRow,
   PayrollItemLineRow,
   PayrollItemRow,
@@ -502,6 +506,54 @@ export async function getSalesOrderDeliveries(itemIds: string[]): Promise<StockM
   }
 }
 
+/** The one active (non-void) deposit invoice for a SO, if any — enforced unique by the DB. */
+export async function getDepositInvoiceForSo(
+  salesOrderId: string,
+): Promise<DepositInvoiceRow | null> {
+  try {
+    const supabase = await client();
+    const { data } = await supabase
+      .from('deposit_invoices')
+      .select('*')
+      .eq('sales_order_id', salesOrderId)
+      .neq('status', 'void')
+      .maybeSingle();
+    return (data as DepositInvoiceRow) ?? null;
+  } catch (e) {
+    console.error('[queries] getDepositInvoiceForSo', e);
+    return null;
+  }
+}
+
+export async function getDepositInvoice(id: string): Promise<DepositInvoiceRow | null> {
+  try {
+    const supabase = await client();
+    const { data } = await supabase.from('deposit_invoices').select('*').eq('id', id).maybeSingle();
+    return (data as DepositInvoiceRow) ?? null;
+  } catch (e) {
+    console.error('[queries] getDepositInvoice', e);
+    return null;
+  }
+}
+
+/** Payment ledger for one deposit invoice, newest first. */
+export async function getDepositInvoicePayments(
+  depositInvoiceId: string,
+): Promise<DepositInvoicePaymentRow[]> {
+  try {
+    const supabase = await client();
+    const { data } = await supabase
+      .from('deposit_invoice_payments')
+      .select('*')
+      .eq('deposit_invoice_id', depositInvoiceId)
+      .order('paid_date', { ascending: false });
+    return (data as DepositInvoicePaymentRow[]) ?? [];
+  } catch (e) {
+    console.error('[queries] getDepositInvoicePayments', e);
+    return [];
+  }
+}
+
 // --- Payroll (Fourth pass) ------------------------------------------------------
 
 /** Count-only (no row data transferred) — for the dashboard's "Payroll approvals" tile. */
@@ -610,6 +662,48 @@ export async function getPayrollRunLines(itemIds: string[]): Promise<PayrollItem
     return (data as PayrollItemLineRow[]) ?? [];
   } catch (e) {
     console.error('[queries] getPayrollRunLines', e);
+    return [];
+  }
+}
+
+// --- Quotations ----------------------------------------------------------------
+
+export async function getQuotations(): Promise<QuotationRow[]> {
+  try {
+    const supabase = await client();
+    const { data } = await supabase
+      .from('quotations')
+      .select('*')
+      .order('quotation_date', { ascending: false })
+      .order('created_at', { ascending: false });
+    return (data as QuotationRow[]) ?? [];
+  } catch (e) {
+    console.error('[queries] getQuotations', e);
+    return [];
+  }
+}
+
+export async function getQuotation(id: string): Promise<QuotationRow | null> {
+  try {
+    const supabase = await client();
+    const { data } = await supabase.from('quotations').select('*').eq('id', id).maybeSingle();
+    return (data as QuotationRow) ?? null;
+  } catch (e) {
+    console.error('[queries] getQuotation', e);
+    return null;
+  }
+}
+
+/** Line items for one quotation, or for many (when listing). */
+export async function getQuotationItems(quotationId?: string): Promise<QuotationItemRow[]> {
+  try {
+    const supabase = await client();
+    let q = supabase.from('quotation_items').select('*');
+    if (quotationId) q = q.eq('quotation_id', quotationId);
+    const { data } = await q.order('line_no');
+    return (data as QuotationItemRow[]) ?? [];
+  } catch (e) {
+    console.error('[queries] getQuotationItems', e);
     return [];
   }
 }

@@ -1,0 +1,686 @@
+'use client';
+import { useActionState, useEffect, useMemo, useState } from 'react';
+import { FileText, Loader2, Plus, Printer, Receipt, Trash2, Wallet, X } from 'lucide-react';
+import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
+import { Textarea } from '@/components/ui/textarea';
+import { Badge } from '@/components/ui/badge';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+} from '@/components/ui/dialog';
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from '@/components/ui/table';
+import { ActionForm } from '@/components/forms/action-form';
+import { SubmitButton } from '@/components/forms/submit-button';
+import { useT } from '@/components/i18n-provider';
+import {
+  createQuotation,
+  updateQuotation,
+  deleteQuotation,
+  issueDocument,
+  markPaid,
+} from '@/lib/actions/quotations';
+import { quotationTotals, lineAmount, validUntil, type DocumentKind } from '@/lib/domain/quotation';
+import { buildQuotationDocHtml, type DocLine } from '@/lib/reports/quotation-doc-html';
+import { formatDDMMYYYY, businessDate } from '@/lib/domain/datetime';
+import type { ActionState } from '@/lib/actions/types';
+import type { QuotationRow, QuotationItemRow } from '@/lib/db/types';
+import type { MessageKey } from '@/lib/i18n';
+
+type Opt = { id: string; name: string };
+
+const selectCls =
+  'flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring';
+
+const usd = (n: number) => `$${n.toFixed(2)}`;
+
+interface DraftLine {
+  description: string;
+  wireDia: string;
+  steelGrade: string;
+  unit: string;
+  unitPrice: string;
+  quantity: string;
+}
+const BLANK_LINE: DraftLine = {
+  description: '',
+  wireDia: '',
+  steelGrade: '',
+  unit: 'm²',
+  unitPrice: '',
+  quantity: '',
+};
+
+export function QuotationsClient({
+  quotations,
+  items,
+  customers,
+  canManage,
+}: {
+  quotations: QuotationRow[];
+  items: QuotationItemRow[];
+  customers: Opt[];
+  canManage: boolean;
+}) {
+  const { t, m } = useT();
+  const [editing, setEditing] = useState<QuotationRow | null>(null);
+  const [showCreate, setShowCreate] = useState(false);
+  const [deleting, setDeleting] = useState<QuotationRow | null>(null);
+
+  const itemsByQuotation = useMemo(() => {
+    const map = new Map<string, QuotationItemRow[]>();
+    for (const it of items) {
+      if (!map.has(it.quotation_id)) map.set(it.quotation_id, []);
+      map.get(it.quotation_id)!.push(it);
+    }
+    return map;
+  }, [items]);
+
+  /** Open a branded document in a new window and trigger Save-as-PDF. */
+  function printDocument(q: QuotationRow, kind: DocumentKind) {
+    const lines: DocLine[] = (itemsByQuotation.get(q.id) ?? []).map((it) => ({
+      description: it.description,
+      wireDia: it.wire_dia,
+      steelGrade: it.steel_grade,
+      unit: it.unit,
+      unitPrice: Number(it.unit_price),
+      quantity: Number(it.quantity),
+    }));
+    const docNo =
+      kind === 'quotation' ? q.quotation_no : kind === 'deposit' ? q.deposit_no : q.balance_no;
+    const issuedIso =
+      (kind === 'quotation'
+        ? q.quotation_issued_on
+        : kind === 'deposit'
+          ? q.deposit_issued_on
+          : q.balance_issued_on) ?? businessDate();
+
+    const html = buildQuotationDocHtml({
+      kind,
+      docNo: docNo ?? '',
+      issuedOn: formatDDMMYYYY(issuedIso),
+      issuedOnIso: issuedIso,
+      customerName: q.customer_name,
+      contact: q.contact,
+      projectSite: q.project_site,
+      currency: q.currency,
+      validDays: q.valid_days,
+      depositPct: Number(q.deposit_pct),
+      lines,
+      refQuotationNo: q.quotation_no,
+      refDepositNo: q.deposit_no,
+      pricingBasis: q.pricing_basis,
+    });
+
+    const w = window.open('', '_blank', 'width=900,height=1000');
+    if (!w) return;
+    w.document.open();
+    w.document.write(html);
+    w.document.close();
+    w.focus();
+    setTimeout(() => {
+      try {
+        w.print();
+      } catch {
+        /* the user can still print manually */
+      }
+    }, 500);
+  }
+
+  return (
+    <div className="space-y-4">
+      {canManage && (
+        <div className="flex justify-end">
+          <Button
+            variant={showCreate ? 'secondary' : 'default'}
+            onClick={() => setShowCreate((s) => !s)}
+          >
+            {showCreate ? <X className="h-4 w-4" /> : <Plus className="h-4 w-4" />}
+            {showCreate ? t('common.close') : t('quo.new')}
+          </Button>
+        </div>
+      )}
+
+      {canManage && showCreate && (
+        <QuotationForm
+          action={createQuotation}
+          customers={customers}
+          onDone={() => setShowCreate(false)}
+        />
+      )}
+
+      {canManage && editing && (
+        <QuotationForm
+          action={updateQuotation}
+          customers={customers}
+          quotation={editing}
+          lines={itemsByQuotation.get(editing.id) ?? []}
+          onDone={() => setEditing(null)}
+        />
+      )}
+
+      <Card>
+        <CardContent className="overflow-x-auto p-0">
+          <Table>
+            <TableHeader>
+              <TableRow>
+                <TableHead>{t('quo.customer')}</TableHead>
+                <TableHead>{t('quo.date')}</TableHead>
+                <TableHead className="text-right">{t('quo.subtotal')}</TableHead>
+                <TableHead className="text-right">{t('quo.deposit')}</TableHead>
+                <TableHead className="text-right">{t('quo.balance')}</TableHead>
+                <TableHead>{t('quo.documents')}</TableHead>
+                <TableHead className="text-right">{t('quo.generatePdf')}</TableHead>
+              </TableRow>
+            </TableHeader>
+            <TableBody>
+              {quotations.map((q) => {
+                const lines = itemsByQuotation.get(q.id) ?? [];
+                const totals = quotationTotals(
+                  lines.map((l) => ({
+                    unitPrice: Number(l.unit_price),
+                    quantity: Number(l.quantity),
+                  })),
+                  Number(q.deposit_pct),
+                );
+                return (
+                  <TableRow key={q.id}>
+                    <TableCell>
+                      <div className="font-medium">{q.customer_name}</div>
+                      {q.project_site && (
+                        <div className="text-xs text-muted-foreground">{q.project_site}</div>
+                      )}
+                      <div className="text-xs text-muted-foreground">
+                        {lines.length} {t('quo.lines')}
+                      </div>
+                    </TableCell>
+                    <TableCell className="whitespace-nowrap text-sm">
+                      {formatDDMMYYYY(q.quotation_date)}
+                      <div className="text-xs text-muted-foreground">
+                        {t('quo.validUntil')}{' '}
+                        {formatDDMMYYYY(validUntil(q.quotation_date, q.valid_days))}
+                      </div>
+                    </TableCell>
+                    <TableCell className="text-right font-medium tabular-nums">
+                      {usd(totals.subtotal)}
+                    </TableCell>
+                    <TableCell className="text-right tabular-nums">
+                      {usd(totals.depositDue)}
+                      <div className="text-xs text-muted-foreground">
+                        {totals.depositPercent}%{q.deposit_paid_on ? ` · ${t('quo.paid')}` : ''}
+                      </div>
+                    </TableCell>
+                    <TableCell className="text-right tabular-nums">
+                      {usd(totals.balanceDue)}
+                      <div className="text-xs text-muted-foreground">
+                        {totals.balancePercent}%{q.balance_paid_on ? ` · ${t('quo.paid')}` : ''}
+                      </div>
+                    </TableCell>
+                    <TableCell className="space-y-0.5 text-xs">
+                      <DocBadge no={q.quotation_no} label="Q" />
+                      <DocBadge no={q.deposit_no} label="DP" />
+                      <DocBadge no={q.balance_no} label="BL" />
+                    </TableCell>
+                    <TableCell className="text-right">
+                      <div className="flex flex-wrap justify-end gap-1">
+                        <DocButton
+                          icon={<FileText className="h-4 w-4" />}
+                          label={t('quo.docQuotation')}
+                          quotationId={q.id}
+                          kind="quotation"
+                          canManage={canManage}
+                          onPrint={() => printDocument(q, 'quotation')}
+                        />
+                        <DocButton
+                          icon={<Receipt className="h-4 w-4" />}
+                          label={t('quo.docDeposit')}
+                          quotationId={q.id}
+                          kind="deposit"
+                          canManage={canManage}
+                          onPrint={() => printDocument(q, 'deposit')}
+                        />
+                        <DocButton
+                          icon={<Wallet className="h-4 w-4" />}
+                          label={t('quo.docBalance')}
+                          quotationId={q.id}
+                          kind="balance"
+                          canManage={canManage}
+                          onPrint={() => printDocument(q, 'balance')}
+                        />
+                        {canManage && (
+                          <>
+                            <Button variant="ghost" size="sm" onClick={() => setEditing(q)}>
+                              {t('common.edit')}
+                            </Button>
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              className="text-destructive hover:text-destructive"
+                              onClick={() => setDeleting(q)}
+                            >
+                              <Trash2 className="h-4 w-4" />
+                            </Button>
+                          </>
+                        )}
+                      </div>
+                      {canManage && (
+                        <div className="mt-1 flex justify-end gap-1">
+                          {!q.deposit_paid_on && (
+                            <ActionForm action={markPaid} className="space-y-0">
+                              <input type="hidden" name="id" value={q.id} />
+                              <input type="hidden" name="which" value="deposit" />
+                              <SubmitButton variant="ghost" size="sm">
+                                {t('quo.markDepositPaid')}
+                              </SubmitButton>
+                            </ActionForm>
+                          )}
+                          {!q.balance_paid_on && (
+                            <ActionForm action={markPaid} className="space-y-0">
+                              <input type="hidden" name="id" value={q.id} />
+                              <input type="hidden" name="which" value="balance" />
+                              <SubmitButton variant="ghost" size="sm">
+                                {t('quo.markBalancePaid')}
+                              </SubmitButton>
+                            </ActionForm>
+                          )}
+                        </div>
+                      )}
+                    </TableCell>
+                  </TableRow>
+                );
+              })}
+              {quotations.length === 0 && (
+                <TableRow>
+                  <TableCell colSpan={7} className="text-center text-muted-foreground">
+                    {t('quo.none')}
+                  </TableCell>
+                </TableRow>
+              )}
+            </TableBody>
+          </Table>
+        </CardContent>
+      </Card>
+
+      <DeleteDialog row={deleting} onDone={() => setDeleting(null)} m={m} t={t} />
+    </div>
+  );
+}
+
+function DocBadge({ no, label }: { no: string | null; label: string }) {
+  if (!no) return null;
+  return (
+    <div>
+      <Badge variant="outline" className="font-mono text-[10px]">
+        {label} · {no}
+      </Badge>
+    </div>
+  );
+}
+
+/**
+ * Issues the document number (once) and then opens the print view. Viewers who
+ * cannot manage sales still get the PDF, just without assigning a number.
+ */
+function DocButton({
+  icon,
+  label,
+  quotationId,
+  kind,
+  canManage,
+  onPrint,
+}: {
+  icon: React.ReactNode;
+  label: string;
+  quotationId: string;
+  kind: DocumentKind;
+  canManage: boolean;
+  onPrint: () => void;
+}) {
+  const [state, formAction, pending] = useActionState<ActionState, FormData>(issueDocument, null);
+
+  useEffect(() => {
+    if (state?.ok) onPrint();
+  }, [state]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  if (!canManage) {
+    return (
+      <Button variant="outline" size="sm" onClick={onPrint}>
+        {icon} {label}
+      </Button>
+    );
+  }
+  return (
+    <form action={formAction} className="inline">
+      <input type="hidden" name="quotationId" value={quotationId} />
+      <input type="hidden" name="kind" value={kind} />
+      <Button type="submit" variant="outline" size="sm" disabled={pending}>
+        {pending ? <Loader2 className="h-4 w-4 animate-spin" /> : icon}
+        {label}
+        <Printer className="h-3.5 w-3.5 opacity-60" />
+      </Button>
+    </form>
+  );
+}
+
+function DeleteDialog({
+  row,
+  onDone,
+  m,
+  t,
+}: {
+  row: QuotationRow | null;
+  onDone: () => void;
+  m: (s: string | undefined | null) => string;
+  t: (k: MessageKey) => string;
+}) {
+  const [state, formAction, pending] = useActionState<ActionState, FormData>(deleteQuotation, null);
+  useEffect(() => {
+    if (state?.ok) onDone();
+  }, [state]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  return (
+    <Dialog open={!!row} onOpenChange={(o) => !o && onDone()}>
+      <DialogContent className="text-left">
+        <DialogHeader>
+          <DialogTitle>{t('quo.deleteTitle')}</DialogTitle>
+          <DialogDescription>
+            {t('quo.deleteBody')} {row?.customer_name}
+          </DialogDescription>
+        </DialogHeader>
+        {state?.error && (
+          <p className="rounded-md bg-destructive/10 px-3 py-2 text-sm text-destructive">
+            {m(state.error)}
+          </p>
+        )}
+        <div className="flex justify-end gap-2">
+          <Button type="button" variant="ghost" onClick={onDone}>
+            {t('common.cancel')}
+          </Button>
+          <form action={formAction}>
+            <input type="hidden" name="id" value={row?.id ?? ''} />
+            <Button type="submit" variant="destructive" disabled={pending}>
+              {pending && <Loader2 className="h-4 w-4 animate-spin" />}
+              {t('common.delete')}
+            </Button>
+          </form>
+        </div>
+      </DialogContent>
+    </Dialog>
+  );
+}
+
+/** Create / edit form with live subtotal, deposit and balance. */
+function QuotationForm({
+  action,
+  customers,
+  quotation,
+  lines: existing,
+  onDone,
+}: {
+  action: (s: ActionState, f: FormData) => Promise<ActionState>;
+  customers: Opt[];
+  quotation?: QuotationRow;
+  lines?: QuotationItemRow[];
+  onDone: () => void;
+}) {
+  const { t, m } = useT();
+  const [state, formAction, pending] = useActionState<ActionState, FormData>(action, null);
+
+  const [depositPct, setDepositPct] = useState(
+    String(Math.round(Number(quotation?.deposit_pct ?? 0.3) * 100)),
+  );
+  const [lines, setLines] = useState<DraftLine[]>(
+    existing && existing.length > 0
+      ? existing.map((l) => ({
+          description: l.description,
+          wireDia: l.wire_dia ?? '',
+          steelGrade: l.steel_grade ?? '',
+          unit: l.unit,
+          unitPrice: String(l.unit_price),
+          quantity: String(l.quantity),
+        }))
+      : [{ ...BLANK_LINE }],
+  );
+
+  useEffect(() => {
+    if (state?.ok) onDone();
+  }, [state]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  const totals = quotationTotals(
+    lines.map((l) => ({ unitPrice: parseFloat(l.unitPrice), quantity: parseFloat(l.quantity) })),
+    parseFloat(depositPct) || 0,
+  );
+
+  const setLine = (i: number, patch: Partial<DraftLine>) =>
+    setLines((ls) => ls.map((l, n) => (n === i ? { ...l, ...patch } : l)));
+
+  return (
+    <Card>
+      <CardHeader>
+        <CardTitle className="text-base">{quotation ? t('quo.edit') : t('quo.new')}</CardTitle>
+      </CardHeader>
+      <CardContent>
+        <form action={formAction} className="space-y-4">
+          {quotation && <input type="hidden" name="id" value={quotation.id} />}
+
+          <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
+            <div className="space-y-1.5">
+              <Label htmlFor="q-customer">
+                {t('quo.customer')} <span className="text-destructive">*</span>
+              </Label>
+              <Input
+                id="q-customer"
+                name="customerName"
+                defaultValue={quotation?.customer_name ?? ''}
+                className={state?.fieldErrors?.customerName ? 'border-destructive' : ''}
+              />
+              {state?.fieldErrors?.customerName && (
+                <p className="text-xs text-destructive">{m(state.fieldErrors.customerName)}</p>
+              )}
+            </div>
+            <div className="space-y-1.5">
+              <Label htmlFor="q-customer-id">{t('quo.linkCustomer')}</Label>
+              <select
+                id="q-customer-id"
+                name="customerId"
+                className={selectCls}
+                defaultValue={quotation?.customer_id ?? ''}
+              >
+                <option value="">{t('common.select')}</option>
+                {customers.map((c) => (
+                  <option key={c.id} value={c.id}>
+                    {c.name}
+                  </option>
+                ))}
+              </select>
+            </div>
+            <div className="space-y-1.5">
+              <Label htmlFor="q-contact">{t('quo.contact')}</Label>
+              <Input id="q-contact" name="contact" defaultValue={quotation?.contact ?? ''} />
+            </div>
+            <div className="space-y-1.5">
+              <Label htmlFor="q-site">{t('quo.projectSite')}</Label>
+              <Input id="q-site" name="projectSite" defaultValue={quotation?.project_site ?? ''} />
+            </div>
+            <div className="space-y-1.5">
+              <Label htmlFor="q-date">{t('quo.date')}</Label>
+              <Input
+                id="q-date"
+                name="quotationDate"
+                type="date"
+                defaultValue={quotation?.quotation_date ?? businessDate()}
+              />
+            </div>
+            <div className="space-y-1.5">
+              <Label htmlFor="q-valid">{t('quo.validDays')}</Label>
+              <Input
+                id="q-valid"
+                name="validDays"
+                type="number"
+                min="0"
+                defaultValue={quotation?.valid_days ?? 15}
+              />
+            </div>
+            <div className="space-y-1.5">
+              <Label htmlFor="q-deposit">{t('quo.depositPct')}</Label>
+              <Input
+                id="q-deposit"
+                name="depositPct"
+                type="number"
+                min="0"
+                max="100"
+                step="1"
+                value={depositPct}
+                onChange={(e) => setDepositPct(e.target.value)}
+              />
+            </div>
+            <div className="space-y-1.5">
+              <Label htmlFor="q-basis">{t('quo.pricingBasis')}</Label>
+              <Input
+                id="q-basis"
+                name="pricingBasis"
+                placeholder="Rate (USD per m²)"
+                defaultValue={quotation?.pricing_basis ?? ''}
+              />
+            </div>
+          </div>
+
+          {/* Line items */}
+          <div className="space-y-2">
+            <div className="flex items-center justify-between">
+              <Label>{t('quo.lineItems')}</Label>
+              <Button
+                type="button"
+                variant="outline"
+                size="sm"
+                onClick={() => setLines((ls) => [...ls, { ...BLANK_LINE }])}
+              >
+                <Plus className="h-4 w-4" /> {t('quo.addLine')}
+              </Button>
+            </div>
+            <div className="space-y-2">
+              {lines.map((l, i) => (
+                <div key={i} className="grid gap-2 rounded-md border p-2 sm:grid-cols-7">
+                  <Input
+                    name="itemDescription"
+                    value={l.description}
+                    onChange={(e) => setLine(i, { description: e.target.value })}
+                    placeholder={t('quo.description')}
+                    className="sm:col-span-2"
+                  />
+                  <Input
+                    name="itemWireDia"
+                    value={l.wireDia}
+                    onChange={(e) => setLine(i, { wireDia: e.target.value })}
+                    placeholder={t('quo.wireDia')}
+                  />
+                  <Input
+                    name="itemSteelGrade"
+                    value={l.steelGrade}
+                    onChange={(e) => setLine(i, { steelGrade: e.target.value })}
+                    placeholder={t('quo.steelGrade')}
+                  />
+                  <Input
+                    name="itemUnit"
+                    value={l.unit}
+                    onChange={(e) => setLine(i, { unit: e.target.value })}
+                    placeholder={t('common.unit')}
+                  />
+                  <Input
+                    name="itemUnitPrice"
+                    type="number"
+                    step="0.0001"
+                    min="0"
+                    value={l.unitPrice}
+                    onChange={(e) => setLine(i, { unitPrice: e.target.value })}
+                    placeholder={t('quo.unitPrice')}
+                  />
+                  <div className="flex gap-1">
+                    <Input
+                      name="itemQuantity"
+                      type="number"
+                      step="0.001"
+                      min="0"
+                      value={l.quantity}
+                      onChange={(e) => setLine(i, { quantity: e.target.value })}
+                      placeholder={t('quo.quantity')}
+                    />
+                    {lines.length > 1 && (
+                      <Button
+                        type="button"
+                        variant="ghost"
+                        size="icon"
+                        onClick={() => setLines((ls) => ls.filter((_, n) => n !== i))}
+                      >
+                        <X className="h-4 w-4" />
+                      </Button>
+                    )}
+                  </div>
+                  <div className="text-right text-sm tabular-nums text-muted-foreground sm:col-span-7">
+                    {t('quo.amount')}:{' '}
+                    <strong>
+                      {usd(
+                        lineAmount({
+                          unitPrice: parseFloat(l.unitPrice),
+                          quantity: parseFloat(l.quantity),
+                        }),
+                      )}
+                    </strong>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+
+          {/* Live totals — the workbook's formulas */}
+          <div className="flex flex-wrap gap-x-6 gap-y-1 rounded-md bg-muted px-3 py-2 text-sm">
+            <span>
+              {t('quo.subtotal')}: <strong className="tabular-nums">{usd(totals.subtotal)}</strong>
+            </span>
+            <span className="text-primary">
+              {t('quo.deposit')} ({totals.depositPercent}%):{' '}
+              <strong className="tabular-nums">{usd(totals.depositDue)}</strong>
+            </span>
+            <span>
+              {t('quo.balance')} ({totals.balancePercent}%):{' '}
+              <strong className="tabular-nums">{usd(totals.balanceDue)}</strong>
+            </span>
+          </div>
+
+          <div className="space-y-1.5">
+            <Label htmlFor="q-notes">{t('common.notes')}</Label>
+            <Textarea id="q-notes" name="notes" rows={2} defaultValue={quotation?.notes ?? ''} />
+          </div>
+
+          {state?.error && (
+            <p className="rounded-md bg-destructive/10 px-3 py-1.5 text-sm text-destructive">
+              {m(state.error)}
+            </p>
+          )}
+
+          <div className="flex gap-2">
+            <Button type="submit" disabled={pending}>
+              {pending && <Loader2 className="h-4 w-4 animate-spin" />}
+              {t('common.save')}
+            </Button>
+            <Button type="button" variant="ghost" onClick={onDone}>
+              {t('common.cancel')}
+            </Button>
+          </div>
+        </form>
+      </CardContent>
+    </Card>
+  );
+}

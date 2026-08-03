@@ -103,7 +103,7 @@ export function cellText(value: string | number | null, kind: ColumnKind): strin
   return s.length ? s : '—';
 }
 
-function esc(s: string): string {
+export function esc(s: string): string {
   return s
     .replace(/&/g, '&amp;')
     .replace(/</g, '&lt;')
@@ -112,26 +112,32 @@ function esc(s: string): string {
 }
 
 const RED = '#e31e24';
-const HEADER_RED = '#b3141a';
-const GREY = '#ededed';
 const BANNER = '#fbf2f2';
 const MUTED = '#6b6b6b';
 const INK = '#1a1a1a';
 
 /**
- * A self-contained, print-optimized HTML document for the inquiry report. The
- * client writes this into a new window and calls print() (Save as PDF).
+ * A self-contained, print-optimized HTML document for the inquiry report — the
+ * exact layout of the ZY Steel printed invoice (letterhead, red title bar,
+ * two-column meta block, bordered table, right-aligned totals with one
+ * highlighted row, red footer strip), so the PDF and the .xlsx match.
+ * The client writes this into a new window and calls print() (Save as PDF).
  */
 export function buildInquiryReportHtml(data: InquiryReportData): string {
   const s = data.summary;
-  const kpis: Array<[string, string]> = [
-    ['Inquiries 询价数', String(s.totalInquiries)],
-    ['Quotation value 报价总额', formatUsd(s.totalQuotationValue)],
-    ['Won 成交', String(s.wonOrders)],
-    ['Lost 流失', String(s.lostOrders)],
-    ['Conversion 成交率', `${(s.conversionRate * 100).toFixed(0)}%`],
-    ['Won profit 成交利润', formatUsd(s.wonProfit)],
-    ['Pending 待跟进', String(s.pendingFollowups)],
+
+  const metaRight: Array<[string, string]> = [
+    ['Generated:', data.generatedOn],
+    ['Inquiries:', String(s.totalInquiries)],
+    ['Currency:', 'US Dollar (USD)'],
+  ];
+
+  const totals: Array<[string, string, boolean]> = [
+    ['Quotation value 报价总额:', formatUsd(s.totalQuotationValue), false],
+    ['Won / Lost 成交/流失:', `${s.wonOrders} / ${s.lostOrders}`, false],
+    ['Conversion 成交率:', `${(s.conversionRate * 100).toFixed(0)}%`, false],
+    ['Pending 待跟进:', String(s.pendingFollowups), false],
+    ['WON PROFIT 成交利润:', formatUsd(s.wonProfit), true],
   ];
 
   const thead = INQUIRY_REPORT_COLUMNS.map(
@@ -140,7 +146,7 @@ export function buildInquiryReportHtml(data: InquiryReportData): string {
 
   const tbody =
     data.rows.length === 0
-      ? `<tr><td class="empty" colspan="${INQUIRY_REPORT_COLUMNS.length}">No inquiries 暂无询价</td></tr>`
+      ? `<tr><td class="empty" colspan="${INQUIRY_REPORT_COLUMNS.length}">No records for this report 暂无记录</td></tr>`
       : data.rows
           .map(
             (row) =>
@@ -151,10 +157,14 @@ export function buildInquiryReportHtml(data: InquiryReportData): string {
           )
           .join('');
 
-  const kpiCards = kpis
+  const metaRightHtml = metaRight
+    .map(([l, v]) => `<tr><td class="ml">${esc(l)}</td><td class="mv">${esc(v)}</td></tr>`)
+    .join('');
+
+  const totalsHtml = totals
     .map(
-      ([label, value]) =>
-        `<div class="kpi"><div class="kpi-l">${esc(label)}</div><div class="kpi-v">${esc(value)}</div></div>`,
+      ([l, v, hi]) =>
+        `<tr class="${hi ? 'hi' : ''}"><td class="tl">${esc(l)}</td><td class="tv">${esc(v)}</td></tr>`,
     )
     .join('');
 
@@ -162,7 +172,7 @@ export function buildInquiryReportHtml(data: InquiryReportData): string {
 <html lang="en">
 <head>
 <meta charset="utf-8" />
-<title>ZY Steels · Customer Price Inquiry Report</title>
+<title>ZY Steel · Customer Price Inquiry Report</title>
 <style>
   * { box-sizing: border-box; }
   html, body { margin: 0; padding: 0; }
@@ -171,51 +181,86 @@ export function buildInquiryReportHtml(data: InquiryReportData): string {
     color: ${INK};
     -webkit-print-color-adjust: exact;
     print-color-adjust: exact;
-    padding: 22px;
+    padding: 20px;
   }
-  .brand { font-size: 24px; font-weight: 700; letter-spacing: .2px; }
-  .sub { font-size: 10.5px; color: ${MUTED}; margin-top: 2px; }
+  /* --- Letterhead --- */
+  .brand { font-size: 22px; font-weight: 700; letter-spacing: .3px; }
+  .brand-zh { font-size: 12px; font-weight: 700; color: ${RED}; margin-top: 1px; }
+  .sub { font-size: 9px; color: ${MUTED}; margin-top: 2px; }
+  /* --- Red title bar --- */
   .bar {
     background: ${RED}; color: #fff; font-weight: 700; text-align: center;
-    padding: 8px; margin: 14px 0; font-size: 14px; letter-spacing: .3px;
+    padding: 8px; margin: 14px 0 12px; font-size: 13px; letter-spacing: .3px;
   }
-  .meta { font-size: 10px; color: ${MUTED}; margin-bottom: 10px; }
-  .kpis { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 14px; }
-  .kpi { border: 1px solid ${GREY}; border-left: 3px solid ${RED}; padding: 6px 10px; min-width: 120px; }
-  .kpi-l { font-size: 9px; color: ${MUTED}; text-transform: uppercase; }
-  .kpi-v { font-size: 15px; font-weight: 700; }
-  table { width: 100%; border-collapse: collapse; font-size: 9px; }
-  th, td { border: 1px solid #cfcfcf; padding: 4px 5px; }
-  thead th { background: ${HEADER_RED}; color: #fff; font-weight: 700; }
-  th.l, td.l { text-align: left; }
-  th.r, td.r { text-align: right; }
-  tbody tr:nth-child(even) { background: #fafafa; }
-  td.empty { text-align: center; color: ${MUTED}; padding: 16px; }
+  /* --- Meta block --- */
+  .meta { display: flex; justify-content: space-between; gap: 20px; margin-bottom: 12px; }
+  .meta-l { font-size: 10px; }
+  .meta-l .lbl { font-size: 9px; font-weight: 700; color: ${RED}; }
+  .meta-l .val { font-size: 12px; font-weight: 700; }
+  .meta-l .small { font-size: 9px; color: ${MUTED}; margin-top: 2px; }
+  .meta-r td { font-size: 9px; padding: 1px 0; }
+  .meta-r .ml { font-weight: 700; text-align: right; padding-right: 8px; }
+  .meta-r .mv { text-align: right; }
+  /* --- Table --- */
+  table.data { width: 100%; border-collapse: collapse; font-size: 8.5px; }
+  table.data th, table.data td { border: 1px solid #bfbfbf; padding: 4px 5px; }
+  table.data thead th { background: ${RED}; color: #fff; font-weight: 700; text-align: center; }
+  table.data th.l, table.data td.l { text-align: left; }
+  table.data th.r, table.data td.r { text-align: right; }
+  table.data tbody tr:nth-child(even) { background: #fafafa; }
+  table.data td.empty { text-align: center; color: ${MUTED}; font-style: italic; padding: 14px; }
+  /* --- Totals --- */
+  .totals { margin-top: 10px; display: flex; justify-content: flex-end; }
+  .totals table { border-collapse: collapse; font-size: 10px; }
+  .totals .tl { text-align: right; font-weight: 700; padding: 3px 10px; }
+  .totals .tv { text-align: right; font-weight: 700; padding: 3px 10px; border: 1px solid #bfbfbf; min-width: 110px; }
+  .totals tr.hi .tl, .totals tr.hi .tv { background: ${BANNER}; color: ${RED}; }
+  /* --- Notes + footer --- */
+  .notes { margin-top: 14px; font-size: 8.5px; }
+  .notes h4 { margin: 0 0 4px; font-size: 9.5px; color: ${RED}; }
+  .notes ol { margin: 0; padding-left: 16px; }
+  .notes li { margin-bottom: 2px; }
   .footer {
     background: ${RED}; color: #fff; font-weight: 700; text-align: center;
-    padding: 6px; margin-top: 14px; font-size: 9px;
+    padding: 6px; margin-top: 16px; font-size: 9px;
   }
-  .note { font-size: 8.5px; font-style: italic; color: ${MUTED}; margin-top: 8px; }
-  .conf {
-    background: ${BANNER}; border-left: 4px solid ${RED}; color: ${INK};
-    font-size: 9px; padding: 6px 10px; margin-bottom: 12px;
-  }
-  @page { size: A4 landscape; margin: 12mm; }
+  @page { size: A4 landscape; margin: 10mm; }
 </style>
 </head>
 <body>
-  <div class="brand">ZY Steels&nbsp;&nbsp;中粤铁网</div>
-  <div class="sub">Steel Mesh &amp; Wire Drawing Manufacturer&nbsp;·&nbsp;Phnom Penh, Cambodia</div>
-  <div class="conf">CONFIDENTIAL · 机密 — Internal sales report. Do not distribute outside ZY Steels. 内部销售报告，请勿外传。</div>
+  <div class="brand">ZY STEEL</div>
+  <div class="brand-zh">中粤铁网</div>
+  <div class="sub">Steel Mesh &amp; Wire Drawing Manufacturer</div>
+  <div class="sub">Phnom Penh, Kingdom of Cambodia</div>
+
   <div class="bar">CUSTOMER PRICE INQUIRY REPORT · 客户询价报告</div>
-  <div class="meta">Generated 生成日期: ${esc(data.generatedOn)} &nbsp;·&nbsp; Prices per square metre ($/m²) 单价按平方米</div>
-  <div class="kpis">${kpiCards}</div>
-  <table>
+
+  <div class="meta">
+    <div class="meta-l">
+      <div class="lbl">REPORT:</div>
+      <div class="val">Customer Price Inquiries 客户询价</div>
+      <div class="small">Prices per square metre ($/m²) 单价按平方米</div>
+    </div>
+    <table class="meta-r">${metaRightHtml}</table>
+  </div>
+
+  <table class="data">
     <thead><tr>${thead}</tr></thead>
     <tbody>${tbody}</tbody>
   </table>
-  <div class="footer">ZY Steels 中粤铁网 · Confidential 机密 · Generated ${esc(data.generatedOn)}</div>
-  <div class="note">Price Difference = Quoted − Target ($/m²). Estimated Profit = (Final or Quoted − Cost) × Area × Qty.</div>
+
+  <div class="totals"><table>${totalsHtml}</table></div>
+
+  <div class="notes">
+    <h4>NOTES · 说明</h4>
+    <ol>
+      <li>Price Difference = Quoted − Target ($/m²). 价差 = 报价 − 目标价。</li>
+      <li>Estimated Profit = (Final or Quoted − Cost) × Area × Qty. 预估利润 =（成交价或报价 − 成本）× 面积 × 数量。</li>
+      <li>Confidential — internal sales report. 机密，内部销售报告。</li>
+    </ol>
+  </div>
+
+  <div class="footer">ZY STEEL 中粤铁网 · Phnom Penh, Cambodia · Thank you for your business</div>
 </body>
 </html>`;
 }

@@ -76,6 +76,26 @@ export async function GET() {
 
   const exportRows: ExportRow[] = rows.flatMap((so) => so.items.map((item) => ({ so, item })));
 
-  const buffer = await buildXlsxBuffer('Sales Orders', COLUMNS, exportRows);
-  return xlsxResponse(buffer, `sales-orders-${businessDate()}.xlsx`);
+  const today = businessDate();
+  const grandTotal = exportRows.reduce((sum, r) => sum + Number(r.item.lineTotal ?? 0), 0);
+  const currencies = [...new Set(rows.map((r) => r.currency))];
+
+  const buffer = await buildXlsxBuffer('Sales Orders', COLUMNS, exportRows, {
+    title: 'SALES ORDERS REPORT · 销售订单报表',
+    metaLeft: [{ label: 'REPORT:', value: 'Sales Orders 销售订单' }],
+    metaRight: [
+      { label: 'Generated:', value: formatDDMMYYYY(today) },
+      { label: 'Orders:', value: String(rows.length) },
+      { label: 'Currency:', value: currencies.join(', ') || 'USD' },
+    ],
+    totals: [
+      { label: 'Order lines 明细行数:', value: exportRows.length },
+      { label: 'Grand total 合计:', value: grandTotal, numFmt: '#,##0.00', highlight: true },
+    ],
+    notes: [
+      'Line Total = Ordered Qty × Unit Price. 小计 = 订购数量 × 单价。',
+      'Delivered quantities are derived from the stock ledger. 已发货数量取自库存台账。',
+    ],
+  });
+  return xlsxResponse(buffer, `sales-orders-${today}.xlsx`);
 }

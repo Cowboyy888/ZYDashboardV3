@@ -27,6 +27,11 @@ const optionalUuid = z.preprocess(
   (v) => (v === '' || v == null ? undefined : v),
   z.string().uuid().optional(),
 );
+// Empty form fields ('') become undefined before coercion/validation.
+const optionalNumber = z.preprocess(
+  (v) => (v === '' || v == null ? undefined : v),
+  z.coerce.number().optional(),
+);
 
 // --- Master data -------------------------------------------------------------
 
@@ -314,12 +319,21 @@ export type CustomerInput = z.infer<typeof customerSchema>;
 
 export const customerUpdateSchema = customerSchema.extend({ id: z.string().uuid() });
 
-const soItemInputSchema = z.object({
-  skuId: z.string().uuid(),
-  locationId: z.string().uuid(),
-  orderedQty: positiveQty,
-  unitPrice: z.coerce.number().min(0, 'Unit price cannot be negative'),
-});
+const soItemInputSchema = z
+  .object({
+    skuId: z.string().uuid(),
+    locationId: z.string().uuid(),
+    orderedQty: positiveQty,
+    unitPrice: z.coerce.number().min(0, 'Unit price cannot be negative'),
+    // Optional per-m² pricing breakdown — all-or-nothing. When both are set,
+    // the server derives unitPrice from them (see create_draft_sales_order).
+    areaPerSheet: optionalNumber,
+    pricePerSqm: optionalNumber,
+  })
+  .refine((v) => (v.areaPerSheet == null) === (v.pricePerSqm == null), {
+    message: 'Enter both Area/sheet and Price/m², or leave both blank',
+    path: ['areaPerSheet'],
+  });
 
 export const createSalesOrderSchema = z.object({
   customerId: z.string().uuid(),
@@ -345,6 +359,26 @@ export const deliverGoodsSchema = z.object({
   overrideReason: optionalText,
 });
 export type DeliverGoodsInput = z.infer<typeof deliverGoodsSchema>;
+
+// --- Deposit invoices ----------------------------------------------------------
+
+export const generateDepositInvoiceSchema = z.object({
+  salesOrderId: z.string().uuid(),
+  depositPercentage: z.coerce
+    .number()
+    .positive('Must be greater than zero')
+    .max(100, 'Cannot exceed 100%'),
+});
+export type GenerateDepositInvoiceInput = z.infer<typeof generateDepositInvoiceSchema>;
+
+export const recordDepositPaymentSchema = z.object({
+  depositInvoiceId: z.string().uuid(),
+  amount: z.coerce.number().positive('Amount must be greater than zero'),
+  paidDate: isoDate,
+  method: optionalText,
+  notes: optionalText,
+});
+export type RecordDepositPaymentInput = z.infer<typeof recordDepositPaymentSchema>;
 
 // --- Payroll (Fourth pass) -------------------------------------------------------
 
@@ -373,6 +407,50 @@ export const addPayrollLineSchema = z.object({
   amount: z.coerce.number().positive('Amount must be greater than zero'),
 });
 export type AddPayrollLineInput = z.infer<typeof addPayrollLineSchema>;
+
+// --- Quotations / deposit + balance invoices ------------------------------------
+
+/** One quotation line. Amount is derived in the DB (unit price × quantity). */
+export const quotationItemSchema = z.object({
+  description: nonEmpty.max(200),
+  wireDia: optionalText,
+  steelGrade: optionalText,
+  unit: z
+    .string()
+    .trim()
+    .max(16)
+    .optional()
+    .transform((v) => (v && v.length ? v : 'm²')),
+  unitPrice: z.coerce.number().min(0, 'Must be zero or more'),
+  quantity: z.coerce.number().min(0, 'Must be zero or more'),
+});
+export type QuotationItemInput = z.infer<typeof quotationItemSchema>;
+
+export const quotationSchema = z.object({
+  customerId: optionalUuid,
+  customerName: nonEmpty.max(120),
+  contact: optionalText,
+  projectSite: optionalText,
+  quotationDate: isoDate,
+  validDays: z.coerce.number().int().min(0).max(365).default(15),
+  currency: z.enum(['USD', 'KHR', 'CNY']).default('USD'),
+  /** Accepts 30 or 0.3 — normalised to a 0–1 share by the domain helper. */
+  depositPct: z.coerce.number().min(0).max(100).default(30),
+  pricingBasis: optionalText,
+  notes: optionalText,
+  items: z.array(quotationItemSchema).min(1, 'Add at least one line item'),
+});
+export type QuotationInput = z.infer<typeof quotationSchema>;
+
+export const quotationUpdateSchema = quotationSchema.extend({ id: z.string().uuid() });
+export type QuotationUpdateInput = z.infer<typeof quotationUpdateSchema>;
+
+export const QUOTATION_DOC_KINDS = ['quotation', 'deposit', 'balance'] as const;
+export const issueDocumentSchema = z.object({
+  quotationId: z.string().uuid(),
+  kind: z.enum(QUOTATION_DOC_KINDS),
+});
+export type IssueDocumentInput = z.infer<typeof issueDocumentSchema>;
 
 // --- Overtime 加班 ----------------------------------------------------------------
 
@@ -426,11 +504,6 @@ export type OvertimeSettingsInput = z.infer<typeof overtimeSettingsSchema>;
 
 // --- Customer price inquiries (quotation tracking) -------------------------------
 
-// Empty form fields ('') become undefined before coercion/validation.
-const optionalNumber = z.preprocess(
-  (v) => (v === '' || v == null ? undefined : v),
-  z.coerce.number().optional(),
-);
 const optionalIsoDate = z.preprocess(
   (v) => (v === '' || v == null ? undefined : v),
   isoDate.optional(),
