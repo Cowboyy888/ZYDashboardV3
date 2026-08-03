@@ -71,6 +71,12 @@ describe('workbook formulas — Amount / Subtotal / Deposit / Balance', () => {
     expect(balancePercentLabel(0.1)).toBe(90);
   });
 
+  it('keeps decimal percentages instead of rounding to a whole number', () => {
+    // 41.4% deposit entered directly (normalizeDepositPct treats >1 as a percentage).
+    expect(depositPercentLabel(41.4)).toBe(41.4);
+    expect(balancePercentLabel(41.4)).toBe(58.6);
+  });
+
   it('bundles every figure the three documents need', () => {
     const t = quotationTotals([{ unitPrice: 1.83, quantity: 4320 }], 0.3);
     expect(t).toEqual({

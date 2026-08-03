@@ -364,7 +364,7 @@ function EditDepositPctDialog({
 
   useEffect(() => {
     if (row) {
-      setValue(String(Math.round(Number(row.deposit_pct) * 100)));
+      setValue(String(Math.round(Number(row.deposit_pct) * 10000) / 100));
       setError(null);
     }
   }, [row]);
@@ -401,7 +401,7 @@ function EditDepositPctDialog({
               type="number"
               min="0"
               max="100"
-              step="1"
+              step="0.01"
               value={value}
               onChange={(e) => setValue(e.target.value)}
               autoFocus
@@ -539,7 +539,7 @@ function QuotationForm({
   const [state, formAction, pending] = useActionState<ActionState, FormData>(action, null);
 
   const [depositPct, setDepositPct] = useState(
-    String(Math.round(Number(quotation?.deposit_pct ?? 0.3) * 100)),
+    String(Math.round(Number(quotation?.deposit_pct ?? 0.3) * 10000) / 100),
   );
   const [lines, setLines] = useState<DraftLine[]>(
     existing && existing.length > 0
@@ -641,7 +641,7 @@ function QuotationForm({
                 type="number"
                 min="0"
                 max="100"
-                step="1"
+                step="0.01"
                 value={depositPct}
                 onChange={(e) => setDepositPct(e.target.value)}
               />

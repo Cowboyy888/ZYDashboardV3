@@ -78,14 +78,14 @@ export function depositCredit(contractSubtotal: number, depositPct: number): num
   return round2(-depositDue(contractSubtotal, depositPct));
 }
 
-/** Deposit share as a whole-number percentage for labels, e.g. 30. */
+/** Deposit share as a percentage for labels, e.g. 30 or 41.4 — keeps decimals entered. */
 export function depositPercentLabel(depositPct: number): number {
-  return Math.round(normalizeDepositPct(depositPct) * 100);
+  return round2(normalizeDepositPct(depositPct) * 100);
 }
 
-/** Balance share as a whole-number percentage, e.g. 70 (`C19 = 1 − C18`). */
+/** Balance share as a percentage, e.g. 70 or 58.6 (`C19 = 1 − C18`). */
 export function balancePercentLabel(depositPct: number): number {
-  return 100 - depositPercentLabel(depositPct);
+  return round2(100 - depositPercentLabel(depositPct));
 }
 
 export interface QuotationTotals {
