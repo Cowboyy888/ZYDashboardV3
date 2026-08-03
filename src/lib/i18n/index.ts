@@ -594,6 +594,11 @@ export const dictionary = {
   'quo.validDays': { en: 'Valid (days)', zh: '有效期（天）' },
   'quo.validUntil': { en: 'Valid until', zh: '有效期至' },
   'quo.depositPct': { en: 'Deposit %', zh: '订金比例 %' },
+  'quo.editDepositPct': { en: 'Edit deposit %', zh: '编辑订金比例' },
+  'quo.editDepositPctHint': {
+    en: 'Only the deposit share changes — line items are untouched.',
+    zh: '仅更改订金比例，明细项不受影响。',
+  },
   'quo.pricingBasis': { en: 'Pricing basis', zh: '计价方式' },
   'quo.lineItems': { en: 'Line items', zh: '明细' },
   'quo.addLine': { en: 'Add line', zh: '新增明细' },

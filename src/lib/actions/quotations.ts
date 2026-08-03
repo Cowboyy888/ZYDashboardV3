@@ -9,6 +9,7 @@ import {
   quotationSchema,
   quotationUpdateSchema,
   issueDocumentSchema,
+  updateQuotationDepositPctSchema,
   type QuotationItemInput,
 } from '@/lib/validation/schemas';
 import { fail, ok, zodFieldErrors, type ActionState } from './types';
@@ -150,6 +151,37 @@ export async function updateQuotation(
   revalidatePath(LIST_PATH);
   revalidatePath(`${LIST_PATH}/${id}`);
   return ok('Quotation updated');
+}
+
+/** Quick inline edit — just the deposit share, from the list row, no line items touched. */
+export async function updateQuotationDepositPct(
+  _prev: ActionState,
+  formData: FormData,
+): Promise<ActionState> {
+  const user = await assertPermission('sales:manage');
+  const parsed = updateQuotationDepositPctSchema.safeParse({
+    id: formData.get('id'),
+    depositPct: formData.get('depositPct'),
+  });
+  if (!parsed.success)
+    return fail('Please check the highlighted fields', zodFieldErrors(parsed.error.issues));
+  const { id, depositPct } = parsed.data;
+
+  const supabase = await createSupabaseServerClient();
+  const { error } = await supabase
+    .from('quotations')
+    .update({ deposit_pct: normalizeDepositPct(depositPct) })
+    .eq('id', id);
+  if (error) return fail(error.message);
+
+  await writeAudit(user, {
+    action: 'quotation.update_deposit_pct',
+    entity: 'quotations',
+    entityId: id,
+    newValue: { depositPct },
+  });
+  revalidatePath(LIST_PATH);
+  return ok('Deposit percentage updated');
 }
 
 export async function deleteQuotation(

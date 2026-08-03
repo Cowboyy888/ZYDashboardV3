@@ -452,6 +452,13 @@ export const issueDocumentSchema = z.object({
 });
 export type IssueDocumentInput = z.infer<typeof issueDocumentSchema>;
 
+/** Quick inline edit — just the deposit share, without touching line items. */
+export const updateQuotationDepositPctSchema = z.object({
+  id: z.string().uuid(),
+  depositPct: z.coerce.number().min(0).max(100),
+});
+export type UpdateQuotationDepositPctInput = z.infer<typeof updateQuotationDepositPctSchema>;
+
 // --- Overtime 加班 ----------------------------------------------------------------
 
 const nonNegNumber = z.preprocess(

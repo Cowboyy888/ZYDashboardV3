@@ -1,6 +1,6 @@
 'use client';
-import { useActionState, useEffect, useMemo, useState } from 'react';
-import { FileText, Loader2, Plus, Printer, Receipt, Trash2, Wallet, X } from 'lucide-react';
+import { useActionState, useEffect, useMemo, useState, useTransition } from 'react';
+import { FileText, Loader2, Pencil, Plus, Printer, Receipt, Trash2, Wallet, X } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -9,6 +9,7 @@ import { Badge } from '@/components/ui/badge';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import {
   Dialog,
+  DialogClose,
   DialogContent,
   DialogDescription,
   DialogHeader,
@@ -28,6 +29,7 @@ import { useT } from '@/components/i18n-provider';
 import {
   createQuotation,
   updateQuotation,
+  updateQuotationDepositPct,
   deleteQuotation,
   issueDocument,
   markPaid,
@@ -78,6 +80,7 @@ export function QuotationsClient({
   const [editing, setEditing] = useState<QuotationRow | null>(null);
   const [showCreate, setShowCreate] = useState(false);
   const [deleting, setDeleting] = useState<QuotationRow | null>(null);
+  const [editingDepositPct, setEditingDepositPct] = useState<QuotationRow | null>(null);
 
   const itemsByQuotation = useMemo(() => {
     const map = new Map<string, QuotationItemRow[]>();
@@ -218,8 +221,18 @@ export function QuotationsClient({
                     </TableCell>
                     <TableCell className="text-right tabular-nums">
                       {usd(totals.depositDue)}
-                      <div className="text-xs text-muted-foreground">
+                      <div className="flex items-center justify-end gap-1 text-xs text-muted-foreground">
                         {totals.depositPercent}%{q.deposit_paid_on ? ` · ${t('quo.paid')}` : ''}
+                        {canManage && (
+                          <button
+                            type="button"
+                            className="text-muted-foreground hover:text-foreground"
+                            title={t('quo.editDepositPct')}
+                            onClick={() => setEditingDepositPct(q)}
+                          >
+                            <Pencil className="h-3 w-3" />
+                          </button>
+                        )}
                       </div>
                     </TableCell>
                     <TableCell className="text-right tabular-nums">
@@ -314,6 +327,11 @@ export function QuotationsClient({
       </Card>
 
       <DeleteDialog row={deleting} onDone={() => setDeleting(null)} m={m} t={t} />
+      <EditDepositPctDialog
+        row={editingDepositPct}
+        open={!!editingDepositPct}
+        onOpenChange={(o) => !o && setEditingDepositPct(null)}
+      />
     </div>
   );
 }
@@ -326,6 +344,88 @@ function DocBadge({ no, label }: { no: string | null; label: string }) {
         {label} · {no}
       </Badge>
     </div>
+  );
+}
+
+/** Quick inline edit for just the deposit % — opened from the list row's pencil icon. */
+function EditDepositPctDialog({
+  row,
+  open,
+  onOpenChange,
+}: {
+  row: QuotationRow | null;
+  open: boolean;
+  onOpenChange: (v: boolean) => void;
+}) {
+  const { t, m } = useT();
+  const [value, setValue] = useState('30');
+  const [pending, start] = useTransition();
+  const [error, setError] = useState<string | null>(null);
+
+  useEffect(() => {
+    if (row) {
+      setValue(String(Math.round(Number(row.deposit_pct) * 100)));
+      setError(null);
+    }
+  }, [row]);
+
+  function onSubmit(e: React.FormEvent) {
+    e.preventDefault();
+    if (!row) return;
+    setError(null);
+    start(async () => {
+      const fd = new FormData();
+      fd.set('id', row.id);
+      fd.set('depositPct', value);
+      const res = await updateQuotationDepositPct(null, fd);
+      if (!res?.ok) {
+        setError(res?.error ?? 'Failed');
+        return;
+      }
+      onOpenChange(false);
+    });
+  }
+
+  return (
+    <Dialog open={open} onOpenChange={onOpenChange}>
+      <DialogContent className="max-w-sm text-left">
+        <DialogHeader>
+          <DialogTitle>{t('quo.editDepositPct')}</DialogTitle>
+          <DialogDescription>{t('quo.editDepositPctHint')}</DialogDescription>
+        </DialogHeader>
+        <form onSubmit={onSubmit} className="space-y-3">
+          <div className="space-y-1.5">
+            <Label htmlFor="edp-pct">{t('quo.depositPct')}</Label>
+            <Input
+              id="edp-pct"
+              type="number"
+              min="0"
+              max="100"
+              step="1"
+              value={value}
+              onChange={(e) => setValue(e.target.value)}
+              autoFocus
+            />
+          </div>
+          {error && (
+            <p className="rounded-md bg-destructive/10 px-3 py-1.5 text-sm text-destructive">
+              {m(error)}
+            </p>
+          )}
+          <div className="flex justify-end gap-2">
+            <DialogClose asChild>
+              <Button type="button" variant="ghost">
+                {t('common.cancel')}
+              </Button>
+            </DialogClose>
+            <Button type="submit" disabled={pending}>
+              {pending && <Loader2 className="h-4 w-4 animate-spin" />}
+              {t('common.save')}
+            </Button>
+          </div>
+        </form>
+      </DialogContent>
+    </Dialog>
   );
 }
 
