@@ -110,6 +110,8 @@ export function buildDepositInvoiceHtml(data: DepositInvoiceData): string {
     print-color-adjust: exact;
     padding: 22px;
   }
+  .letterhead { display: flex; align-items: center; gap: 12px; }
+  .logo { height: 46px; width: auto; }
   .brand { font-size: 24px; font-weight: 700; letter-spacing: .2px; }
   .sub { font-size: 10.5px; color: ${MUTED}; margin-top: 2px; }
   .bar {
@@ -137,8 +139,13 @@ export function buildDepositInvoiceHtml(data: DepositInvoiceData): string {
 </style>
 </head>
 <body>
-  <div class="brand">ZY STEEL&nbsp;&nbsp;中粤铁网</div>
-  <div class="sub">Steel Mesh &amp; Wire Drawing Manufacturer&nbsp;·&nbsp;Phnom Penh, Cambodia</div>
+  <div class="letterhead">
+    <img src="/brand/zysteel-logo.png" alt="ZY Steel 中粤铁网" class="logo" />
+    <div>
+      <div class="brand">ZY STEEL&nbsp;&nbsp;中粤铁网</div>
+      <div class="sub">Steel Mesh &amp; Wire Drawing Manufacturer&nbsp;·&nbsp;Phnom Penh, Cambodia</div>
+    </div>
+  </div>
   <div class="bar">DEPOSIT INVOICE · 定金发票</div>
 
   <div class="meta-grid">

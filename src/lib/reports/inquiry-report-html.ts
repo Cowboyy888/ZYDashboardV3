@@ -184,6 +184,8 @@ export function buildInquiryReportHtml(data: InquiryReportData): string {
     padding: 20px;
   }
   /* --- Letterhead --- */
+  .letterhead { display: flex; align-items: center; gap: 10px; }
+  .logo { height: 42px; width: auto; }
   .brand { font-size: 22px; font-weight: 700; letter-spacing: .3px; }
   .brand-zh { font-size: 12px; font-weight: 700; color: ${RED}; margin-top: 1px; }
   .sub { font-size: 9px; color: ${MUTED}; margin-top: 2px; }
@@ -228,10 +230,15 @@ export function buildInquiryReportHtml(data: InquiryReportData): string {
 </style>
 </head>
 <body>
-  <div class="brand">ZY STEEL</div>
-  <div class="brand-zh">中粤铁网</div>
-  <div class="sub">Steel Mesh &amp; Wire Drawing Manufacturer</div>
-  <div class="sub">Phnom Penh, Kingdom of Cambodia</div>
+  <div class="letterhead">
+    <img src="/brand/zysteel-logo.png" alt="ZY Steel 中粤铁网" class="logo" />
+    <div>
+      <div class="brand">ZY STEEL</div>
+      <div class="brand-zh">中粤铁网</div>
+      <div class="sub">Steel Mesh &amp; Wire Drawing Manufacturer</div>
+      <div class="sub">Phnom Penh, Kingdom of Cambodia</div>
+    </div>
+  </div>
 
   <div class="bar">CUSTOMER PRICE INQUIRY REPORT · 客户询价报告</div>
 

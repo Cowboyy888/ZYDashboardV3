@@ -244,6 +244,8 @@ export function buildQuotationDocHtml(d: QuotationDocData): string {
     padding: 24px 26px;
     font-size: 11px;
   }
+  .letterhead { display: flex; align-items: center; gap: 12px; }
+  .logo { height: 46px; width: auto; }
   .brand { font-size: 24px; font-weight: 700; letter-spacing: .3px; }
   .brand-zh { font-size: 13px; font-weight: 700; color: ${RED}; margin-top: 1px; }
   .sub { font-size: 9.5px; color: ${MUTED}; margin-top: 2px; }
@@ -307,10 +309,15 @@ export function buildQuotationDocHtml(d: QuotationDocData): string {
     <button type="button" onclick="window.print()">Print / Save as PDF</button>
     <span class="hint">Reviewing only — nothing has been printed yet.</span>
   </div>
-  <div class="brand">ZY STEEL</div>
-  <div class="brand-zh">中粤铁网</div>
-  <div class="sub">Steel Mesh &amp; Wire Drawing Manufacturer</div>
-  <div class="sub">Phnom Penh, Kingdom of Cambodia</div>
+  <div class="letterhead">
+    <img src="/brand/zysteel-logo.png" alt="ZY Steel 中粤铁网" class="logo" />
+    <div>
+      <div class="brand">ZY STEEL</div>
+      <div class="brand-zh">中粤铁网</div>
+      <div class="sub">Steel Mesh &amp; Wire Drawing Manufacturer</div>
+      <div class="sub">Phnom Penh, Kingdom of Cambodia</div>
+    </div>
+  </div>
 
   <div class="bar">${esc(documentTitle(d.kind, d.depositPct))}</div>
 
