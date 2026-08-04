@@ -92,9 +92,9 @@ export function defaultTerms(validDays: number): string[] {
 /** Payment instructions for the deposit / balance invoices. */
 function paymentInstructions(d: QuotationDocData): string[] {
   const t = quotationTotals(d.lines, d.depositPct);
-  const bank = d.bankName ?? '____________________';
-  const account = d.accountName ?? '____________________';
-  const accountNo = d.accountNo ?? '____________________';
+  const bank = d.bankName ?? 'ABA Bank';
+  const account = d.accountName ?? 'Ma Jiang Ou';
+  const accountNo = d.accountNo ?? '6686 88888';
   const first =
     d.kind === 'deposit'
       ? `This invoice covers the ${t.depositPercent}% deposit of the order value. The balance is due before delivery.`
@@ -107,8 +107,7 @@ function paymentInstructions(d: QuotationDocData): string[] {
     first,
     second,
     `Please quote Invoice No. ${d.docNo || '—'} when making payment.`,
-    `Bank: ${bank}   Account Name: ${account}`,
-    `Account No.: ${accountNo}   SWIFT / Branch: ____________________`,
+    `Bank: ${bank}  ·  Account Name: ${account}  ·  Account No.: ${accountNo}`,
   ];
 }
 

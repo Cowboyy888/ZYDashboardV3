@@ -131,6 +131,8 @@ export function buildDepositInvoiceHtml(data: DepositInvoiceData): string {
   .summary-row { display: flex; justify-content: space-between; font-size: 11px; padding: 3px 0; }
   .summary-row.emphasise { font-size: 14px; font-weight: 700; border-top: 1px solid ${GREY}; margin-top: 4px; padding-top: 8px; }
   .status { display: inline-block; margin-top: 8px; padding: 3px 10px; background: ${BANNER}; border: 1px solid ${RED}; color: ${HEADER_RED}; font-weight: 700; font-size: 10px; }
+  .payment { margin-top: 14px; border-left: 4px solid ${RED}; padding: 8px 14px; font-size: 10px; }
+  .payment-l { font-weight: 700; color: ${RED}; margin-bottom: 4px; text-transform: uppercase; font-size: 9px; }
   .footer {
     background: ${RED}; color: #fff; font-weight: 700; text-align: center;
     padding: 6px; margin-top: 14px; font-size: 9px;
@@ -175,6 +177,12 @@ export function buildDepositInvoiceHtml(data: DepositInvoiceData): string {
     ${summaryRow('Deposit Percentage', `${data.depositPercentage}%`)}
     ${summaryRow('Deposit Amount', formatMoney(data.depositAmount, data.currency), true)}
     ${summaryRow('Remaining Balance', formatMoney(data.remainingBalance, data.currency))}
+  </div>
+
+  <div class="payment">
+    <div class="payment-l">Payment Details 付款信息</div>
+    <div>Bank: ABA Bank &middot; Account Name: Ma Jiang Ou &middot; Account No.: 6686 88888</div>
+    <div>Please quote Invoice No. ${esc(data.invoiceNumber)} when making payment.</div>
   </div>
 
   <div class="footer">ZY STEEL 中粤铁网 &middot; Phnom Penh, Cambodia &middot; Thank you for your business</div>
