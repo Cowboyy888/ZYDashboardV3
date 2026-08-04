@@ -10,7 +10,7 @@ import { AttachmentField } from '@/components/purchasing/attachment-field';
 import { useT } from '@/components/i18n-provider';
 import { createDraftSalesOrder } from '@/lib/actions/sales';
 import { CURRENCIES, type Currency } from '@/lib/domain/sales';
-import { computeUnitPriceFromArea } from '@/lib/domain/deposit-invoice';
+import { computeUnitPriceFromArea, computeOrderedQtyFromArea } from '@/lib/domain/deposit-invoice';
 import type { ActionState } from '@/lib/actions/types';
 
 const selectCls =
@@ -41,6 +41,9 @@ interface ItemRow {
   // computed from them (Price/m² × Area/sheet = Price/sheet) and read-only.
   areaPerSheet: string;
   pricePerSqm: string;
+  // Optional total-area entry — when set together with areaPerSheet,
+  // orderedQty is computed from them (Total area ÷ Area/sheet) and read-only.
+  totalArea: string;
 }
 
 let nextKey = 1;
@@ -53,6 +56,7 @@ function emptyRow(): ItemRow {
     unitPrice: '',
     areaPerSheet: '',
     pricePerSqm: '',
+    totalArea: '',
   };
 }
 
@@ -99,6 +103,10 @@ export function NewSoForm({
         const priceSqm = Number(next.pricePerSqm);
         if (next.areaPerSheet && next.pricePerSqm && area > 0 && priceSqm >= 0) {
           next.unitPrice = String(computeUnitPriceFromArea(priceSqm, area));
+        }
+        const totalArea = Number(next.totalArea);
+        if (next.totalArea && next.areaPerSheet && area > 0 && totalArea >= 0) {
+          next.orderedQty = String(computeOrderedQtyFromArea(totalArea, area));
         }
         return next;
       }),
@@ -243,6 +251,8 @@ export function NewSoForm({
                   data-testid="so-item-qty"
                   value={row.orderedQty}
                   onChange={(e) => updateItem(row.key, { orderedQty: e.target.value })}
+                  readOnly={!!(row.totalArea && row.areaPerSheet)}
+                  className={row.totalArea && row.areaPerSheet ? 'bg-muted' : undefined}
                   required
                 />
               </div>
@@ -275,7 +285,19 @@ export function NewSoForm({
                   <Trash2 className="h-4 w-4" />
                 </Button>
               </div>
-              <div className="col-span-6 space-y-1.5 sm:col-span-3">
+              <div className="col-span-6 space-y-1.5 sm:col-span-4">
+                <Label>{t('sal.totalArea')}</Label>
+                <Input
+                  type="number"
+                  step="0.001"
+                  min="0"
+                  data-testid="so-item-total-area"
+                  value={row.totalArea}
+                  onChange={(e) => updateItem(row.key, { totalArea: e.target.value })}
+                  placeholder="m²"
+                />
+              </div>
+              <div className="col-span-6 space-y-1.5 sm:col-span-4">
                 <Label>{t('sal.areaPerSheet')}</Label>
                 <Input
                   type="number"
@@ -287,7 +309,7 @@ export function NewSoForm({
                   placeholder="m²"
                 />
               </div>
-              <div className="col-span-6 space-y-1.5 sm:col-span-3">
+              <div className="col-span-6 space-y-1.5 sm:col-span-4">
                 <Label>{t('sal.pricePerSqm')}</Label>
                 <Input
                   type="number"
@@ -299,8 +321,13 @@ export function NewSoForm({
                   placeholder={`$/m²`}
                 />
               </div>
+              {!!(row.totalArea && row.areaPerSheet) && (
+                <p className="col-span-12 text-xs text-muted-foreground">
+                  {t('sal.totalAreaHint')}
+                </p>
+              )}
               {!!(row.areaPerSheet && row.pricePerSqm) && (
-                <p className="col-span-12 text-xs text-muted-foreground sm:col-span-6">
+                <p className="col-span-12 text-xs text-muted-foreground">
                   {t('sal.pricePerSqmHint')}
                 </p>
               )}

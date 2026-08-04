@@ -1,6 +1,7 @@
 import { describe, it, expect } from 'vitest';
 import {
   computeUnitPriceFromArea,
+  computeOrderedQtyFromArea,
   computeDepositAmount,
   computeRemainingBalance,
   computeDepositInvoiceStatus,
@@ -11,6 +12,18 @@ import {
 describe('computeUnitPriceFromArea', () => {
   it('price per sheet = price per m² × area per sheet', () => {
     expect(computeUnitPriceFromArea(1.8, 3)).toBeCloseTo(5.4, 6);
+  });
+});
+
+describe('computeOrderedQtyFromArea', () => {
+  it('sheet count = total area ÷ area per sheet', () => {
+    // 5000 m² of 3m×6m (18 m²) sheets.
+    expect(computeOrderedQtyFromArea(5000, 18)).toBeCloseTo(277.778, 3);
+  });
+
+  it('returns 0 when area per sheet is zero or missing', () => {
+    expect(computeOrderedQtyFromArea(5000, 0)).toBe(0);
+    expect(computeOrderedQtyFromArea(5000, -1)).toBe(0);
   });
 });
 

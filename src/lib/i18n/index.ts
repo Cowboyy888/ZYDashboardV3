@@ -783,6 +783,11 @@ export const dictionary = {
     en: 'Unit price is computed as Price/m² × Area/sheet.',
     zh: '单价将按 单价($/m²) × 单张面积 自动计算。',
   },
+  'sal.totalArea': { en: 'Total area (m²)', zh: '总面积 (m²)' },
+  'sal.totalAreaHint': {
+    en: 'Ordered quantity (sheets) is computed as Total area ÷ Area/sheet.',
+    zh: '订购数量（张）将按 总面积 ÷ 单张面积 自动计算。',
+  },
 
   // --- Deposit invoices ------------------------------------------------------------
   'sal.generateDepositInvoice': { en: 'Generate Deposit Invoice', zh: '生成定金发票' },

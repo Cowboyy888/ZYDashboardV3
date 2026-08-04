@@ -13,6 +13,7 @@
  * database never disagree about what the next status should be.
  */
 import type { SoStatus } from './sales';
+import { round3 } from './stock-ledger';
 
 function round2(n: number): number {
   return Math.round(n * 100) / 100;
@@ -56,6 +57,17 @@ export const SO_PAYMENT_STATUS_LABELS: Record<SoPaymentStatus, { en: string; zh:
 /** Price per sheet = price per m² × area per sheet (the requested formula). */
 export function computeUnitPriceFromArea(pricePerSqm: number, areaPerSheet: number): number {
   return round2(pricePerSqm * areaPerSheet);
+}
+
+/**
+ * Sheet count = total area ordered ÷ area per sheet — e.g. 5000 m² of 3m×6m
+ * (18 m²) sheets = 5000 / 18 ≈ 277.778 sheets. Steel mesh is priced and
+ * ordered by area; the sheet count is packaging detail derived from it, not
+ * entered directly. Zero/invalid area per sheet has no meaningful quotient.
+ */
+export function computeOrderedQtyFromArea(totalArea: number, areaPerSheet: number): number {
+  if (!(areaPerSheet > 0)) return 0;
+  return round3(totalArea / areaPerSheet);
 }
 
 /** Deposit amount = total order amount × deposit percentage. */
