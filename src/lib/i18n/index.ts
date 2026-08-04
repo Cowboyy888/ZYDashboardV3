@@ -202,6 +202,8 @@ export const dictionary = {
   'emp.rateCol': { en: 'Rate', zh: '薪资' },
   'emp.perDay': { en: '/day', zh: '/天' },
   'emp.noEmployees': { en: 'No employees yet.', zh: '暂无员工。' },
+  'emp.search': { en: 'Search employees…', zh: '搜索员工…' },
+  'emp.noEmployeesMatch': { en: 'No employees match your search.', zh: '没有符合条件的员工。' },
   'emp.profile': { en: 'Profile', zh: '档案' },
   'emp.details': { en: 'Employee details', zh: '员工详情' },
   'emp.saveDetails': { en: 'Save details', zh: '保存详情' },

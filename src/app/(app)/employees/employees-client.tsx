@@ -1,8 +1,9 @@
 'use client';
-import { useState } from 'react';
+import { useMemo, useState } from 'react';
 import Link from 'next/link';
-import { Plus } from 'lucide-react';
+import { Plus, Search } from 'lucide-react';
 import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import {
@@ -35,8 +36,27 @@ export function EmployeesClient({
 }) {
   const { t } = useT();
   const [showAdd, setShowAdd] = useState(false);
+  const [query, setQuery] = useState('');
   const groupName = new Map(groups.map((g) => [g.id, g.name]));
   const privateByEmployee = new Map(privateRows.map((p) => [p.employee_id, p]));
+
+  const visibleEmployees = useMemo(() => {
+    const q = query.trim().toLowerCase();
+    if (!q) return employees;
+    return employees.filter((e) =>
+      [
+        e.employee_code,
+        e.display_name,
+        e.name_english,
+        e.name_chinese,
+        e.name_khmer,
+        e.job_title,
+        e.attendance_group_id ? groupName.get(e.attendance_group_id) : null,
+      ]
+        .filter(Boolean)
+        .some((v) => String(v).toLowerCase().includes(q)),
+    );
+  }, [employees, query, groupName]);
 
   function rateLabel(e: EmployeeRow): string {
     // Postgres `numeric` columns come back from PostgREST as strings, not
@@ -50,13 +70,22 @@ export function EmployeesClient({
 
   return (
     <div className="space-y-4">
-      {canManage && (
-        <div className="flex justify-end">
+      <div className="flex flex-wrap items-center justify-between gap-3">
+        <div className="relative">
+          <Search className="pointer-events-none absolute left-2.5 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+          <Input
+            value={query}
+            onChange={(e) => setQuery(e.target.value)}
+            placeholder={t('emp.search')}
+            className="h-9 w-64 pl-8"
+          />
+        </div>
+        {canManage && (
           <Button variant={showAdd ? 'secondary' : 'default'} onClick={() => setShowAdd((s) => !s)}>
             <Plus className="h-4 w-4" /> {showAdd ? t('common.close') : t('emp.add')}
           </Button>
-        </div>
-      )}
+        )}
+      </div>
 
       {canManage && showAdd && (
         <Card>
@@ -84,7 +113,7 @@ export function EmployeesClient({
               </TableRow>
             </TableHeader>
             <TableBody>
-              {employees.map((e) => (
+              {visibleEmployees.map((e) => (
                 <TableRow key={e.id}>
                   <TableCell className="whitespace-nowrap font-mono text-xs">
                     {e.employee_code}
@@ -127,13 +156,13 @@ export function EmployeesClient({
                   )}
                 </TableRow>
               ))}
-              {employees.length === 0 && (
+              {visibleEmployees.length === 0 && (
                 <TableRow>
                   <TableCell
                     colSpan={5 + (canSensitive ? 1 : 0) + (canManage ? 1 : 0)}
                     className="text-center text-muted-foreground"
                   >
-                    {t('emp.noEmployees')}
+                    {employees.length === 0 ? t('emp.noEmployees') : t('emp.noEmployeesMatch')}
                   </TableCell>
                 </TableRow>
               )}
