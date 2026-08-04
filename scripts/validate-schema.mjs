@@ -65,7 +65,15 @@ for (const t of tables) {
 }
 
 // --- RLS enabled on every table ---------------------------------------------
-for (const t of tables) {
+// Derived from the migrations themselves, not the hardcoded list above, so
+// this can't silently stop covering new tables. That's exactly how the
+// sequence-table RLS gap (fixed in 0022) went unnoticed by `npm run verify`
+// and had to be caught by Supabase's own Security Advisor instead.
+const allTables = [
+  ...new Set([...sql.matchAll(/create table if not exists public\.(\w+)/gi)].map((m) => m[1])),
+].sort();
+check(allTables.length >= tables.length, `discovered ${allTables.length} tables in migrations`);
+for (const t of allTables) {
   check(
     new RegExp(`alter table public\\.${t}\\s+enable row level security`, 'i').test(sql),
     `RLS enabled: ${t}`,

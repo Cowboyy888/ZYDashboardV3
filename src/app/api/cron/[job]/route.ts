@@ -1,3 +1,4 @@
+import { timingSafeEqual } from 'node:crypto';
 import { NextResponse, type NextRequest } from 'next/server';
 import { env } from '@/lib/env';
 import { createSupabaseAdminClient } from '@/lib/supabase/admin';
@@ -17,13 +18,21 @@ const JOB_MAP: Record<string, { type: ReportType; flag: string }> = {
   inventory: { type: 'inventory', flag: 'inventory_enabled' },
 };
 
+/** Constant-time string compare — a plain `===` here leaks timing info an attacker could use to guess the secret byte-by-byte. */
+function safeEqual(a: string, b: string): boolean {
+  const bufA = Buffer.from(a);
+  const bufB = Buffer.from(b);
+  return bufA.length === bufB.length && timingSafeEqual(bufA, bufB);
+}
+
 function authorized(request: NextRequest): boolean {
   const secret = env.cronSecret();
   if (!secret) return false;
   const header = request.headers.get('authorization');
-  if (header === `Bearer ${secret}`) return true;
+  if (header && safeEqual(header, `Bearer ${secret}`)) return true;
   // Allow ?secret= for providers that cannot set headers.
-  return request.nextUrl.searchParams.get('secret') === secret;
+  const queryValue = request.nextUrl.searchParams.get('secret');
+  return queryValue !== null && safeEqual(queryValue, secret);
 }
 
 async function handle(request: NextRequest, job: string) {
