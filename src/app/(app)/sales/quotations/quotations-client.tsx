@@ -1,6 +1,6 @@
 'use client';
 import { useActionState, useEffect, useMemo, useState, useTransition } from 'react';
-import { FileText, Loader2, Pencil, Plus, Printer, Receipt, Trash2, Wallet, X } from 'lucide-react';
+import { Eye, FileText, Loader2, Pencil, Plus, Receipt, Trash2, Wallet, X } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -91,8 +91,12 @@ export function QuotationsClient({
     return map;
   }, [items]);
 
-  /** Open a branded document in a new window and trigger Save-as-PDF. */
-  function printDocument(q: QuotationRow, kind: DocumentKind) {
+  /**
+   * Open a branded document in a new window for review. The document itself
+   * carries a "Print / Save as PDF" button, so nothing is printed until the
+   * user explicitly asks for it there.
+   */
+  function previewDocument(q: QuotationRow, kind: DocumentKind) {
     const lines: DocLine[] = (itemsByQuotation.get(q.id) ?? []).map((it) => ({
       description: it.description,
       wireDia: it.wire_dia,
@@ -133,13 +137,6 @@ export function QuotationsClient({
     w.document.write(html);
     w.document.close();
     w.focus();
-    setTimeout(() => {
-      try {
-        w.print();
-      } catch {
-        /* the user can still print manually */
-      }
-    }, 500);
   }
 
   return (
@@ -254,7 +251,7 @@ export function QuotationsClient({
                           quotationId={q.id}
                           kind="quotation"
                           canManage={canManage}
-                          onPrint={() => printDocument(q, 'quotation')}
+                          onOpen={() => previewDocument(q, 'quotation')}
                         />
                         <DocButton
                           icon={<Receipt className="h-4 w-4" />}
@@ -262,7 +259,7 @@ export function QuotationsClient({
                           quotationId={q.id}
                           kind="deposit"
                           canManage={canManage}
-                          onPrint={() => printDocument(q, 'deposit')}
+                          onOpen={() => previewDocument(q, 'deposit')}
                         />
                         <DocButton
                           icon={<Wallet className="h-4 w-4" />}
@@ -270,7 +267,7 @@ export function QuotationsClient({
                           quotationId={q.id}
                           kind="balance"
                           canManage={canManage}
-                          onPrint={() => printDocument(q, 'balance')}
+                          onOpen={() => previewDocument(q, 'balance')}
                         />
                         {canManage && (
                           <>
@@ -430,8 +427,9 @@ function EditDepositPctDialog({
 }
 
 /**
- * Issues the document number (once) and then opens the print view. Viewers who
- * cannot manage sales still get the PDF, just without assigning a number.
+ * Issues the document number (once) and then opens the review view. Viewers
+ * who cannot manage sales still get to review the PDF, just without
+ * assigning a number.
  */
 function DocButton({
   icon,
@@ -439,24 +437,24 @@ function DocButton({
   quotationId,
   kind,
   canManage,
-  onPrint,
+  onOpen,
 }: {
   icon: React.ReactNode;
   label: string;
   quotationId: string;
   kind: DocumentKind;
   canManage: boolean;
-  onPrint: () => void;
+  onOpen: () => void;
 }) {
   const [state, formAction, pending] = useActionState<ActionState, FormData>(issueDocument, null);
 
   useEffect(() => {
-    if (state?.ok) onPrint();
+    if (state?.ok) onOpen();
   }, [state]); // eslint-disable-line react-hooks/exhaustive-deps
 
   if (!canManage) {
     return (
-      <Button variant="outline" size="sm" onClick={onPrint}>
+      <Button variant="outline" size="sm" onClick={onOpen}>
         {icon} {label}
       </Button>
     );
@@ -468,7 +466,7 @@ function DocButton({
       <Button type="submit" variant="outline" size="sm" disabled={pending}>
         {pending ? <Loader2 className="h-4 w-4 animate-spin" /> : icon}
         {label}
-        <Printer className="h-3.5 w-3.5 opacity-60" />
+        <Eye className="h-3.5 w-3.5 opacity-60" />
       </Button>
     </form>
   );

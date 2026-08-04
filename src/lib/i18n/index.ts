@@ -615,7 +615,7 @@ export const dictionary = {
   'quo.deposit': { en: 'Deposit', zh: '订金' },
   'quo.balance': { en: 'Balance', zh: '尾款' },
   'quo.documents': { en: 'Documents', zh: '单据' },
-  'quo.generatePdf': { en: 'Generate PDF', zh: '生成 PDF' },
+  'quo.generatePdf': { en: 'Review as PDF', zh: '预览 PDF' },
   'quo.docQuotation': { en: 'Quotation', zh: '报价单' },
   'quo.docDeposit': { en: 'Deposit', zh: '订金发票' },
   'quo.docBalance': { en: 'Balance', zh: '尾款发票' },
