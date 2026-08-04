@@ -37,10 +37,18 @@ export function StatCard({
     warning: 'bg-warning/10 text-warning',
     destructive: 'bg-destructive/10 text-destructive',
   }[tone];
+  const glowClass = {
+    default: 'group-hover:shadow-[0_0_0_6px_hsl(var(--muted-foreground)/0.12)]',
+    primary: 'group-hover:shadow-[0_0_0_6px_hsl(var(--primary)/0.18)]',
+    success: 'group-hover:shadow-[0_0_0_6px_hsl(var(--success)/0.18)]',
+    warning: 'group-hover:shadow-[0_0_0_6px_hsl(var(--warning)/0.18)]',
+    destructive: 'group-hover:shadow-[0_0_0_6px_hsl(var(--destructive)/0.18)]',
+  }[tone];
 
   const card = (
     <Card
       className={cn(
+        'group',
         href &&
           'h-full transition-all duration-200 hover:-translate-y-0.5 hover:border-primary/40 hover:shadow-md',
         !href && className,
@@ -53,7 +61,14 @@ export function StatCard({
             {label}
           </div>
           {icon && (
-            <div className={cn('shrink-0 rounded-md p-1.5', chipClass)}>
+            <div
+              className={cn(
+                'shrink-0 rounded-md p-1.5 transition-shadow duration-300 motion-safe:animate-zy-pop-in',
+                chipClass,
+                glowClass,
+              )}
+              style={style}
+            >
               <div className="h-4 w-4">{icon}</div>
             </div>
           )}

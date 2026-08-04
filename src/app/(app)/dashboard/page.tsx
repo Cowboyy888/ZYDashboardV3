@@ -43,7 +43,7 @@ import {
 } from '@/lib/db/queries';
 import { PageHeader } from '@/components/page-header';
 import { StatCard } from '@/components/stat-card';
-import { AnimatedNumber, AnimatedBar } from '@/components/animated-stat';
+import { AnimatedNumber, AnimatedBar, LiveDot } from '@/components/animated-stat';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { ProductionQuickEntry } from './production-quick-entry';
@@ -152,7 +152,16 @@ export default async function DashboardPage() {
 
   return (
     <div>
-      <PageHeader title={t('dash.title')} description={`${formatDDMMYYYY(today)} · Asia/Bangkok`} />
+      <PageHeader
+        title={t('dash.title')}
+        description={
+          <>
+            {formatDDMMYYYY(today)} · Asia/Bangkok
+            <LiveDot />
+            {t('dash.live')}
+          </>
+        }
+      />
 
       <div className="grid grid-cols-2 gap-3 lg:grid-cols-4">
         <StatCard
@@ -166,7 +175,17 @@ export default async function DashboardPage() {
               <AnimatedNumber value={morning.present} />/{morning.totalActive}
             </>
           }
-          sub={sub(morning)}
+          sub={
+            <>
+              {sub(morning)}
+              <AnimatedBar
+                percent={
+                  morning.totalActive > 0 ? (morning.present / morning.totalActive) * 100 : 0
+                }
+                className={morning.unmarked > 0 ? 'bg-warning' : 'bg-success'}
+              />
+            </>
+          }
           tone={morning.unmarked > 0 ? 'warning' : 'success'}
         />
         <StatCard
@@ -180,7 +199,17 @@ export default async function DashboardPage() {
               <AnimatedNumber value={afternoon.present} />/{afternoon.totalActive}
             </>
           }
-          sub={sub(afternoon)}
+          sub={
+            <>
+              {sub(afternoon)}
+              <AnimatedBar
+                percent={
+                  afternoon.totalActive > 0 ? (afternoon.present / afternoon.totalActive) * 100 : 0
+                }
+                className={afternoon.unmarked > 0 ? 'bg-warning' : 'bg-success'}
+              />
+            </>
+          }
           tone={afternoon.unmarked > 0 ? 'warning' : 'success'}
         />
         <StatCard

@@ -85,6 +85,7 @@ export const dictionary = {
 
   // Dashboard
   'dash.title': { en: 'Operations Dashboard', zh: '运营仪表盘' },
+  'dash.live': { en: 'Live', zh: '实时' },
   'dash.morningAtt': { en: "Today's Attendance · Morning", zh: '今日考勤 · 上午' },
   'dash.afternoonAtt': { en: "Today's Attendance · Afternoon", zh: '今日考勤 · 下午' },
   'dash.mtdRate': { en: 'Month-to-date rate', zh: '本月出勤率' },

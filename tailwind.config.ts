@@ -106,6 +106,13 @@ const config: Config = {
           '70%': { opacity: 'var(--spark-opacity, 0.9)' },
           '100%': { transform: 'translate3d(var(--spark-drift, 0), -70vh, 0)', opacity: '0' },
         },
+        // One-shot bounce-in for dashboard stat-card icons — pairs with the
+        // card's own fade/slide entrance at the same stagger delay.
+        'zy-pop-in': {
+          '0%': { transform: 'scale(0.4)', opacity: '0' },
+          '70%': { transform: 'scale(1.1)', opacity: '1' },
+          '100%': { transform: 'scale(1)', opacity: '1' },
+        },
       },
       animation: {
         'accordion-down': 'accordion-down 0.2s ease-out',
@@ -113,6 +120,7 @@ const config: Config = {
         'zy-shake': 'zy-shake 0.5s cubic-bezier(0.36, 0.07, 0.19, 0.97) both',
         'zy-furnace-glow': 'zy-furnace-glow 5s ease-in-out infinite',
         'zy-spark-rise': 'zy-spark-rise 5s linear infinite',
+        'zy-pop-in': 'zy-pop-in 0.5s cubic-bezier(0.34, 1.56, 0.64, 1) both',
       },
     },
   },

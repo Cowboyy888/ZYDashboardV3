@@ -102,3 +102,19 @@ export function AnimatedBar({
     </div>
   );
 }
+
+/**
+ * Small pulsing "live data" dot — a solid dot with an expanding, fading ring
+ * behind it (the classic online/live indicator). The ring is dropped
+ * entirely under prefers-reduced-motion; the solid dot still shows.
+ */
+export function LiveDot({ className = 'bg-success' }: { className?: string }) {
+  return (
+    <span className="relative inline-flex h-2 w-2 shrink-0" aria-hidden>
+      <span
+        className={`absolute inline-flex h-full w-full animate-ping rounded-full opacity-75 motion-reduce:hidden ${className}`}
+      />
+      <span className={`relative inline-flex h-2 w-2 rounded-full ${className}`} />
+    </span>
+  );
+}
