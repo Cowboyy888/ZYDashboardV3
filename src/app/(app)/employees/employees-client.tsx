@@ -27,12 +27,14 @@ export function EmployeesClient({
   canManage,
   canSensitive,
   privateRows,
+  photoUrls,
 }: {
   employees: EmployeeRow[];
   groups: AttendanceGroupRow[];
   canManage: boolean;
   canSensitive: boolean;
   privateRows: EmployeePrivateRow[];
+  photoUrls: Record<string, string>;
 }) {
   const { t } = useT();
   const [showAdd, setShowAdd] = useState(false);
@@ -119,15 +121,29 @@ export function EmployeesClient({
                     {e.employee_code}
                   </TableCell>
                   <TableCell>
-                    <Link
-                      href={`/employees/${e.id}`}
-                      className="font-medium hover:text-primary hover:underline"
-                    >
-                      {e.display_name || e.name_english || e.name_chinese || e.employee_code}
-                    </Link>
-                    {e.name_khmer && (
-                      <div className="name-khmer text-xs text-muted-foreground">{e.name_khmer}</div>
-                    )}
+                    <div className="flex items-center gap-2.5">
+                      {canSensitive && (
+                        <EmployeeAvatar
+                          photoUrl={photoUrls[e.id]}
+                          name={
+                            e.display_name || e.name_english || e.name_chinese || e.employee_code
+                          }
+                        />
+                      )}
+                      <div>
+                        <Link
+                          href={`/employees/${e.id}`}
+                          className="font-medium hover:text-primary hover:underline"
+                        >
+                          {e.display_name || e.name_english || e.name_chinese || e.employee_code}
+                        </Link>
+                        {e.name_khmer && (
+                          <div className="name-khmer text-xs text-muted-foreground">
+                            {e.name_khmer}
+                          </div>
+                        )}
+                      </div>
+                    </div>
                   </TableCell>
                   <TableCell className="text-sm text-muted-foreground">
                     {(e.attendance_group_id && groupName.get(e.attendance_group_id)) || '—'}
@@ -170,6 +186,21 @@ export function EmployeesClient({
           </Table>
         </CardContent>
       </Card>
+    </div>
+  );
+}
+
+/** Small round thumbnail for the list row — initial-letter fallback when there's no photo. */
+function EmployeeAvatar({ photoUrl, name }: { photoUrl: string | undefined; name: string }) {
+  if (photoUrl) {
+    return (
+      // eslint-disable-next-line @next/next/no-img-element
+      <img src={photoUrl} alt="" className="h-8 w-8 shrink-0 rounded-full object-cover" />
+    );
+  }
+  return (
+    <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-muted text-xs font-medium text-muted-foreground">
+      {name.charAt(0).toUpperCase()}
     </div>
   );
 }
