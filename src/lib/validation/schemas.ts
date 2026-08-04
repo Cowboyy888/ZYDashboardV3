@@ -423,6 +423,8 @@ export const quotationItemSchema = z.object({
     .transform((v) => (v && v.length ? v : 'm²')),
   unitPrice: z.coerce.number().min(0, 'Must be zero or more'),
   quantity: z.coerce.number().min(0, 'Must be zero or more'),
+  /** Reference only — not part of the amount formula (unit_price * quantity). */
+  totalSheets: optionalNumber,
 });
 export type QuotationItemInput = z.infer<typeof quotationItemSchema>;
 

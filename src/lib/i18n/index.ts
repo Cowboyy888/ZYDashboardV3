@@ -610,6 +610,7 @@ export const dictionary = {
   'quo.steelGrade': { en: 'Steel grade', zh: '钢材等级' },
   'quo.unitPrice': { en: 'Unit price', zh: '单价' },
   'quo.quantity': { en: 'Quantity', zh: '数量' },
+  'quo.totalSheets': { en: 'Total sheets', zh: '总张数' },
   'quo.amount': { en: 'Amount', zh: '金额' },
   'quo.subtotal': { en: 'Contract subtotal', zh: '合同小计' },
   'quo.deposit': { en: 'Deposit', zh: '订金' },

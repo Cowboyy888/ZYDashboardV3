@@ -26,6 +26,7 @@ function parseItems(formData: FormData): unknown[] {
     unit: formData.getAll('itemUnit')[i],
     unitPrice: formData.getAll('itemUnitPrice')[i],
     quantity: formData.getAll('itemQuantity')[i],
+    totalSheets: formData.getAll('itemTotalSheets')[i],
   }));
 }
 
@@ -57,6 +58,7 @@ function itemRows(quotationId: string, items: QuotationItemInput[]) {
     unit: it.unit,
     unit_price: it.unitPrice,
     quantity: it.quantity,
+    total_sheets: it.totalSheets ?? null,
   }));
 }
 

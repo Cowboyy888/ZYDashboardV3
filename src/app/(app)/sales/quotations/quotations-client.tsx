@@ -55,6 +55,8 @@ interface DraftLine {
   unit: string;
   unitPrice: string;
   quantity: string;
+  /** Reference only — not part of the amount calculation. */
+  totalSheets: string;
 }
 const BLANK_LINE: DraftLine = {
   description: '',
@@ -63,6 +65,7 @@ const BLANK_LINE: DraftLine = {
   unit: 'm²',
   unitPrice: '',
   quantity: '',
+  totalSheets: '',
 };
 
 export function QuotationsClient({
@@ -548,6 +551,7 @@ function QuotationForm({
           unit: l.unit,
           unitPrice: String(l.unit_price),
           quantity: String(l.quantity),
+          totalSheets: l.total_sheets == null ? '' : String(l.total_sheets),
         }))
       : [{ ...BLANK_LINE }],
   );
@@ -670,7 +674,7 @@ function QuotationForm({
             </div>
             <div className="space-y-2">
               {lines.map((l, i) => (
-                <div key={i} className="grid gap-2 rounded-md border p-2 sm:grid-cols-7">
+                <div key={i} className="grid gap-2 rounded-md border p-2 sm:grid-cols-8">
                   <Input
                     name="itemDescription"
                     value={l.description}
@@ -705,6 +709,15 @@ function QuotationForm({
                     onChange={(e) => setLine(i, { unitPrice: e.target.value })}
                     placeholder={t('quo.unitPrice')}
                   />
+                  <Input
+                    name="itemTotalSheets"
+                    type="number"
+                    step="0.001"
+                    min="0"
+                    value={l.totalSheets}
+                    onChange={(e) => setLine(i, { totalSheets: e.target.value })}
+                    placeholder={t('quo.totalSheets')}
+                  />
                   <div className="flex gap-1">
                     <Input
                       name="itemQuantity"
@@ -726,7 +739,7 @@ function QuotationForm({
                       </Button>
                     )}
                   </div>
-                  <div className="text-right text-sm tabular-nums text-muted-foreground sm:col-span-7">
+                  <div className="text-right text-sm tabular-nums text-muted-foreground sm:col-span-8">
                     {t('quo.amount')}:{' '}
                     <strong>
                       {usd(

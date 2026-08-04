@@ -195,6 +195,7 @@ export interface QuotationItemRow {
   unit: string;
   unit_price: number;
   quantity: number;
+  total_sheets: number | null;
   amount: number; // generated
   created_at: string;
 }
