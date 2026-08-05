@@ -629,6 +629,10 @@ export const dictionary = {
     en: 'This permanently removes the quotation and its line items for',
     zh: '此操作将永久删除该报价单及其明细：',
   },
+  'quo.popupBlocked': {
+    en: 'Please allow pop-ups for this site to view the PDF.',
+    zh: '请允许此网站弹出窗口以查看 PDF。',
+  },
 
   // Customer price inquiries (quotation tracking)
   'inq.desc': {
