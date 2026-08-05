@@ -1,6 +1,7 @@
 'use client';
 import { useActionState, useEffect, useMemo, useState, useTransition } from 'react';
 import { useRouter } from 'next/navigation';
+import Link from 'next/link';
 import { Eye, FileText, Loader2, Pencil, Plus, Receipt, Trash2, Wallet, X } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -74,11 +75,13 @@ export function QuotationsClient({
   items,
   customers,
   canManage,
+  linkedOrders,
 }: {
   quotations: QuotationRow[];
   items: QuotationItemRow[];
   customers: Opt[];
   canManage: boolean;
+  linkedOrders: { quotationId: string; soId: string; soNumber: string | null }[];
 }) {
   const { t, m } = useT();
   const [editing, setEditing] = useState<QuotationRow | null>(null);
@@ -94,6 +97,11 @@ export function QuotationsClient({
     }
     return map;
   }, [items]);
+
+  const orderByQuotation = useMemo(
+    () => new Map(linkedOrders.map((o) => [o.quotationId, o])),
+    [linkedOrders],
+  );
 
   /**
    * Fill an ALREADY-OPEN window with a branded document for review. The
@@ -258,6 +266,17 @@ export function QuotationsClient({
                       <DocBadge no={q.quotation_no} label="Q" />
                       <DocBadge no={q.deposit_no} label="DP" />
                       <DocBadge no={q.balance_no} label="BL" />
+                      {orderByQuotation.has(q.id) && (
+                        <div>
+                          <Link
+                            href={`/sales/orders/${orderByQuotation.get(q.id)!.soId}`}
+                            className="inline-flex items-center gap-0.5 text-primary underline underline-offset-2"
+                          >
+                            {t('quo.linkedSalesOrder')}{' '}
+                            {orderByQuotation.get(q.id)!.soNumber ?? '—'}
+                          </Link>
+                        </div>
+                      )}
                     </TableCell>
                     <TableCell className="text-right">
                       <div className="flex flex-wrap justify-end gap-1">

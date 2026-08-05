@@ -10,6 +10,9 @@ import {
   isDueWithinDays,
   isCurrency,
   CURRENCIES,
+  shouldCreateSalesOrderFromQuotation,
+  findMatchingCustomerId,
+  buildSalesOrderNoteFromQuotation,
 } from '@/lib/domain/sales';
 
 describe('computeSoStatus — Partially Delivered vs Delivered', () => {
@@ -139,5 +142,45 @@ describe('currency (re-exported from purchasing — one shared set app-wide)', (
     expect(CURRENCIES).toEqual(['USD', 'KHR', 'CNY']);
     expect(isCurrency('USD')).toBe(true);
     expect(isCurrency('EUR')).toBe(false);
+  });
+});
+
+describe('shouldCreateSalesOrderFromQuotation — fires only on the first deposit-paid transition', () => {
+  it('is true when the deposit was never marked paid before', () => {
+    expect(shouldCreateSalesOrderFromQuotation(null)).toBe(true);
+  });
+  it('is false once a paid date is already on record — never re-fires on a later markPaid call', () => {
+    expect(shouldCreateSalesOrderFromQuotation('2026-08-01')).toBe(false);
+  });
+});
+
+describe('findMatchingCustomerId — reuse an existing customer before creating a duplicate', () => {
+  const customers = [
+    { id: 'c1', name: 'ABC Construction Co.' },
+    { id: 'c2', name: 'Battambang Rebar Supply' },
+  ];
+  it('matches case-insensitively', () => {
+    expect(findMatchingCustomerId('abc construction co.', customers)).toBe('c1');
+    expect(findMatchingCustomerId('ABC CONSTRUCTION CO.', customers)).toBe('c1');
+  });
+  it('ignores surrounding whitespace', () => {
+    expect(findMatchingCustomerId('  Battambang Rebar Supply  ', customers)).toBe('c2');
+  });
+  it('returns null when no existing customer matches exactly', () => {
+    expect(findMatchingCustomerId('ABC Construction Company', customers)).toBeNull();
+    expect(findMatchingCustomerId('Someone New', customers)).toBeNull();
+  });
+});
+
+describe('buildSalesOrderNoteFromQuotation', () => {
+  it('cites the quotation number when the document has been issued', () => {
+    expect(buildSalesOrderNoteFromQuotation('ZYS-Q2608-003')).toBe(
+      'Auto-created from Quotation ZYS-Q2608-003 on deposit payment',
+    );
+  });
+  it('falls back to a generic note when the quotation was never issued a number', () => {
+    expect(buildSalesOrderNoteFromQuotation(null)).toBe(
+      'Auto-created from a Quotation on deposit payment',
+    );
   });
 });

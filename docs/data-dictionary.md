@@ -173,16 +173,20 @@ Trigger `enforce_po_item_immutable` (UPDATE + DELETE) is likewise dormant.
 history cannot be hard-deleted (archive instead); `deleteCustomer` pre-checks
 this and the FK is the backstop.
 
-### sales_orders  *(Third pass; `payment_status` added Fifth pass)*
+### sales_orders  *(Third pass; `payment_status` added Fifth pass; `quotation_id` added Sixth pass)*
 `id`, `so_number` (unique, auto `SO-YYYY-####` — atomic per-calendar-year
 counter via `sales_order_seq` + `assign_so_number` trigger), `customer_id →
 customers`, `order_date`, `expected_delivery_date`, `currency`, `status`,
-`payment_status`, `notes`, `attachment_path`, `created_by → profiles`,
+`payment_status`, `notes`, `attachment_path`, `quotation_id → quotations`
+(nullable, `on delete set null`), `created_by → profiles`,
 `confirmed_at`, `cancelled_at`, `created_at`, `updated_at`.
 - One currency per SO; no exchange-rate conversion.
 - Trigger `enforce_so_header_immutable`: once `status <> 'draft'`, `customer_id`
   /`currency`/`order_date` can no longer change (`expected_delivery_date`,
   `notes`, `attachment_path`, `status` remain editable — delivery dates slip).
+  The same trigger also blocks the `draft → confirmed` transition when the SO
+  has zero line items (`SO_CONFIRM_NO_ITEMS`) — see `sales_order_items` below
+  for why a Draft SO can legitimately start out empty.
 - `status` is the one sales field that IS stored (not derived): set by the app
   on Confirm/Cancel, and recomputed by `post_sale_delivery` after each delivery
   from `SUM(ordered) vs SUM(delivered)` across all of the SO's items.
@@ -190,6 +194,11 @@ customers`, `order_date`, `expected_delivery_date`, `currency`, `status`,
   orthogonal to `status` — it tracks the SO's deposit invoice, not delivery.
   Mirrored by trigger `mirror_deposit_invoice_status` from the SO's active
   `deposit_invoices.status`; the app never writes it directly.
+- `quotation_id` is set when this order was auto-created from a Quotation's
+  paid deposit (`markPaid` in `src/lib/actions/quotations.ts`) — see the
+  `quotations` section below for the full flow. `on delete set null` rather
+  than cascade/restrict: deleting the source quotation record must never
+  touch a real order that money has already been paid against.
 
 ### sales_order_items  *(Third pass; `area_per_sheet`/`price_per_sqm` added Fifth pass)*
 `id`, `sales_order_id → sales_orders` (cascade), `sku_id → skus`,
@@ -199,15 +208,28 @@ unit-conversion path to get wrong), `ordered_qty`, `unit_price`, `line_total`
 (**generated always as** `ordered_qty * unit_price`), `area_per_sheet`
 (nullable), `price_per_sqm` (nullable). Delivered/outstanding quantity is
 derived, never stored (see `sales_order_item_delivered` above).
-- Triggers `enforce_so_item_immutable` (UPDATE + DELETE): items are freely
-  editable while the parent SO is `draft`; once confirmed they are permanently
-  immutable, matching the ledger's append-only philosophy.
+- Triggers `enforce_so_item_immutable` (INSERT + UPDATE + DELETE, INSERT added
+  Sixth pass): items are freely editable while the parent SO is `draft`; once
+  confirmed they are permanently immutable, matching the ledger's append-only
+  philosophy. INSERT is guarded too because items can now arrive two ways —
+  all at once via `create_draft_sales_order`, or one at a time via
+  `addSalesOrderItem` against an already-existing Draft order.
 - `area_per_sheet`/`price_per_sqm` are an optional per-m² pricing breakdown.
   `unit_price` stays the money source of truth: `create_draft_sales_order`
   derives it server-side (`price_per_sqm × area_per_sheet`) when both are
   supplied, and ignores any client-computed `unit_price` in that case; when
   either is absent, `unit_price` is taken as entered (the legacy flat-price
   path). Used to display Price/m² and Area/sheet on a Deposit Invoice.
+- **A Draft SO may legitimately have ZERO items** (Sixth pass — previously
+  `create_draft_sales_order` rejected an empty `p_items` array unconditionally;
+  that check was removed). This exists for exactly one reason: a SO
+  auto-created from a paid Quotation deposit can't populate real items itself
+  (quotation lines are free text; SO lines need a real `sku_id`/`location_id`
+  resolved against the catalog — see `quotations` below), so it starts empty
+  and a human adds each line by hand via `addSalesOrderItem`. The "must have
+  ≥1 item" invariant still holds — it just moved from creation time to confirm
+  time (`SO_CONFIRM_NO_ITEMS`, above), which is actually more consistent with
+  every other `draft`-is-the-mutable-state rule in this schema.
 
 ### deposit_invoices  *(Fifth pass)*
 `id`, `invoice_number` (unique, auto `DI-YYYY-####`, same numbering shape as
@@ -241,6 +263,30 @@ mistake gets a correcting entry, not an edit.
   `paid >= deposit_amount`. A second trigger,
   `mirror_deposit_invoice_status`, then mirrors that status onto
   `sales_orders.payment_status`.
+
+### quotations.deposit_paid_on → auto-created Sales Order  *(Sixth pass)*
+The first time a Quotation's `deposit_paid_on` transitions from `null` to a
+date (`markPaid` in `src/lib/actions/quotations.ts`, gated by
+`shouldCreateSalesOrderFromQuotation` so it only fires once per quotation —
+`src/lib/domain/sales.ts`), the app auto-creates a Draft `sales_orders` row
+linked via `quotation_id`:
+- **Customer**: uses `quotations.customer_id` if already linked; otherwise
+  looks for an existing `customers` row whose `name` matches
+  `quotations.customer_name` case-insensitively (`findMatchingCustomerId`),
+  and only creates a new `customers` row if nothing matches. Either way, the
+  resolved/created `customer_id` is also written back onto the quotation.
+- **Line items**: NONE — created empty (see `sales_order_items` above for why
+  this is even possible now). Quotation line items are free-text
+  (`description`/`wire_dia`/`steel_grade`); Sales Order line items need a
+  real catalog `sku_id` + `location_id`, which nothing can reliably infer from
+  free text. The Sales Order detail page shows the quotation's items as a
+  read-only reference table so a human can pick the matching SKU per line via
+  `addSalesOrderItem`.
+- **Failure handling**: this is a best-effort side effect of recording that
+  the deposit was paid — if customer/order creation fails partway, the
+  deposit-paid write is NOT rolled back (the user's actual action already
+  succeeded); the failure is surfaced in the action's response message
+  instead, and there is no automatic retry.
 
 ### payroll_runs  *(Fourth pass)*
 `id`, `period_start`, `period_end`, `pay_date`, `status`, `notes`,

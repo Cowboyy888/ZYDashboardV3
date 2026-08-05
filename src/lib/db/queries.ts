@@ -728,6 +728,28 @@ export async function getQuotationItems(quotationId?: string): Promise<Quotation
   }
 }
 
+/**
+ * The (at most one) Sales Order auto-created from each of these quotations'
+ * paid deposits — batched for the Quotations list page's "→ SO-xxxx"
+ * cross-link, mirroring getPayrollItemDeductions' batch-by-ids shape.
+ */
+export async function getSalesOrdersByQuotationIds(
+  quotationIds: string[],
+): Promise<Pick<SalesOrderRow, 'id' | 'so_number' | 'quotation_id'>[]> {
+  if (quotationIds.length === 0) return [];
+  try {
+    const supabase = await client();
+    const { data } = await supabase
+      .from('sales_orders')
+      .select('id, so_number, quotation_id')
+      .in('quotation_id', quotationIds);
+    return (data as Pick<SalesOrderRow, 'id' | 'so_number' | 'quotation_id'>[]) ?? [];
+  } catch (e) {
+    console.error('[queries] getSalesOrdersByQuotationIds', e);
+    return [];
+  }
+}
+
 // --- Overtime 加班 --------------------------------------------------------------
 
 export async function getOvertimeSettings(): Promise<OvertimeSettingsRow | null> {

@@ -7,6 +7,7 @@ import {
   customerSchema,
   customerUpdateSchema,
   createSalesOrderSchema,
+  addSalesOrderItemSchema,
   deliverGoodsSchema,
 } from '@/lib/validation/schemas';
 import { evaluateOverDeliveryGuard, canDeliverAgainst, canCancel } from '@/lib/domain/sales';
@@ -243,6 +244,93 @@ export async function createDraftSalesOrder(
   return ok('Sales order created as Draft', { id: soId });
 }
 
+/**
+ * Add one line item to an already-existing Draft sales order — used both by
+ * a human filling in items by hand and, notably, to complete a Sales Order
+ * that was auto-created header-only from a paid Quotation deposit (see
+ * markPaid in actions/quotations.ts), which has zero items until someone
+ * picks the real SKU/warehouse for each quotation line.
+ */
+export async function addSalesOrderItem(
+  _prev: ActionState,
+  formData: FormData,
+): Promise<ActionState> {
+  const user = await assertPermission('sales:manage');
+  const parsed = addSalesOrderItemSchema.safeParse({
+    salesOrderId: formData.get('salesOrderId'),
+    skuId: formData.get('skuId'),
+    locationId: formData.get('locationId'),
+    orderedQty: formData.get('orderedQty'),
+    unitPrice: formData.get('unitPrice'),
+  });
+  if (!parsed.success)
+    return fail('Please check the highlighted fields', zodFieldErrors(parsed.error.issues));
+  const d = parsed.data;
+
+  const supabase = await createSupabaseServerClient();
+  const { data: so } = await supabase
+    .from('sales_orders')
+    .select('status')
+    .eq('id', d.salesOrderId)
+    .maybeSingle();
+  if (!so) return fail('Sales order not found');
+  if (so.status !== 'draft') return fail('Items can only be added while the sales order is Draft.');
+
+  // The sale unit is never chosen by the user — it is always the SKU's own
+  // stock unit, matching createDraftSalesOrder's own derivation.
+  const { data: sku } = await supabase.from('skus').select('unit').eq('id', d.skuId).maybeSingle();
+  if (!sku) return fail('The selected specification was not found.');
+
+  const { error } = await supabase.from('sales_order_items').insert({
+    sales_order_id: d.salesOrderId,
+    sku_id: d.skuId,
+    location_id: d.locationId,
+    unit: sku.unit,
+    ordered_qty: d.orderedQty,
+    unit_price: d.unitPrice,
+  });
+  if (error) {
+    if (error.message.includes('SO_ITEM_LOCKED'))
+      return fail('Items can only be added while the sales order is Draft.');
+    return fail(error.message);
+  }
+
+  await writeAudit(user, {
+    action: 'sales_order.add_item',
+    entity: 'sales_order_items',
+    entityId: d.salesOrderId,
+    newValue: { skuId: d.skuId, locationId: d.locationId, orderedQty: d.orderedQty },
+  });
+  revalidatePath(`/sales/orders/${d.salesOrderId}`);
+  return ok('Item added');
+}
+
+export async function removeSalesOrderItem(
+  _prev: ActionState,
+  formData: FormData,
+): Promise<ActionState> {
+  const user = await assertPermission('sales:manage');
+  const itemId = String(formData.get('itemId') ?? '');
+  const salesOrderId = String(formData.get('salesOrderId') ?? '');
+  if (!itemId) return fail('Missing line item');
+
+  const supabase = await createSupabaseServerClient();
+  const { error } = await supabase.from('sales_order_items').delete().eq('id', itemId);
+  if (error) {
+    if (error.message.includes('SO_ITEM_LOCKED'))
+      return fail('Items can only be removed while the sales order is Draft.');
+    return fail(error.message);
+  }
+
+  await writeAudit(user, {
+    action: 'sales_order.remove_item',
+    entity: 'sales_order_items',
+    entityId: itemId,
+  });
+  if (salesOrderId) revalidatePath(`/sales/orders/${salesOrderId}`);
+  return ok('Item removed');
+}
+
 export async function confirmSalesOrder(
   _prev: ActionState,
   formData: FormData,
@@ -260,12 +348,22 @@ export async function confirmSalesOrder(
   if (!so) return fail('Sales order not found');
   if (so.status !== 'draft') return fail('Only a Draft sales order can be confirmed.');
 
+  const { count: itemCount } = await supabase
+    .from('sales_order_items')
+    .select('id', { count: 'exact', head: true })
+    .eq('sales_order_id', id);
+  if (!itemCount) return fail('Add at least one line item before confirming this sales order.');
+
   const { error } = await supabase
     .from('sales_orders')
     .update({ status: 'confirmed', confirmed_at: new Date().toISOString() })
     .eq('id', id)
     .eq('status', 'draft');
-  if (error) return fail(error.message);
+  if (error) {
+    if (error.message.includes('SO_CONFIRM_NO_ITEMS'))
+      return fail('Add at least one line item before confirming this sales order.');
+    return fail(error.message);
+  }
 
   await writeAudit(user, {
     action: 'sales_order.confirm',

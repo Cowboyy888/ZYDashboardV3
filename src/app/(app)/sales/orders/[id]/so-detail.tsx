@@ -1,5 +1,6 @@
 'use client';
 import { useRouter } from 'next/navigation';
+import Link from 'next/link';
 import { Fragment, useState } from 'react';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -14,7 +15,7 @@ import {
 } from '@/components/ui/table';
 import { ConfirmActionButton } from '@/components/forms/confirm-action-button';
 import { useT } from '@/components/i18n-provider';
-import { confirmSalesOrder, cancelSalesOrder } from '@/lib/actions/sales';
+import { confirmSalesOrder, cancelSalesOrder, removeSalesOrderItem } from '@/lib/actions/sales';
 import {
   SO_STATUS_LABELS,
   CURRENCY_LABELS,
@@ -34,12 +35,15 @@ import type {
   StockMovementRow,
   CustomerRow,
   DepositInvoiceRow,
+  QuotationRow,
+  QuotationItemRow,
 } from '@/lib/db/types';
 import { DeliverForm } from './deliver-form';
 import { SoPrint } from './so-print';
 import { GenerateDepositInvoiceDialog } from './generate-deposit-invoice-dialog';
 import { RecordPaymentDialog } from './record-payment-dialog';
 import { PrintDepositInvoiceButton } from './print-deposit-invoice-button';
+import { AddSoItemDialog } from './add-so-item-dialog';
 
 const STATUS_VARIANT = {
   draft: 'outline',
@@ -67,6 +71,9 @@ export function SoDetail({
   canManage,
   canOverride,
   depositInvoice,
+  sourceQuotation,
+  sourceQuotationItems,
+  skuOptions,
 }: {
   row: SalesOrderRow;
   so: SoRow;
@@ -78,10 +85,15 @@ export function SoDetail({
   canManage: boolean;
   canOverride: boolean;
   depositInvoice: DepositInvoiceRow | null;
+  /** Set when this order was auto-created from a Quotation's paid deposit. */
+  sourceQuotation: QuotationRow | null;
+  sourceQuotationItems: QuotationItemRow[];
+  skuOptions: { id: string; unit: string; label: string }[];
 }) {
   const { t, locale } = useT();
   const router = useRouter();
   const [deliveringItem, setDeliveringItem] = useState<string | null>(null);
+  const locations = Object.entries(locationName).map(([id, name]) => ({ id, name }));
 
   return (
     <div className="space-y-4">
@@ -101,6 +113,17 @@ export function SoDetail({
               )}
               {row.isOverdue && <Badge variant="destructive">{t('sal.overdueBadge')}</Badge>}
             </CardTitle>
+            {sourceQuotation && (
+              <div className="mt-1 text-xs text-muted-foreground">
+                {t('sal.createdFromQuotation')}{' '}
+                <Link
+                  href={`/sales/quotations`}
+                  className="text-primary underline underline-offset-2"
+                >
+                  {sourceQuotation.quotation_no ?? sourceQuotation.id.slice(0, 8)}
+                </Link>
+              </div>
+            )}
           </div>
           <div className="flex gap-2 print:hidden">
             <Button variant="outline" size="sm" onClick={() => window.print()}>
@@ -112,6 +135,14 @@ export function SoDetail({
                 grandTotal={row.grandTotal}
                 currency={row.currency}
                 onGenerated={() => router.refresh()}
+              />
+            )}
+            {canManage && so.status === 'draft' && (
+              <AddSoItemDialog
+                salesOrderId={so.id}
+                locations={locations}
+                skuOptions={skuOptions}
+                onAdded={() => router.refresh()}
               />
             )}
             {canManage && so.status === 'draft' && (
@@ -223,6 +254,41 @@ export function SoDetail({
         </Card>
       )}
 
+      {sourceQuotation && sourceQuotationItems.length > 0 && row.items.length === 0 && (
+        <Card className="border-dashed print:hidden">
+          <CardHeader>
+            <CardTitle className="text-base">{t('sal.quotationRefTitle')}</CardTitle>
+            <p className="text-xs text-muted-foreground">{t('sal.quotationRefHint')}</p>
+          </CardHeader>
+          <CardContent className="p-0">
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead>{t('quo.description')}</TableHead>
+                  <TableHead>{t('quo.wireDia')}</TableHead>
+                  <TableHead>{t('quo.steelGrade')}</TableHead>
+                  <TableHead className="text-right">{t('quo.quantity')}</TableHead>
+                  <TableHead className="text-right">{t('quo.unitPrice')}</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {sourceQuotationItems.map((it) => (
+                  <TableRow key={it.id}>
+                    <TableCell>{it.description}</TableCell>
+                    <TableCell>{it.wire_dia || '—'}</TableCell>
+                    <TableCell>{it.steel_grade || '—'}</TableCell>
+                    <TableCell className="text-right tabular-nums">
+                      {it.quantity} {it.unit}
+                    </TableCell>
+                    <TableCell className="text-right tabular-nums">{it.unit_price}</TableCell>
+                  </TableRow>
+                ))}
+              </TableBody>
+            </Table>
+          </CardContent>
+        </Card>
+      )}
+
       <Card className="print:hidden">
         <CardHeader>
           <CardTitle className="text-base">{t('sal.lineItems')}</CardTitle>
@@ -279,6 +345,16 @@ export function SoDetail({
                               {t('sal.deliverGoods')}
                             </Button>
                           )}
+                        {so.status === 'draft' && (
+                          <ConfirmActionButton
+                            action={removeSalesOrderItem}
+                            formData={{ itemId: item.itemId, salesOrderId: so.id }}
+                            label={t('common.delete')}
+                            confirmText={t('sal.confirmRemoveItem')}
+                            variant="destructive"
+                            onSuccess={() => router.refresh()}
+                          />
+                        )}
                       </TableCell>
                     )}
                   </TableRow>

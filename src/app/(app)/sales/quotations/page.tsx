@@ -1,6 +1,11 @@
 import { requirePermission } from '@/lib/auth';
 import { hasPermission } from '@/lib/domain/rbac';
-import { getQuotations, getQuotationItems, getCustomers } from '@/lib/db/queries';
+import {
+  getQuotations,
+  getQuotationItems,
+  getCustomers,
+  getSalesOrdersByQuotationIds,
+} from '@/lib/db/queries';
 import { getLocale } from '@/lib/i18n/locale';
 import { translator } from '@/lib/i18n';
 import { PageHeader } from '@/components/page-header';
@@ -19,6 +24,7 @@ export default async function QuotationsPage() {
     getQuotationItems(),
     getCustomers(true),
   ]);
+  const linkedOrders = await getSalesOrdersByQuotationIds(quotations.map((q) => q.id));
 
   return (
     <div>
@@ -29,6 +35,11 @@ export default async function QuotationsPage() {
         items={items}
         customers={customers.map((c) => ({ id: c.id, name: c.name }))}
         canManage={hasPermission(user.role, 'sales:manage')}
+        linkedOrders={linkedOrders.map((o) => ({
+          quotationId: o.quotation_id as string,
+          soId: o.id,
+          soNumber: o.so_number,
+        }))}
       />
     </div>
   );

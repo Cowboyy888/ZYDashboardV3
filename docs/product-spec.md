@@ -153,6 +153,20 @@ Seeded opening stock (Storage Room): 拔丝料 10厘 = 10 捆; 拔丝料 6厘 = 
   from an append-only payments ledger — never hand-set — via "Record
   Payment" (amount + date). Reuses `sales:manage`, no new permission — see
   `docs/data-dictionary.md` and `docs/test-plan.md` for the schema and tests.
+- **Sixth pass — Quotation deposit → Sales Order (built):** the first time a
+  Quotation's deposit is marked paid, the app auto-creates a linked Draft
+  Sales Order (customer resolved-or-created from the quotation's name/contact,
+  currency, and a traceability note — see `docs/data-dictionary.md`'s
+  "quotations.deposit_paid_on → auto-created Sales Order" for the exact
+  resolution rules). It starts with **zero line items** by design: a
+  quotation's lines are free text, while a Sales Order's lines need a real
+  catalog SKU + warehouse, which nothing can safely guess from text. A human
+  completes it via a new "Add item" action on the Sales Order (SKU/location
+  picker, with the quotation's original lines shown alongside as a reference),
+  and confirming the order is now blocked until it has at least one item — a
+  rule that used to be enforced at creation time and moved to confirm time to
+  make the empty-Draft-then-fill-in-by-hand flow possible. Both records show a
+  cross-link once connected. Reuses `sales:manage`, no new permission.
 
 ## Explicit non-goals (v1)
 

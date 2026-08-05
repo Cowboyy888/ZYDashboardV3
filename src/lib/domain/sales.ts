@@ -121,3 +121,40 @@ export function isDueWithinDays(
   if (!expectedDeliveryDate) return false;
   return expectedDeliveryDate >= today && expectedDeliveryDate <= addDays(today, days);
 }
+
+// --- Quotation → Sales Order linkage --------------------------------------------
+// When a Quotation's deposit is marked paid, the app auto-creates a Draft
+// Sales Order for it (src/lib/actions/quotations.ts's markPaid). These pure
+// helpers back that decision; the I/O (customer lookup/insert, RPC call)
+// stays in the action.
+
+/**
+ * Only fire the auto-create the FIRST time a deposit transitions to paid —
+ * `deposit_paid_on` had no built-in "is this a fresh change" signal (markPaid
+ * just overwrites it unconditionally), so the caller must read the prior
+ * value itself and pass it in here.
+ */
+export function shouldCreateSalesOrderFromQuotation(depositPaidOnBefore: string | null): boolean {
+  return depositPaidOnBefore == null;
+}
+
+/**
+ * Case-insensitive exact match against existing customers, so re-using an
+ * already-created customer record is preferred over spawning a duplicate
+ * when the quotation's typed name happens to match one exactly. Returns
+ * null when nothing matches — the caller creates a new customer in that case.
+ */
+export function findMatchingCustomerId(
+  customerName: string,
+  existingCustomers: { id: string; name: string }[],
+): string | null {
+  const needle = customerName.trim().toLowerCase();
+  return existingCustomers.find((c) => c.name.trim().toLowerCase() === needle)?.id ?? null;
+}
+
+/** Traceability note stamped on the auto-created Sales Order. */
+export function buildSalesOrderNoteFromQuotation(quotationNo: string | null): string {
+  return quotationNo
+    ? `Auto-created from Quotation ${quotationNo} on deposit payment`
+    : 'Auto-created from a Quotation on deposit payment';
+}

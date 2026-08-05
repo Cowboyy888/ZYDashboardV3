@@ -387,6 +387,8 @@ export interface SalesOrderRow {
   payment_status: SoPaymentStatus;
   notes: string | null;
   attachment_path: string | null;
+  /** Set when this order was auto-created from a Quotation's paid deposit — see markPaid. */
+  quotation_id: string | null;
   created_by: string | null;
   confirmed_at: string | null;
   cancelled_at: string | null;

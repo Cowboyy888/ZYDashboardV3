@@ -349,6 +349,16 @@ export const createSalesOrderSchema = z.object({
 });
 export type CreateSalesOrderInput = z.infer<typeof createSalesOrderSchema>;
 
+/** Add one line item to an already-existing Draft sales order. */
+export const addSalesOrderItemSchema = z.object({
+  salesOrderId: z.string().uuid(),
+  skuId: z.string().uuid(),
+  locationId: z.string().uuid(),
+  orderedQty: positiveQty,
+  unitPrice: z.coerce.number().min(0, 'Unit price cannot be negative'),
+});
+export type AddSalesOrderItemInput = z.infer<typeof addSalesOrderItemSchema>;
+
 export const deliverGoodsSchema = z.object({
   itemId: z.string().uuid(),
   quantity: positiveQty,

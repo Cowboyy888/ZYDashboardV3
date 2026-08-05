@@ -12,8 +12,11 @@ import {
   getLocations,
   getProfiles,
   getDepositInvoiceForSo,
+  getQuotation,
+  getQuotationItems,
 } from '@/lib/db/queries';
 import { buildSalesOrderRows } from '@/lib/domain/sales-view';
+import { buildSkuLabel } from '@/lib/domain/products';
 import { businessDate } from '@/lib/domain/datetime';
 import { getLocale } from '@/lib/i18n/locale';
 import { PageHeader } from '@/components/page-header';
@@ -47,6 +50,9 @@ export default async function SalesOrderDetailPage({
     getSalesOrderItemsDelivered(itemIds),
     getSalesOrderDeliveries(itemIds),
   ]);
+  const [sourceQuotation, sourceQuotationItems] = so.quotation_id
+    ? await Promise.all([getQuotation(so.quotation_id), getQuotationItems(so.quotation_id)])
+    : [null, []];
 
   const rows = buildSalesOrderRows(
     [so],
@@ -62,6 +68,24 @@ export default async function SalesOrderDetailPage({
   if (!row) notFound();
   const locationName = new Map(locations.map((l) => [l.id, l.name]));
   const profileName = new Map(profiles.map((p) => [p.id, p.full_name || p.email]));
+  const familyName = new Map(families.map((f) => [f.id, f.name]));
+  const skuOptions = skus.map((s) => ({
+    id: s.id,
+    unit: s.unit,
+    label: buildSkuLabel(
+      {
+        familyName: familyName.get(s.family_id) ?? '—',
+        diameter: s.diameter,
+        size: s.size,
+        hole: s.hole,
+        rodCount: s.rod_count,
+        extra: s.extra,
+        condition: s.condition,
+        unit: s.unit,
+      },
+      locale,
+    ),
+  }));
 
   return (
     <div>
@@ -81,6 +105,9 @@ export default async function SalesOrderDetailPage({
         canManage={hasPermission(user.role, 'sales:manage')}
         canOverride={hasPermission(user.role, 'stock:override_negative')}
         depositInvoice={depositInvoice}
+        sourceQuotation={sourceQuotation}
+        sourceQuotationItems={sourceQuotationItems}
+        skuOptions={skuOptions}
       />
     </div>
   );

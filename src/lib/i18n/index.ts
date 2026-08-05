@@ -633,6 +633,7 @@ export const dictionary = {
     en: 'Please allow pop-ups for this site to view the PDF.',
     zh: '请允许此网站弹出窗口以查看 PDF。',
   },
+  'quo.linkedSalesOrder': { en: 'Sales Order', zh: '销售订单' },
 
   // Customer price inquiries (quotation tracking)
   'inq.desc': {
@@ -753,6 +754,16 @@ export const dictionary = {
   'sal.attachment': { en: 'Attachment', zh: '附件' },
   'sal.lineItems': { en: 'Line items', zh: '明细项' },
   'sal.addItem': { en: 'Add line', zh: '新增一行' },
+  'sal.createdFromQuotation': { en: 'Created from Quotation', zh: '源自报价单' },
+  'sal.quotationRefTitle': {
+    en: "Quotation's line items (reference)",
+    zh: '报价单明细（参考）',
+  },
+  'sal.quotationRefHint': {
+    en: 'Free-text from the quotation — pick the matching catalog specification and add it as a real line item below.',
+    zh: '来自报价单的文字描述 — 请在下方选择对应的产品规格并新增为正式明细。',
+  },
+  'sal.confirmRemoveItem': { en: 'Remove this line item?', zh: '确认删除此明细项？' },
   'sal.orderedQty': { en: 'Ordered qty', zh: '订购数量' },
   'sal.unitPrice': { en: 'Unit price', zh: '单价' },
   'sal.lineTotal': { en: 'Line total', zh: '小计' },

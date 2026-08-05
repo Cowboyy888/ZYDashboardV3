@@ -1,10 +1,15 @@
 'use server';
 import { revalidatePath } from 'next/cache';
 import { createSupabaseServerClient } from '@/lib/supabase/server';
-import { assertPermission } from '@/lib/auth';
+import { assertPermission, type CurrentUser } from '@/lib/auth';
 import { writeAudit } from '@/lib/audit';
 import { businessDate } from '@/lib/domain/datetime';
 import { DOC_PREFIX, normalizeDepositPct, type DocumentKind } from '@/lib/domain/quotation';
+import {
+  shouldCreateSalesOrderFromQuotation,
+  findMatchingCustomerId,
+  buildSalesOrderNoteFromQuotation,
+} from '@/lib/domain/sales';
 import {
   quotationSchema,
   quotationUpdateSchema,
@@ -242,8 +247,15 @@ export async function markPaid(_prev: ActionState, formData: FormData): Promise<
   const which = String(formData.get('which') ?? '');
   if (!id || (which !== 'deposit' && which !== 'balance')) return fail('Invalid payment request');
 
-  const column = which === 'deposit' ? 'deposit_paid_on' : 'balance_paid_on';
   const supabase = await createSupabaseServerClient();
+  const { data: quotation } = await supabase
+    .from('quotations')
+    .select('id, customer_id, customer_name, contact, currency, quotation_no, deposit_paid_on')
+    .eq('id', id)
+    .maybeSingle();
+  if (!quotation) return fail('Quotation not found');
+
+  const column = which === 'deposit' ? 'deposit_paid_on' : 'balance_paid_on';
   const { error } = await supabase
     .from('quotations')
     .update({ [column]: businessDate() })
@@ -256,5 +268,87 @@ export async function markPaid(_prev: ActionState, formData: FormData): Promise<
     entityId: id,
   });
   revalidatePath(`${LIST_PATH}/${id}`);
-  return ok(which === 'deposit' ? 'Deposit marked paid' : 'Balance marked paid');
+
+  // Connect this quotation to a Sales Order the first time its deposit is
+  // paid — see src/lib/domain/sales.ts for why this is a header-only Draft
+  // (zero line items: quotation lines are free text, sales order lines need
+  // a real catalog SKU + warehouse, which nothing here can safely guess).
+  let soWarning: string | null = null;
+  if (which === 'deposit' && shouldCreateSalesOrderFromQuotation(quotation.deposit_paid_on)) {
+    soWarning = await createSalesOrderFromQuotation(supabase, user, quotation);
+  }
+
+  const successMessage = which === 'deposit' ? 'Deposit marked paid' : 'Balance marked paid';
+  return ok(soWarning ? `${successMessage} — ${soWarning}` : successMessage);
+}
+
+/**
+ * Best-effort side effect of markPaid: resolve (or create) the customer, then
+ * create the Draft Sales Order via the same RPC the manual "New Sales Order"
+ * form uses. Returns a warning string if it failed — the deposit-paid write
+ * itself must never be rolled back just because this secondary step didn't
+ * complete, since the user's actual action (recording that money came in)
+ * already succeeded.
+ */
+async function createSalesOrderFromQuotation(
+  supabase: Awaited<ReturnType<typeof createSupabaseServerClient>>,
+  user: CurrentUser,
+  quotation: {
+    id: string;
+    customer_id: string | null;
+    customer_name: string;
+    contact: string | null;
+    currency: string;
+    quotation_no: string | null;
+  },
+): Promise<string | null> {
+  let customerId = quotation.customer_id;
+
+  if (!customerId) {
+    const { data: existing } = await supabase
+      .from('customers')
+      .select('id, name')
+      .eq('is_active', true);
+    customerId = findMatchingCustomerId(quotation.customer_name, existing ?? []);
+
+    if (!customerId) {
+      const { data: created, error: customerError } = await supabase
+        .from('customers')
+        .insert({
+          name: quotation.customer_name,
+          phone: quotation.contact ?? null,
+          default_currency: quotation.currency,
+        })
+        .select('id')
+        .single();
+      if (customerError) return `could not create a linked Sales Order (${customerError.message})`;
+      customerId = created.id as string;
+    }
+
+    // Link the quotation to the resolved/created customer too, so it no
+    // longer shows as unlinked — best-effort, not fatal if it fails.
+    await supabase.from('quotations').update({ customer_id: customerId }).eq('id', quotation.id);
+  }
+
+  const { data: soId, error: soError } = await supabase.rpc('create_draft_sales_order', {
+    p_customer_id: customerId,
+    p_order_date: businessDate(),
+    p_expected_delivery_date: null,
+    p_currency: quotation.currency,
+    p_notes: buildSalesOrderNoteFromQuotation(quotation.quotation_no),
+    p_attachment_path: null,
+    p_items: [],
+    p_quotation_id: quotation.id,
+  });
+  if (soError) return `could not create a linked Sales Order (${soError.message})`;
+
+  await writeAudit(user, {
+    action: 'sales_order.create_from_quotation',
+    entity: 'sales_orders',
+    entityId: String(soId ?? ''),
+    newValue: { quotationId: quotation.id },
+  });
+  revalidatePath('/sales/orders');
+  revalidatePath('/sales');
+  return null;
 }
