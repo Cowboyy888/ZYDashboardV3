@@ -19,6 +19,7 @@ import type {
   QuotationRow,
   PayrollItemDeductionsRow,
   PayrollItemLineRow,
+  PayrollItemLiveRow,
   PayrollItemRow,
   PayrollRunRow,
   ProductFamilyRow,
@@ -605,6 +606,25 @@ export async function getPayrollItems(payrollRunId?: string): Promise<PayrollIte
     return (data as PayrollItemRow[]) ?? [];
   } catch (e) {
     console.error('[queries] getPayrollItems', e);
+    return [];
+  }
+}
+
+/**
+ * Recomputed-from-current-attendance figures for Draft-run items, via the
+ * `payroll_items_live` view (0026_payroll_items_live.sql) — pass the item ids
+ * belonging to Draft runs only; `buildPayrollRunRows` (payroll-view.ts)
+ * overlays these onto the stored snapshot for items whose run is still
+ * Draft, so Approved/Paid runs keep their frozen numbers untouched.
+ */
+export async function getPayrollItemsLive(itemIds: string[]): Promise<PayrollItemLiveRow[]> {
+  if (itemIds.length === 0) return [];
+  try {
+    const supabase = await client();
+    const { data } = await supabase.from('payroll_items_live').select('*').in('id', itemIds);
+    return (data as PayrollItemLiveRow[]) ?? [];
+  } catch (e) {
+    console.error('[queries] getPayrollItemsLive', e);
     return [];
   }
 }

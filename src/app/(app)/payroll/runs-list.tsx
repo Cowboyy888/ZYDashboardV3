@@ -10,6 +10,7 @@ import {
   TableHeader,
   TableRow,
 } from '@/components/ui/table';
+import { LiveDot } from '@/components/animated-stat';
 import { useT } from '@/components/i18n-provider';
 import { PAYROLL_STATUS_LABELS, type PayrollStatus } from '@/lib/domain/payroll';
 import { formatDDMMYYYY } from '@/lib/domain/datetime';
@@ -50,9 +51,12 @@ export function RunsList({ rows }: { rows: PayrollRunRow[] }) {
                 </TableCell>
                 <TableCell>{formatDDMMYYYY(r.payDate)}</TableCell>
                 <TableCell>
-                  <Badge variant={STATUS_VARIANT[r.status]}>
-                    {PAYROLL_STATUS_LABELS[r.status][locale]}
-                  </Badge>
+                  <div className="flex items-center gap-1.5">
+                    <Badge variant={STATUS_VARIANT[r.status]}>
+                      {PAYROLL_STATUS_LABELS[r.status][locale]}
+                    </Badge>
+                    {r.status === 'draft' && <LiveDot />}
+                  </div>
                 </TableCell>
                 <TableCell className="text-right tabular-nums">{r.itemCount}</TableCell>
                 <TableCell className="text-right font-semibold tabular-nums">

@@ -130,6 +130,16 @@ Seeded opening stock (Storage Room): 拔丝料 10厘 = 10 捆; 拔丝料 6厘 = 
   labels/kinds — see AGENTS.md). These rules (worked-day counting, currency,
   deduction structure) were explicit product decisions, not inferred — see
   `docs/data-dictionary.md` and `docs/test-plan.md` for the schema and tests.
+  While a run is still **Draft**, its days-worked/base/overtime figures are
+  **live** — recomputed from current attendance and overtime on every page
+  load via the `payroll_items_live` view (migration 0026), so a Draft left
+  open across several days reflects each day's attendance instead of
+  freezing at generation time. Approving a run snapshots those CURRENT live
+  figures into the stored columns as its last step before flipping status
+  (the `approve_payroll_run` RPC) — so the frozen record is what was on
+  screen at approval time, not the stale generation-time numbers — and only
+  then becomes authoritative and immutable, preserving the existing "an
+  Approved payslip never changes" guarantee.
 - **Fifth pass — Sales Order Deposit Invoices (built):** a confirmed sales
   order can generate one active `Deposit Invoice` for a chosen percentage
   (10/30/50/custom) of its total. Sales order line items got an optional

@@ -4,6 +4,7 @@ import { hasPermission } from '@/lib/domain/rbac';
 import {
   getPayrollRuns,
   getPayrollItems,
+  getPayrollItemsLive,
   getPayrollItemDeductions,
   getEmployees,
 } from '@/lib/db/queries';
@@ -26,7 +27,13 @@ export default async function PayrollPage() {
     getEmployees(true),
   ]);
 
-  const rows = buildPayrollRunRows(runs, items, deductions, [], employees);
+  // Only Draft runs' items need the live recompute — Approved/Paid/Cancelled
+  // keep their frozen snapshot.
+  const draftRunIds = new Set(runs.filter((r) => r.status === 'draft').map((r) => r.id));
+  const draftItemIds = items.filter((it) => draftRunIds.has(it.payroll_run_id)).map((it) => it.id);
+  const liveItems = await getPayrollItemsLive(draftItemIds);
+
+  const rows = buildPayrollRunRows(runs, items, deductions, [], employees, liveItems);
 
   return (
     <div>

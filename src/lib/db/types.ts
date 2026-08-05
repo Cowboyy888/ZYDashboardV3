@@ -481,3 +481,14 @@ export interface PayrollItemDeductionsRow {
   item_id: string;
   deductions_total: number;
 }
+
+/** Recomputed-from-current-attendance figures for a Draft run's item (public.payroll_items_live). */
+export interface PayrollItemLiveRow {
+  id: string;
+  payroll_run_id: string;
+  employee_id: string;
+  live_days_worked: number;
+  live_rate: number;
+  live_base_amount: number;
+  live_overtime_amount: number;
+}

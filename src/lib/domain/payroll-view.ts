@@ -30,6 +30,14 @@ export interface DeductionsLike {
   deductions_total: number;
 }
 
+export interface PayrollItemLiveLike {
+  id: string;
+  live_days_worked: number;
+  live_rate: number;
+  live_base_amount: number;
+  live_overtime_amount: number;
+}
+
 export interface LineLike {
   id: string;
   payroll_item_id: string;
@@ -71,6 +79,8 @@ export interface PayrollItemRow {
   deductionsTotal: number;
   netAmount: number;
   lines: PayrollLineRow[];
+  /** True while these figures are the live-recomputed ones (Draft run only) rather than the frozen snapshot. */
+  isLive: boolean;
 }
 
 export interface PayrollRunRow {
@@ -88,16 +98,29 @@ export interface PayrollRunRow {
   netTotal: number;
 }
 
-/** Assemble full payroll-run rows (with salary figures) — restrict to payroll-privileged roles before rendering. */
+/**
+ * Assemble full payroll-run rows (with salary figures) — restrict to
+ * payroll-privileged roles before rendering.
+ *
+ * `liveItems` (from `payroll_items_live`, fetched only for Draft-run items —
+ * see `getPayrollItemsLive`) overrides days_worked/rate/base_amount/
+ * overtime_amount for items whose run is still Draft, so the numbers reflect
+ * attendance/overtime marked *after* the run was generated instead of
+ * silently going stale. Once a run leaves Draft, its stored snapshot is
+ * always used — never overridden — so an approved payslip still never
+ * changes.
+ */
 export function buildPayrollRunRows(
   runs: PayrollRunLike[],
   items: PayrollItemLike[],
   deductions: DeductionsLike[],
   lines: LineLike[],
   employees: EmployeeLike[],
+  liveItems: PayrollItemLiveLike[] = [],
 ): PayrollRunRow[] {
   const employeeById = new Map(employees.map((e) => [e.id, e]));
   const deductionsByItem = new Map(deductions.map((d) => [d.item_id, d.deductions_total]));
+  const liveByItem = new Map(liveItems.map((l) => [l.id, l]));
   const linesByItem = new Map<string, LineLike[]>();
   for (const l of lines) {
     if (!linesByItem.has(l.payroll_item_id)) linesByItem.set(l.payroll_item_id, []);
@@ -114,7 +137,13 @@ export function buildPayrollRunRows(
     const itemRows: PayrollItemRow[] = runItems.map((it) => {
       const employee = employeeById.get(it.employee_id);
       const deductionsTotal = round2(deductionsByItem.get(it.id) ?? 0);
-      const overtimeAmount = round2(Number(it.overtime_amount ?? 0));
+      const live = run.status === 'draft' ? liveByItem.get(it.id) : undefined;
+      const daysWorked = live ? live.live_days_worked : it.days_worked;
+      const rate = live ? live.live_rate : it.rate;
+      const baseAmount = live ? live.live_base_amount : it.base_amount;
+      const overtimeAmount = round2(
+        Number((live ? live.live_overtime_amount : it.overtime_amount) ?? 0),
+      );
       const itemLines = (linesByItem.get(it.id) ?? []).map((l) => ({
         lineId: l.id,
         kind: l.kind,
@@ -127,14 +156,15 @@ export function buildPayrollRunRows(
         employeeCode: employee?.employee_code ?? it.employee_id,
         employeeName: employee ? employeeDisplayName(employee) : it.employee_id,
         payType: it.pay_type,
-        daysWorked: it.days_worked,
-        rate: it.rate,
-        baseAmount: it.base_amount,
+        daysWorked,
+        rate,
+        baseAmount,
         overtimeAmount,
         deductionsTotal,
         // Overtime is earned pay, so it is added to the base before deductions.
-        netAmount: computeNetAmount(round2(it.base_amount + overtimeAmount), deductionsTotal),
+        netAmount: computeNetAmount(round2(baseAmount + overtimeAmount), deductionsTotal),
         lines: itemLines,
+        isLive: !!live,
       };
     });
 

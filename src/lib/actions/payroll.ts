@@ -153,19 +153,54 @@ async function transitionRun(
   return ok(successMessage);
 }
 
+/**
+ * Approving a Draft run first snapshots the CURRENT live-recomputed figures
+ * (payroll_items_live) into payroll_items, then flips the run to Approved —
+ * both inside one DB transaction (approve_payroll_run RPC, 0026 migration).
+ * This is deliberately NOT the shared transitionRun() helper used by
+ * markPayrollRunPaid/cancelPayrollRun: those are plain status flips, but
+ * approving must also carry forward whatever attendance/overtime corrections
+ * happened after generation — otherwise the frozen record would silently
+ * revert to the stale generation-time snapshot the Draft view no longer
+ * shows.
+ */
 export async function approvePayrollRun(
   _prev: ActionState,
   formData: FormData,
 ): Promise<ActionState> {
-  return transitionRun(
-    String(formData.get('id') ?? ''),
-    'payroll:approve',
-    canApproveRun,
-    'Only a Draft payroll run can be approved.',
-    { status: 'approved', approved_at: new Date().toISOString() },
-    'payroll_run.approve',
-    'Payroll run approved',
-  );
+  const user = await assertPermission('payroll:approve');
+  const id = String(formData.get('id') ?? '');
+  if (!id) return fail('Missing payroll run');
+
+  const supabase = await createSupabaseServerClient();
+  const { data: run } = await supabase
+    .from('payroll_runs')
+    .select('status')
+    .eq('id', id)
+    .maybeSingle();
+  if (!run) return fail('Payroll run not found');
+  if (!canApproveRun(run.status as PayrollStatus))
+    return fail('Only a Draft payroll run can be approved.');
+
+  const { error } = await supabase.rpc('approve_payroll_run', { p_run_id: id });
+  if (error) {
+    if (error.message.includes('PAYROLL_APPROVE_OWNER_ONLY'))
+      return fail('Only an Owner may approve a payroll run.');
+    if (error.message.includes('PAYROLL_APPROVE_NOT_DRAFT'))
+      return fail('Only a Draft payroll run can be approved.');
+    return fail(error.message);
+  }
+
+  await writeAudit(user, {
+    action: 'payroll_run.approve',
+    entity: 'payroll_runs',
+    entityId: id,
+    oldValue: { status: run.status },
+    newValue: { status: 'approved' },
+  });
+  revalidatePath(`/payroll/${id}`);
+  revalidatePath('/payroll');
+  return ok('Payroll run approved');
 }
 
 export async function markPayrollRunPaid(

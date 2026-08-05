@@ -4,6 +4,7 @@ import { hasPermission } from '@/lib/domain/rbac';
 import {
   getPayrollRun,
   getPayrollItems,
+  getPayrollItemsLive,
   getPayrollItemDeductions,
   getPayrollRunLines,
   getEmployees,
@@ -32,12 +33,13 @@ export default async function PayrollRunDetailPage({
 
   const [items, employees] = await Promise.all([getPayrollItems(id), getEmployees(true)]);
   const itemIds = items.map((i) => i.id);
-  const [deductions, lines] = await Promise.all([
+  const [deductions, lines, liveItems] = await Promise.all([
     getPayrollItemDeductions(itemIds),
     getPayrollRunLines(itemIds),
+    run.status === 'draft' ? getPayrollItemsLive(itemIds) : Promise.resolve([]),
   ]);
 
-  const rows = buildPayrollRunRows([run], items, deductions, lines, employees);
+  const rows = buildPayrollRunRows([run], items, deductions, lines, employees, liveItems);
   const row = rows[0];
   if (!row) notFound();
 

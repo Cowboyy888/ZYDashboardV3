@@ -13,6 +13,7 @@ import {
   TableRow,
 } from '@/components/ui/table';
 import { ConfirmActionButton } from '@/components/forms/confirm-action-button';
+import { LiveDot } from '@/components/animated-stat';
 import { useT } from '@/components/i18n-provider';
 import { approvePayrollRun, markPayrollRunPaid, cancelPayrollRun } from '@/lib/actions/payroll';
 import {
@@ -55,6 +56,12 @@ export function RunDetail({
             <Badge variant={STATUS_VARIANT[row.status]}>
               {PAYROLL_STATUS_LABELS[row.status][locale]}
             </Badge>
+            {row.status === 'draft' && (
+              <span className="flex items-center gap-1.5 text-xs font-normal text-muted-foreground">
+                <LiveDot />
+                {t('pay.live')}
+              </span>
+            )}
           </CardTitle>
           <div className="flex gap-2 print:hidden">
             {canManage && canEditRun(row.status) && (

@@ -826,6 +826,10 @@ export const dictionary = {
     zh: '金额根据考勤与工资率自动计算 — 不可手动输入。',
   },
   'pay.generateDraft': { en: 'Generate draft', zh: '生成草稿' },
+  'pay.live': {
+    en: 'Live — updates as attendance & overtime are recorded',
+    zh: '实时 — 随考勤与加班记录自动更新',
+  },
   'pay.period': { en: 'Period', zh: '周期' },
   'pay.periodStart': { en: 'Period start', zh: '周期开始' },
   'pay.periodEnd': { en: 'Period end', zh: '周期结束' },
