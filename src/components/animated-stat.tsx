@@ -96,8 +96,8 @@ export function AnimatedBar({
   return (
     <div className="mt-2 h-1.5 w-full overflow-hidden rounded-full bg-muted">
       <div
-        className={`h-full rounded-full transition-[width] duration-700 ease-out ${className}`}
-        style={{ width: `${width}%` }}
+        className={`h-full w-full origin-left rounded-full transition-transform duration-700 ease-out ${className}`}
+        style={{ transform: `scaleX(${width / 100})` }}
       />
     </div>
   );

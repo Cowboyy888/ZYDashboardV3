@@ -90,7 +90,9 @@ Editable groups that structure the attendance report (老板助理, 工厂主管
 `id`, `employee_code` (unique — auto-generated `ZY-0001` from `seq_no`),
 `seq_no` (unique; permanent, never-reused sequence from `employee_seq`),
 `name_khmer`, `name_english`, `name_chinese`, `phone`, `department`, `position`,
-`start_date`, `is_active`, `pay_type`, `photo_path`, `notes`, `created_at`.
+`start_date`, `is_active`, `pay_type`, `photo_path`, `photo_thumb_path` (128px
+`sharp`-generated copy, list view only — nullable, falls back to `photo_path`
+until re-upload), `notes`, `created_at`.
 The `assign_employee_identity` BEFORE INSERT trigger sets `seq_no` and
 `employee_code = 'ZY-' || lpad(seq_no,4,'0')`. Employee IDs are **never
 entered by the client** and never reused, even after archiving.

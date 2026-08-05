@@ -29,7 +29,9 @@ export default async function EmployeesPage() {
   let photoUrls: Record<string, string> = {};
   if (canSensitive) {
     const withPhotos = employees.filter((e) => e.photo_path);
-    const urls = await Promise.all(withPhotos.map((e) => getSignedPhotoUrl(e.photo_path)));
+    const urls = await Promise.all(
+      withPhotos.map((e) => getSignedPhotoUrl(e.photo_thumb_path ?? e.photo_path)),
+    );
     photoUrls = Object.fromEntries(
       withPhotos
         .map((e, i) => [e.id, urls[i]])

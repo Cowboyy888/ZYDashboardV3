@@ -195,7 +195,14 @@ function EmployeeAvatar({ photoUrl, name }: { photoUrl: string | undefined; name
   if (photoUrl) {
     return (
       // eslint-disable-next-line @next/next/no-img-element
-      <img src={photoUrl} alt="" className="h-8 w-8 shrink-0 rounded-full object-cover" />
+      <img
+        src={photoUrl}
+        alt=""
+        width={32}
+        height={32}
+        loading="lazy"
+        className="h-8 w-8 shrink-0 rounded-full object-cover"
+      />
     );
   }
   return (

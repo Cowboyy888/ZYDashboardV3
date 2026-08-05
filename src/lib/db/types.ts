@@ -101,6 +101,7 @@ export interface EmployeeRow {
   is_active: boolean;
   pay_type: 'daily';
   photo_path: string | null;
+  photo_thumb_path: string | null;
   notes: string | null;
   // Attendance-group profile fields (used by the grouped report).
   attendance_group_id: string | null;

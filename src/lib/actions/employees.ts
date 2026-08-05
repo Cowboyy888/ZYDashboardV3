@@ -1,5 +1,6 @@
 'use server';
 import { revalidatePath } from 'next/cache';
+import sharp from 'sharp';
 import { createSupabaseServerClient } from '@/lib/supabase/server';
 import { assertPermission } from '@/lib/auth';
 import { writeAudit } from '@/lib/audit';
@@ -127,9 +128,32 @@ export async function setEmployeePhoto(
   const path = String(formData.get('path') ?? '');
   if (!employeeId || !path) return fail('Missing photo path');
   const supabase = await createSupabaseServerClient();
+
+  // Best-effort thumbnail: the employee list renders this at 32px, so a small
+  // resized copy avoids signing/serving the full-resolution original per row.
+  // On any failure, leave it null — the list falls back to photo_path.
+  let thumbPath: string | null = null;
+  try {
+    const { data: original } = await supabase.storage.from('employee-photos').download(path);
+    if (original) {
+      const buffer = Buffer.from(await original.arrayBuffer());
+      const thumb = await sharp(buffer)
+        .resize(128, 128, { fit: 'cover' })
+        .webp({ quality: 80 })
+        .toBuffer();
+      const candidatePath = path.replace(/\.[^./]+$/, '') + '-thumb.webp';
+      const { error: thumbErr } = await supabase.storage
+        .from('employee-photos')
+        .upload(candidatePath, thumb, { upsert: true, contentType: 'image/webp' });
+      if (!thumbErr) thumbPath = candidatePath;
+    }
+  } catch (e) {
+    console.error('[employees] photo thumbnail generation failed', e);
+  }
+
   const { error } = await supabase
     .from('employees')
-    .update({ photo_path: path })
+    .update({ photo_path: path, photo_thumb_path: thumbPath })
     .eq('id', employeeId);
   if (error) return fail(error.message);
   await writeAudit(user, {
