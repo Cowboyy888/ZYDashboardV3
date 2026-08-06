@@ -510,7 +510,7 @@ function DocButton({
         return;
       }
       if (!w) {
-        setError(t('quo.popupBlocked'));
+        setError(t('common.popupBlocked'));
         return;
       }
       // Refresh so the list's document badge picks up the newly-issued

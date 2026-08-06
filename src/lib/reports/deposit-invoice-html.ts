@@ -1,10 +1,15 @@
 /**
  * Branded Deposit Invoice — pure, no DOM / no server deps.
  *
- * Self-contained HTML string, printed to PDF client-side (same pattern as
- * inquiry-report-html.ts's buildInquiryReportHtml: `window.open('', '_blank')`
- * → `document.write(html)` → delayed `print()`). Reuses `esc()` from that file
- * so the two documents never diverge on escaping.
+ * Self-contained HTML string, written into a new window
+ * (`window.open('', '_blank')` → `document.write(html)`). The document
+ * carries its own "Print / Save as PDF" button — same pattern as
+ * quotation-doc-html.ts — rather than the caller auto-triggering `print()`
+ * via a `setTimeout`: on mobile, a `print()` call from a timer callback in
+ * the OPENER window (not a direct in-window user gesture) is silently
+ * blocked by some mobile browsers, leaving the tab open with no way to
+ * print/save it. Reuses `esc()` from inquiry-report-html.ts so the two
+ * documents never diverge on escaping.
  *
  * Unlike the inquiry report (always $/m²), a deposit invoice's currency comes
  * from its sales order (USD/KHR/CNY), so amounts are formatted with a plain
@@ -137,10 +142,28 @@ export function buildDepositInvoiceHtml(data: DepositInvoiceData): string {
     background: ${RED}; color: #fff; font-weight: 700; text-align: center;
     padding: 6px; margin-top: 14px; font-size: 9px;
   }
+  .toolbar {
+    position: fixed; top: 14px; right: 14px; z-index: 100;
+    display: flex; align-items: center; gap: 10px;
+    background: #fff; border: 1px solid #d8d8d8; border-radius: 8px;
+    padding: 8px 12px; box-shadow: 0 2px 10px rgba(0,0,0,.15);
+    font-family: Arial, sans-serif;
+  }
+  .toolbar button {
+    background: ${RED}; color: #fff; border: none; border-radius: 6px;
+    padding: 7px 14px; font-size: 12px; font-weight: 700; cursor: pointer;
+  }
+  .toolbar button:hover { opacity: .9; }
+  .toolbar .hint { font-size: 10px; color: ${MUTED}; }
   @page { size: A4 portrait; margin: 12mm; }
+  @media print { .no-print { display: none !important; } }
 </style>
 </head>
 <body>
+  <div class="toolbar no-print">
+    <button type="button" onclick="window.print()">Print / Save as PDF</button>
+    <span class="hint">Reviewing only — nothing has been printed yet.</span>
+  </div>
   <div class="letterhead">
     <img src="/brand/zysteel-logo.png" alt="ZY Steel 中粤铁网" class="logo" />
     <div>

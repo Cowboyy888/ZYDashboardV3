@@ -123,10 +123,21 @@ export function InquiriesClient({
   const [showCreate, setShowCreate] = useState(false);
   const [editing, setEditing] = useState<SalesInquiryRow | null>(null);
   const [deleting, setDeleting] = useState<SalesInquiryRow | null>(null);
+  const [pdfError, setPdfError] = useState<string | null>(null);
 
-  // Print-to-PDF: build the same branded report the Excel export uses, open it
-  // in a bare window, and trigger the browser's print (Save as PDF) dialog.
+  // Print-to-PDF: build the same branded report the Excel export uses, open
+  // it in a bare window (synchronously, in this click gesture — mobile
+  // browsers block window.open() otherwise), and write it in. The document
+  // carries its own "Print / Save as PDF" button, so nothing here needs to
+  // auto-trigger print() — see inquiry-report-html.ts for why that used to
+  // silently fail on mobile.
   function downloadPdf() {
+    setPdfError(null);
+    const w = window.open('', '_blank', 'width=1100,height=800');
+    if (!w) {
+      setPdfError(t('common.popupBlocked'));
+      return;
+    }
     const resolvers: InquiryReportResolvers = {
       salespersonName: (id) => (id ? empName.get(id) : '') || '',
       typeName: (id) => (id ? typeName.get(id) : '') || '',
@@ -141,20 +152,10 @@ export function InquiriesClient({
       summary,
       rows: inquiries.map((i) => toReportRow(i, resolvers)),
     });
-    const w = window.open('', '_blank', 'width=1100,height=800');
-    if (!w) return;
     w.document.open();
     w.document.write(html);
     w.document.close();
     w.focus();
-    // Give the window a tick to lay out fonts before printing.
-    setTimeout(() => {
-      try {
-        w.print();
-      } catch {
-        /* user can still print manually */
-      }
-    }, 500);
   }
 
   const statusBadge = (id: string | null) => {
@@ -202,9 +203,12 @@ export function InquiriesClient({
               <Download className="h-4 w-4" /> {t('inq.downloadExcel')}
             </a>
           </Button>
-          <Button variant="outline" onClick={downloadPdf}>
-            <Printer className="h-4 w-4" /> {t('inq.downloadPdf')}
-          </Button>
+          <div className="flex flex-col items-end gap-1">
+            <Button variant="outline" onClick={downloadPdf}>
+              <Printer className="h-4 w-4" /> {t('inq.downloadPdf')}
+            </Button>
+            {pdfError && <span className="text-xs text-destructive">{pdfError}</span>}
+          </div>
           {canManage && (
             <Button onClick={() => setShowCreate(true)}>
               <Plus className="h-4 w-4" /> {t('inq.new')}

@@ -1,4 +1,5 @@
 'use client';
+import { useState } from 'react';
 import { Printer } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { useT } from '@/components/i18n-provider';
@@ -11,7 +12,10 @@ import type { DepositInvoiceRow, CustomerRow } from '@/lib/db/types';
 /**
  * Print-to-PDF for a deposit invoice — same trigger shape as the inquiry
  * report (inquiries-client.tsx's downloadPdf): build the self-contained HTML
- * document, open a bare window, write it in, and trigger print().
+ * document, open a bare window synchronously in the click gesture, and write
+ * it in. The document itself carries a "Print / Save as PDF" button, so
+ * nothing here needs to auto-trigger print() (which, from a timer callback,
+ * mobile browsers can silently block — see deposit-invoice-html.ts).
  */
 export function PrintDepositInvoiceButton({
   invoice,
@@ -23,8 +27,15 @@ export function PrintDepositInvoiceButton({
   customer: CustomerRow | null;
 }) {
   const { t, locale } = useT();
+  const [error, setError] = useState<string | null>(null);
 
   function onClick() {
+    setError(null);
+    const w = window.open('', '_blank', 'width=900,height=800');
+    if (!w) {
+      setError(t('common.popupBlocked'));
+      return;
+    }
     const html = buildDepositInvoiceHtml({
       invoiceNumber: invoice.invoice_number ?? '—',
       generatedOn: formatDDMMYYYY(businessDate()),
@@ -55,24 +66,18 @@ export function PrintDepositInvoiceButton({
       depositAmount: invoice.deposit_amount,
       remainingBalance: invoice.remaining_balance,
     });
-    const w = window.open('', '_blank', 'width=900,height=800');
-    if (!w) return;
     w.document.open();
     w.document.write(html);
     w.document.close();
     w.focus();
-    setTimeout(() => {
-      try {
-        w.print();
-      } catch {
-        /* user can still print manually */
-      }
-    }, 500);
   }
 
   return (
-    <Button type="button" variant="outline" size="sm" onClick={onClick}>
-      <Printer className="h-4 w-4" /> {t('sal.printInvoice')}
-    </Button>
+    <div className="inline-flex flex-col items-start gap-1">
+      <Button type="button" variant="outline" size="sm" onClick={onClick}>
+        <Printer className="h-4 w-4" /> {t('sal.printInvoice')}
+      </Button>
+      {error && <span className="text-xs text-destructive">{error}</span>}
+    </div>
   );
 }

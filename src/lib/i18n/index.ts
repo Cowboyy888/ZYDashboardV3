@@ -76,6 +76,10 @@ export const dictionary = {
     zh: '确定立即将此报告发送至已配置的 Telegram 会话？',
   },
   'common.exportExcel': { en: 'Export to Excel', zh: '导出 Excel' },
+  'common.popupBlocked': {
+    en: 'Please allow pop-ups for this site to view the PDF.',
+    zh: '请允许此网站弹出窗口以查看 PDF。',
+  },
 
   'cs.comingSoon': { en: 'Coming soon', zh: '即将推出' },
   'cs.scoped': {
@@ -628,10 +632,6 @@ export const dictionary = {
   'quo.deleteBody': {
     en: 'This permanently removes the quotation and its line items for',
     zh: '此操作将永久删除该报价单及其明细：',
-  },
-  'quo.popupBlocked': {
-    en: 'Please allow pop-ups for this site to view the PDF.',
-    zh: '请允许此网站弹出窗口以查看 PDF。',
   },
   'quo.linkedSalesOrder': { en: 'Sales Order', zh: '销售订单' },
 
