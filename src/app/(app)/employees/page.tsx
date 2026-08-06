@@ -4,7 +4,7 @@ import {
   getEmployees,
   getAttendanceGroups,
   getAllEmployeePrivate,
-  getSignedPhotoUrl,
+  getSignedPhotoUrls,
 } from '@/lib/db/queries';
 import { getLocale } from '@/lib/i18n/locale';
 import { translator } from '@/lib/i18n';
@@ -25,16 +25,19 @@ export default async function EmployeesPage() {
   ]);
 
   // Photos are sensitive (same gate as salary/private docs) — only fetch
-  // signed URLs when the viewer is actually allowed to see them.
+  // signed URLs when the viewer is actually allowed to see them. One batched
+  // Storage call for every photo (not one round-trip per employee).
   let photoUrls: Record<string, string> = {};
   if (canSensitive) {
     const withPhotos = employees.filter((e) => e.photo_path);
-    const urls = await Promise.all(
-      withPhotos.map((e) => getSignedPhotoUrl(e.photo_thumb_path ?? e.photo_path)),
-    );
+    const paths = withPhotos.map((e) => e.photo_thumb_path ?? e.photo_path!);
+    const urlByPath = await getSignedPhotoUrls(paths);
     photoUrls = Object.fromEntries(
       withPhotos
-        .map((e, i) => [e.id, urls[i]])
+        .map((e): [string, string | undefined] => [
+          e.id,
+          urlByPath.get(e.photo_thumb_path ?? e.photo_path!),
+        ])
         .filter((pair): pair is [string, string] => !!pair[1]),
     );
   }

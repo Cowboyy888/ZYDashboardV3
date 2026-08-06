@@ -193,6 +193,29 @@ export async function getSignedPhotoUrl(path: string | null): Promise<string | n
   }
 }
 
+/**
+ * Batched version of `getSignedPhotoUrl`, for a list of employees (the
+ * Employees page) — one Storage API round-trip for every photo instead of
+ * one per employee. Keyed by the storage path so callers can look up each
+ * employee's URL regardless of the response order.
+ */
+export async function getSignedPhotoUrls(paths: string[]): Promise<Map<string, string>> {
+  const unique = [...new Set(paths)];
+  if (unique.length === 0) return new Map();
+  try {
+    const supabase = await client();
+    const { data } = await supabase.storage.from('employee-photos').createSignedUrls(unique, 120);
+    const byPath = new Map<string, string>();
+    for (const row of data ?? []) {
+      if (row.path && row.signedUrl) byPath.set(row.path, row.signedUrl);
+    }
+    return byPath;
+  } catch (e) {
+    console.error('[queries] getSignedPhotoUrls', e);
+    return new Map();
+  }
+}
+
 export async function getAttendanceForDate(businessDate: string): Promise<AttendanceRow[]> {
   try {
     const supabase = await client();
