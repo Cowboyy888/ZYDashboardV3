@@ -146,15 +146,22 @@ pre-checks this and the FK is the backstop.
 ### purchase_orders  *(header-only record — no line items, no receiving)*
 `id`, `po_number` (unique, auto `PO-YYYY-####` — atomic per-calendar-year
 counter via `purchase_order_seq` + `assign_po_number` trigger), `supplier_id →
-suppliers`, `order_date`, `expected_arrival_date`, `currency`, `status`,
-`notes`, `attachment_path`, `created_by → profiles`, `issued_at`,
-`cancelled_at`, `created_at`, `updated_at`.
+suppliers`, `order_date`, `currency`, `status`, `notes`, `attachment_path`,
+`created_by → profiles`, `issued_at`, `cancelled_at`, `created_at`,
+`updated_at`.
 - One currency per PO; no exchange-rate conversion.
 - Trigger `enforce_po_header_immutable`: once `status <> 'draft'`, `supplier_id`
-  /`currency`/`order_date` can no longer change (`expected_arrival_date`,
-  `notes`, `attachment_path`, `status` remain editable — suppliers revise ETAs).
+  /`currency`/`order_date` can no longer change (`notes`, `attachment_path`,
+  `status` remain editable).
 - `status` is a plain stored field, set only by the app on Issue/Cancel — no
   receiving, so nothing recomputes it afterward.
+- The table still has an `expected_arrival_date` column (nullable) and an
+  `expected_arrival_idx` index — the Overdue/Expected Arrival Date feature
+  (and its `isOverdue`/`isDueWithinDays` domain helpers) was removed from the
+  app, but the column was left in place rather than dropped (migrations are
+  additive-only, and dropping it would destroy any historical values already
+  recorded on existing production orders). Nothing reads or writes it
+  anymore — same posture as `purchase_order_items` below.
 
 ### purchase_order_items  *(dormant — table remains in the DB, unused by the app)*
 Purchasing was simplified to header-only records; nothing creates, reads, or

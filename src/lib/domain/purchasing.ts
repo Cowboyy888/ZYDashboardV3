@@ -5,8 +5,6 @@
  * — no line items, no receiving, no automatic inventory updates. `status` is
  * an explicit user transition (Issue/Cancel), never receipt-derived.
  */
-import { addDays, type BusinessDate } from './datetime';
-
 export const CURRENCIES = ['USD', 'KHR', 'CNY'] as const;
 export type Currency = (typeof CURRENCIES)[number];
 
@@ -32,30 +30,4 @@ export const PO_STATUS_LABELS: Record<PoStatus, { en: string; zh: string }> = {
 /** Statuses from which a PO may be cancelled. */
 export function canCancel(status: PoStatus): boolean {
   return status === 'draft' || status === 'ordered';
-}
-
-/** True once the expected arrival date has passed. */
-export function isOverdue(expectedArrivalDate: BusinessDate | null, today: BusinessDate): boolean {
-  if (!expectedArrivalDate) return false;
-  return expectedArrivalDate < today;
-}
-
-/** True when the expected arrival date falls within the next `days` days (inclusive), not yet overdue. */
-export function isDueWithinDays(
-  expectedArrivalDate: BusinessDate | null,
-  today: BusinessDate,
-  days: number,
-): boolean {
-  if (!expectedArrivalDate) return false;
-  return expectedArrivalDate >= today && expectedArrivalDate <= addDays(today, days);
-}
-
-/** Overdue OR due within `days` days — the single window used by the Telegram report. */
-export function isDueOrOverdue(
-  expectedArrivalDate: BusinessDate | null,
-  today: BusinessDate,
-  days = 7,
-): boolean {
-  if (!expectedArrivalDate) return false;
-  return expectedArrivalDate <= addDays(today, days);
 }

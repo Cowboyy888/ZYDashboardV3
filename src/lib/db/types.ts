@@ -340,12 +340,15 @@ export interface SupplierRow {
   updated_at: string;
 }
 
+// Note: the underlying table still has an `expected_arrival_date` column
+// (nullable, never dropped — historical values are preserved), but the app
+// no longer reads or writes it: the Overdue/Expected Arrival feature was
+// removed. Omitted here deliberately since nothing in the app uses it.
 export interface PurchaseOrderRow {
   id: string;
   po_number: string | null;
   supplier_id: string;
   order_date: string;
-  expected_arrival_date: string | null;
   currency: Currency;
   status: PoStatus;
   notes: string | null;

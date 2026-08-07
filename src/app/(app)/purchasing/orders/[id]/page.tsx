@@ -3,7 +3,6 @@ import { requirePermission } from '@/lib/auth';
 import { hasPermission } from '@/lib/domain/rbac';
 import { getPurchaseOrder, getSupplier } from '@/lib/db/queries';
 import { buildPurchaseOrderRows } from '@/lib/domain/purchasing-view';
-import { businessDate } from '@/lib/domain/datetime';
 import { PageHeader } from '@/components/page-header';
 import { PoDetail } from './po-detail';
 
@@ -25,7 +24,6 @@ export default async function PurchaseOrderDetailPage({
   const rows = buildPurchaseOrderRows(
     [po],
     supplier ? [{ id: supplier.id, name: supplier.name }] : [],
-    businessDate(),
   );
   const row = rows[0];
   if (!row) notFound();

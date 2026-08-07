@@ -80,10 +80,6 @@ export function NewPoForm({ suppliers, today }: { suppliers: SupplierOpt[]; toda
             <Label htmlFor="orderDate">{t('pur.orderDate')}</Label>
             <Input id="orderDate" name="orderDate" type="date" defaultValue={today} required />
           </div>
-          <div className="space-y-1.5">
-            <Label htmlFor="expectedArrivalDate">{t('pur.expectedArrival')}</Label>
-            <Input id="expectedArrivalDate" name="expectedArrivalDate" type="date" />
-          </div>
           <div className="space-y-1.5 sm:col-span-2">
             <Label htmlFor="notes">{t('common.notes')}</Label>
             <Input id="notes" name="notes" />

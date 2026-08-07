@@ -12,11 +12,6 @@ const COLUMNS: XlsxColumn<PurchaseOrderRow>[] = [
   { header: 'PO Number 采购单号', width: 18, value: (r) => r.poNumber },
   { header: 'Supplier 供应商', width: 24, value: (r) => r.supplierName },
   { header: 'Order Date 下单日期', width: 14, value: (r) => formatDDMMYYYY(r.orderDate) },
-  {
-    header: 'Expected Arrival 预计到货',
-    width: 16,
-    value: (r) => (r.expectedArrivalDate ? formatDDMMYYYY(r.expectedArrivalDate) : ''),
-  },
   { header: 'Status 状态', width: 16, value: (r) => PO_STATUS_LABELS[r.status]?.en ?? r.status },
   { header: 'Currency 货币', width: 10, value: (r) => r.currency },
   { header: 'Notes 备注', width: 30, value: (r) => r.notes ?? '' },
@@ -27,7 +22,7 @@ export async function GET() {
 
   const today = businessDate();
   const [pos, suppliers] = await Promise.all([getPurchaseOrders(), getSuppliers(true)]);
-  const rows = buildPurchaseOrderRows(pos, suppliers, today);
+  const rows = buildPurchaseOrderRows(pos, suppliers);
 
   const open = rows.filter((r) => r.status !== 'cancelled').length;
 

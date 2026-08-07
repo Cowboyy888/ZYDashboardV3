@@ -2,15 +2,13 @@
  * Pure assembly of purchase-order display rows from master data. No I/O.
  * Purchase orders are header-only — no items, no receiving.
  */
-import { isOverdue, isDueWithinDays, type PoStatus } from './purchasing';
-import type { BusinessDate } from './datetime';
+import type { PoStatus } from './purchasing';
 
 export interface PoLike {
   id: string;
   po_number: string | null;
   supplier_id: string;
   order_date: string;
-  expected_arrival_date: string | null;
   currency: string;
   status: PoStatus;
   notes: string | null;
@@ -28,20 +26,16 @@ export interface PurchaseOrderRow {
   supplierId: string;
   supplierName: string;
   orderDate: string;
-  expectedArrivalDate: string | null;
   currency: string;
   status: PoStatus;
   notes: string | null;
   attachmentPath: string | null;
-  isOverdue: boolean;
-  isDueThisWeek: boolean;
 }
 
 /** Assemble PO header rows for display — restrict to cost-privileged roles before rendering. */
 export function buildPurchaseOrderRows(
   pos: PoLike[],
   suppliers: SupplierLike[],
-  today: BusinessDate,
 ): PurchaseOrderRow[] {
   const supplierName = new Map(suppliers.map((s) => [s.id, s.name]));
 
@@ -51,12 +45,9 @@ export function buildPurchaseOrderRows(
     supplierId: po.supplier_id,
     supplierName: supplierName.get(po.supplier_id) ?? '—',
     orderDate: po.order_date,
-    expectedArrivalDate: po.expected_arrival_date,
     currency: po.currency,
     status: po.status,
     notes: po.notes,
     attachmentPath: po.attachment_path,
-    isOverdue: po.status === 'ordered' && isOverdue(po.expected_arrival_date, today),
-    isDueThisWeek: po.status === 'ordered' && isDueWithinDays(po.expected_arrival_date, today, 7),
   }));
 }

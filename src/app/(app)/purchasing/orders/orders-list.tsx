@@ -32,7 +32,6 @@ export function OrdersList({ rows }: { rows: PurchaseOrderRow[] }) {
               <TableHead>{t('pur.poNumber')}</TableHead>
               <TableHead>{t('pur.supplier')}</TableHead>
               <TableHead>{t('pur.orderDate')}</TableHead>
-              <TableHead>{t('pur.expectedArrival')}</TableHead>
               <TableHead>{t('common.status')}</TableHead>
             </TableRow>
           </TableHeader>
@@ -50,19 +49,6 @@ export function OrdersList({ rows }: { rows: PurchaseOrderRow[] }) {
                 <TableCell>{r.supplierName}</TableCell>
                 <TableCell>{formatDDMMYYYY(r.orderDate)}</TableCell>
                 <TableCell>
-                  {r.expectedArrivalDate ? formatDDMMYYYY(r.expectedArrivalDate) : '—'}
-                  {r.isOverdue && (
-                    <Badge variant="destructive" className="ml-2">
-                      {t('pur.overdueBadge')}
-                    </Badge>
-                  )}
-                  {!r.isOverdue && r.isDueThisWeek && (
-                    <Badge variant="warning" className="ml-2">
-                      {t('pur.dueThisWeekBadge')}
-                    </Badge>
-                  )}
-                </TableCell>
-                <TableCell>
                   <Badge variant={STATUS_VARIANT[r.status] ?? 'outline'}>
                     {PO_STATUS_LABELS[r.status]?.[locale] ?? r.status}
                   </Badge>
@@ -71,7 +57,7 @@ export function OrdersList({ rows }: { rows: PurchaseOrderRow[] }) {
             ))}
             {rows.length === 0 && (
               <TableRow>
-                <TableCell colSpan={5} className="text-center text-muted-foreground">
+                <TableCell colSpan={4} className="text-center text-muted-foreground">
                   {t('pur.noOrders')}
                 </TableCell>
               </TableRow>

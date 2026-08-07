@@ -100,7 +100,11 @@ Seeded opening stock (Storage Room): 拔丝料 10厘 = 10 捆; 拔丝料 6厘 = 
   `docs/data-dictionary.md`.) Costs restricted to Owner/System Admin/Warehouse
   Admin. The Telegram inventory report does not include supplier/PO
   information — see `docs/data-dictionary.md` and `docs/test-plan.md` for the
-  schema and tests.
+  schema and tests. Overdue/Expected Arrival Date tracking (a per-PO ETA
+  field plus an overdue badge/dashboard stat, mirroring Sales' delivery-date
+  tracking) was also built and then removed at the user's request — same
+  dormant-column posture as above (`expected_arrival_date` stays in the
+  `purchase_orders` table, unused).
 - **Third pass — Sales (built):** customers, sales orders (USD/KHR/CNY,
   `SO-YYYY-####`, Draft → Confirmed → Partially Delivered/Delivered/Cancelled),
   delivery from a location (creates `sale_delivery`, immutable ledger,

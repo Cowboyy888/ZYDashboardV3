@@ -291,10 +291,6 @@ export const supplierUpdateSchema = supplierSchema.extend({ id: z.string().uuid(
 export const createPurchaseOrderSchema = z.object({
   supplierId: z.string().uuid(),
   orderDate: isoDate,
-  expectedArrivalDate: z.preprocess(
-    (v) => (v === '' || v == null ? undefined : v),
-    isoDate.optional(),
-  ),
   currency: z.enum(CURRENCIES),
   notes: optionalText,
   attachmentPath: optionalText,

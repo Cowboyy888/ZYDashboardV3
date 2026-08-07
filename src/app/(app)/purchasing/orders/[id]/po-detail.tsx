@@ -39,7 +39,6 @@ export function PoDetail({
               <Badge variant={STATUS_VARIANT[row.status] ?? 'outline'}>
                 {PO_STATUS_LABELS[row.status]?.[locale] ?? row.status}
               </Badge>
-              {row.isOverdue && <Badge variant="destructive">{t('pur.overdueBadge')}</Badge>}
             </CardTitle>
           </div>
           <div className="flex gap-2 print:hidden">
@@ -75,10 +74,6 @@ export function PoDetail({
           <div>
             <div className="text-muted-foreground">{t('pur.orderDate')}</div>
             <div>{formatDDMMYYYY(row.orderDate)}</div>
-          </div>
-          <div>
-            <div className="text-muted-foreground">{t('pur.expectedArrival')}</div>
-            <div>{row.expectedArrivalDate ? formatDDMMYYYY(row.expectedArrivalDate) : '—'}</div>
           </div>
           <div>
             <div className="text-muted-foreground">{t('pur.currency')}</div>

@@ -10,7 +10,6 @@ test('purchasing: create and issue a purchase order, cancel a separate draft', a
 
   // Header — first seeded supplier, today's order date is already defaulted.
   await page.locator('#supplierId').selectOption({ index: 1 });
-  await page.locator('#expectedArrivalDate').fill('2026-08-15');
 
   await page.getByRole('button', { name: /Create draft|创建草稿/ }).click();
 

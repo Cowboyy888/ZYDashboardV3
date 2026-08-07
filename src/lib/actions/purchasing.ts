@@ -176,7 +176,6 @@ export async function createDraftPurchaseOrder(
   const parsed = createPurchaseOrderSchema.safeParse({
     supplierId: formData.get('supplierId'),
     orderDate: formData.get('orderDate'),
-    expectedArrivalDate: formData.get('expectedArrivalDate'),
     currency: formData.get('currency'),
     notes: formData.get('notes'),
     attachmentPath: formData.get('attachmentPath'),
@@ -191,7 +190,6 @@ export async function createDraftPurchaseOrder(
     .insert({
       supplier_id: d.supplierId,
       order_date: d.orderDate,
-      expected_arrival_date: d.expectedArrivalDate ?? null,
       currency: d.currency,
       notes: d.notes ?? null,
       attachment_path: d.attachmentPath ?? null,
