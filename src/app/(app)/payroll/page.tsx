@@ -9,6 +9,7 @@ import {
   getEmployees,
 } from '@/lib/db/queries';
 import { buildPayrollRunRows } from '@/lib/domain/payroll-view';
+import { isPayrollLive } from '@/lib/domain/payroll';
 import { getLocale } from '@/lib/i18n/locale';
 import { translator } from '@/lib/i18n';
 import { PageHeader } from '@/components/page-header';
@@ -27,11 +28,11 @@ export default async function PayrollPage() {
     getEmployees(true),
   ]);
 
-  // Only Draft runs' items need the live recompute — Approved/Paid/Cancelled
-  // keep their frozen snapshot.
-  const draftRunIds = new Set(runs.filter((r) => r.status === 'draft').map((r) => r.id));
-  const draftItemIds = items.filter((it) => draftRunIds.has(it.payroll_run_id)).map((it) => it.id);
-  const liveItems = await getPayrollItemsLive(draftItemIds);
+  // Draft and Approved runs' items need the live recompute — only Paid/
+  // Cancelled runs keep their frozen snapshot.
+  const liveRunIds = new Set(runs.filter((r) => isPayrollLive(r.status)).map((r) => r.id));
+  const liveItemIds = items.filter((it) => liveRunIds.has(it.payroll_run_id)).map((it) => it.id);
+  const liveItems = await getPayrollItemsLive(liveItemIds);
 
   const rows = buildPayrollRunRows(runs, items, deductions, [], employees, liveItems);
 

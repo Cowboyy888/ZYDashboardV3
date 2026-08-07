@@ -12,7 +12,7 @@ import {
 } from '@/components/ui/table';
 import { LiveDot } from '@/components/animated-stat';
 import { useT } from '@/components/i18n-provider';
-import { PAYROLL_STATUS_LABELS, type PayrollStatus } from '@/lib/domain/payroll';
+import { PAYROLL_STATUS_LABELS, isPayrollLive, type PayrollStatus } from '@/lib/domain/payroll';
 import { formatDDMMYYYY } from '@/lib/domain/datetime';
 import type { PayrollRunRow } from '@/lib/domain/payroll-view';
 
@@ -55,7 +55,7 @@ export function RunsList({ rows }: { rows: PayrollRunRow[] }) {
                     <Badge variant={STATUS_VARIANT[r.status]}>
                       {PAYROLL_STATUS_LABELS[r.status][locale]}
                     </Badge>
-                    {r.status === 'draft' && <LiveDot />}
+                    {isPayrollLive(r.status) && <LiveDot />}
                   </div>
                 </TableCell>
                 <TableCell className="text-right tabular-nums">{r.itemCount}</TableCell>

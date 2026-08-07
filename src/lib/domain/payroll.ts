@@ -73,6 +73,16 @@ export function canMarkPaid(status: PayrollStatus): boolean {
   return status === 'approved';
 }
 
+/**
+ * Days-worked/base/overtime stay live (recomputed from current attendance)
+ * through Draft AND Approved — Paid is the actual freeze point, not Approve.
+ * Approving is a sign-off checkpoint (still requires an Owner), not a data
+ * freeze; only marking a run Paid snapshots the final numbers permanently.
+ */
+export function isPayrollLive(status: PayrollStatus): boolean {
+  return status === 'draft' || status === 'approved';
+}
+
 /** A run may be cancelled from Draft or Approved — Paid is terminal. */
 export function canCancelRun(status: PayrollStatus): boolean {
   return status === 'draft' || status === 'approved';

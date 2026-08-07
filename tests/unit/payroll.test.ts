@@ -8,6 +8,7 @@ import {
   canApproveRun,
   canMarkPaid,
   canCancelRun,
+  isPayrollLive,
   WORKED_STATUSES,
   PAYROLL_STATUSES,
   DEDUCTION_KINDS,
@@ -94,6 +95,13 @@ describe('run status transitions', () => {
     expect(canCancelRun('approved')).toBe(true);
     expect(canCancelRun('paid')).toBe(false);
     expect(canCancelRun('cancelled')).toBe(false);
+  });
+
+  it('a run stays live (recomputed from attendance) through Draft and Approved — Paid is the freeze point', () => {
+    expect(isPayrollLive('draft')).toBe(true);
+    expect(isPayrollLive('approved')).toBe(true);
+    expect(isPayrollLive('paid')).toBe(false);
+    expect(isPayrollLive('cancelled')).toBe(false);
   });
 });
 

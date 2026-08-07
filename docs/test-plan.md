@@ -58,7 +58,7 @@ CI stays green; run it locally/staging with `PLAYWRIGHT=1 npm run verify` after
 | 24 | Every employee is paid daily — `pay_type` is constrained to `'daily'` (monthly-salary pay removed) | `employees_pay_type_check`/`payroll_items_pay_type_check`; DB function `create_draft_payroll_run`; schema check |
 | 25 | Net pay = base amount − sum of deduction/advance lines, never a stored total | `tests/unit/payroll.test.ts` (`computeNetAmount`); view `payroll_item_deductions` |
 | 26 | A payroll run can only be approved by an Owner | `tests/unit/rbac.test.ts`; DB trigger `enforce_payroll_run_immutable` (`PAYROLL_APPROVE_OWNER_ONLY`); schema check |
-| 27 | An Approved payroll run is permanently immutable (items/lines locked) | `tests/unit/payroll.test.ts` (`canEditRun`); DB triggers `enforce_payroll_item_immutable`/`enforce_payroll_item_line_immutable`; schema check |
+| 27 | Deduction/advance lines and run dates are only editable while Draft; a Paid (or Cancelled) payroll run's items are permanently immutable | `tests/unit/payroll.test.ts` (`canEditRun`, `isPayrollLive`); `tests/unit/payroll-view.test.ts`; DB triggers `enforce_payroll_item_immutable`/`enforce_payroll_item_line_immutable`; schema check |
 | 28 | Payroll figures visible only to Owner/System Admin/Payroll Admin | `tests/unit/rbac.test.ts`; RLS on `payroll_runs`/`payroll_items`/`payroll_item_lines`; schema check |
 | 29 | Salary/pay figures are never written to the audit log | `src/lib/actions/payroll.ts` (manual review — every `writeAudit` call omits amounts, matching `actions/employees.ts`'s `saveEmployeePrivate` precedent) |
 | 30 | A sales order item's `unit_price` is server-derived from Price/m² × Area/sheet when both are supplied (client value never trusted) | `tests/unit/deposit-invoice.test.ts` (`computeUnitPriceFromArea`); DB function `create_draft_sales_order`; `tests/e2e/deposit-invoice.spec.ts` |
@@ -101,9 +101,14 @@ The domain tests assert the rules; the database enforces them independently:
   layer checks this too, but the trigger is the ultimate authority, same
   belt-and-suspenders shape as the negative-stock/over-receipt/over-delivery
   guards.
-- `enforce_payroll_item_immutable` / `enforce_payroll_item_line_immutable` —
-  payslip items and their deduction/advance lines lock once the run leaves
-  Draft (lines can't even be newly inserted into an approved run).
+- `enforce_payroll_item_immutable` — payslip items (days_worked/rate/
+  base_amount/overtime_amount) lock once the run is `paid` or `cancelled`;
+  writable through Draft AND Approved (widened in migration 0028) so
+  `pay_payroll_run` can snapshot the live figures at the actual freeze point.
+- `enforce_payroll_item_line_immutable` — deduction/advance lines are a
+  separate, narrower window: still Draft-only, unchanged (lines can't be
+  newly inserted into an approved run, even though the run itself still
+  tracks live pay).
 - RLS on `payroll_runs`/`payroll_items`/`payroll_item_lines` — restricted to
   owner/system_admin/payroll_admin, which is also what keeps salary figures
   out of every other role.

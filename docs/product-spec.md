@@ -130,16 +130,29 @@ Seeded opening stock (Storage Room): 拔丝料 10厘 = 10 捆; 拔丝料 6厘 = 
   labels/kinds — see AGENTS.md). These rules (worked-day counting, currency,
   deduction structure) were explicit product decisions, not inferred — see
   `docs/data-dictionary.md` and `docs/test-plan.md` for the schema and tests.
-  While a run is still **Draft**, its days-worked/base/overtime figures are
-  **live** — recomputed from current attendance and overtime on every page
-  load via the `payroll_items_live` view (migration 0026), so a Draft left
-  open across several days reflects each day's attendance instead of
-  freezing at generation time. Approving a run snapshots those CURRENT live
-  figures into the stored columns as its last step before flipping status
-  (the `approve_payroll_run` RPC) — so the frozen record is what was on
-  screen at approval time, not the stale generation-time numbers — and only
-  then becomes authoritative and immutable, preserving the existing "an
-  Approved payslip never changes" guarantee.
+  Deduction/advance lines and period/pay dates are editable only while
+  **Draft**; **Approving still requires an Owner** (enforced by the app AND
+  a DB trigger as the ultimate authority — belt & suspenders, same shape as
+  the negative-stock and over-receipt/over-delivery guards), but Approve is
+  a sign-off checkpoint, not a data freeze (see below). No bank payments
+  (Paid is a bookkeeping marker only). Salary figures are restricted to
+  Owner/System Admin/Payroll Admin and are **never written to the audit
+  log** (only metadata like status transitions and line labels/kinds — see
+  AGENTS.md).
+  A run's days-worked/base/overtime figures are **live** — recomputed from
+  current attendance and overtime on every page load via the
+  `payroll_items_live` view — through BOTH Draft and Approved (migration
+  0026, widened Sixth pass in 0028), so a run left open across several days,
+  even after Owner sign-off, reflects each day's attendance instead of
+  freezing at generation or approval time. **Paid is the actual freeze
+  point**: marking a run Paid snapshots the CURRENT live figures into the
+  stored columns as its last step before flipping status (the
+  `pay_payroll_run` RPC, which superseded 0026's `approve_payroll_run`) — so
+  the permanently-immutable record is what was on screen when it was paid,
+  not stale generation-time numbers. This was an explicit product decision,
+  not an oversight: freezing at Approve turned out to lock pay in too early
+  (attendance/overtime recorded between Approve and payday should still
+  count), so the freeze point moved to Paid.
 - **Fifth pass — Sales Order Deposit Invoices (built):** a confirmed sales
   order can generate one active `Deposit Invoice` for a chosen percentage
   (10/30/50/custom) of its total. Sales order line items got an optional

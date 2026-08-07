@@ -2,7 +2,13 @@
  * Pure assembly of payroll display rows from master data + the stored
  * snapshot items + the derived deductions view. No I/O.
  */
-import { computeNetAmount, round2, type PayrollStatus, type DeductionKind } from './payroll';
+import {
+  computeNetAmount,
+  round2,
+  isPayrollLive,
+  type PayrollStatus,
+  type DeductionKind,
+} from './payroll';
 
 export interface PayrollRunLike {
   id: string;
@@ -79,7 +85,7 @@ export interface PayrollItemRow {
   deductionsTotal: number;
   netAmount: number;
   lines: PayrollLineRow[];
-  /** True while these figures are the live-recomputed ones (Draft run only) rather than the frozen snapshot. */
+  /** True while these figures are the live-recomputed ones (Draft or Approved run) rather than the frozen snapshot. */
   isLive: boolean;
 }
 
@@ -102,13 +108,13 @@ export interface PayrollRunRow {
  * Assemble full payroll-run rows (with salary figures) — restrict to
  * payroll-privileged roles before rendering.
  *
- * `liveItems` (from `payroll_items_live`, fetched only for Draft-run items —
- * see `getPayrollItemsLive`) overrides days_worked/rate/base_amount/
- * overtime_amount for items whose run is still Draft, so the numbers reflect
- * attendance/overtime marked *after* the run was generated instead of
- * silently going stale. Once a run leaves Draft, its stored snapshot is
- * always used — never overridden — so an approved payslip still never
- * changes.
+ * `liveItems` (from `payroll_items_live`, fetched for Draft AND Approved run
+ * items — see `getPayrollItemsLive` / `isPayrollLive`) overrides
+ * days_worked/rate/base_amount/overtime_amount for items whose run isn't
+ * Paid yet, so the numbers reflect attendance/overtime marked *after* the
+ * run was generated instead of silently going stale. Once a run is Paid (or
+ * Cancelled), its stored snapshot is always used — never overridden — that's
+ * the actual freeze point now, not Approve.
  */
 export function buildPayrollRunRows(
   runs: PayrollRunLike[],
@@ -137,7 +143,7 @@ export function buildPayrollRunRows(
     const itemRows: PayrollItemRow[] = runItems.map((it) => {
       const employee = employeeById.get(it.employee_id);
       const deductionsTotal = round2(deductionsByItem.get(it.id) ?? 0);
-      const live = run.status === 'draft' ? liveByItem.get(it.id) : undefined;
+      const live = isPayrollLive(run.status) ? liveByItem.get(it.id) : undefined;
       const daysWorked = live ? live.live_days_worked : it.days_worked;
       const rate = live ? live.live_rate : it.rate;
       const baseAmount = live ? live.live_base_amount : it.base_amount;

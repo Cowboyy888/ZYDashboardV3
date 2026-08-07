@@ -22,6 +22,7 @@ import {
   canMarkPaid,
   canCancelRun,
   canEditRun,
+  isPayrollLive,
 } from '@/lib/domain/payroll';
 import { formatDDMMYYYY } from '@/lib/domain/datetime';
 import type { PayrollRunRow } from '@/lib/domain/payroll-view';
@@ -56,7 +57,7 @@ export function RunDetail({
             <Badge variant={STATUS_VARIANT[row.status]}>
               {PAYROLL_STATUS_LABELS[row.status][locale]}
             </Badge>
-            {row.status === 'draft' && (
+            {isPayrollLive(row.status) && (
               <span className="flex items-center gap-1.5 text-xs font-normal text-muted-foreground">
                 <LiveDot />
                 {t('pay.live')}

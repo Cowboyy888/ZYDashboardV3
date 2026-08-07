@@ -10,6 +10,7 @@ import {
   getEmployees,
 } from '@/lib/db/queries';
 import { buildPayrollRunRows } from '@/lib/domain/payroll-view';
+import { isPayrollLive } from '@/lib/domain/payroll';
 import { formatDDMMYYYY } from '@/lib/domain/datetime';
 import { getLocale } from '@/lib/i18n/locale';
 import { translator } from '@/lib/i18n';
@@ -36,7 +37,7 @@ export default async function PayrollRunDetailPage({
   const [deductions, lines, liveItems] = await Promise.all([
     getPayrollItemDeductions(itemIds),
     getPayrollRunLines(itemIds),
-    run.status === 'draft' ? getPayrollItemsLive(itemIds) : Promise.resolve([]),
+    isPayrollLive(run.status) ? getPayrollItemsLive(itemIds) : Promise.resolve([]),
   ]);
 
   const rows = buildPayrollRunRows([run], items, deductions, lines, employees, liveItems);

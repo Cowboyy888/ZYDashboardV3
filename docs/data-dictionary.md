@@ -308,36 +308,40 @@ linked via `quotation_id`:
 `round(rate * days_worked, 2)`), `created_at`. Unique
 `(payroll_run_id, employee_id)`.
 - Unlike stock/received/delivered quantities, these ARE stored rather than
-  purely derived — this is deliberate: an APPROVED payslip must stay fixed
-  even if attendance is later corrected. Reproducibility is satisfied because
-  the generation logic itself is deterministic and derived from
-  attendance + pay rates at that moment (AGENTS.md "reproducible from approved
-  attendance + rules" invariant) — once approved, nothing can change.
-- Trigger `enforce_payroll_item_immutable` (UPDATE + DELETE): items are
-  freely editable while the parent run is `draft`; locked once it leaves
-  draft.
+  purely derived — this is deliberate: a PAID payslip must stay fixed even if
+  attendance is later corrected. Reproducibility is satisfied because the
+  generation logic itself is deterministic and derived from attendance + pay
+  rates at that moment (AGENTS.md "reproducible from approved attendance +
+  rules" invariant) — once paid, nothing can change.
+- Trigger `enforce_payroll_item_immutable` (UPDATE + DELETE) *(widened
+  Sixth pass, migration 0028)*: items are freely editable while the parent
+  run is `draft` OR `approved`; locked once it's `paid` or `cancelled`. (This
+  governs the auto-computed columns here — `payroll_item_lines`, the
+  human-edited deduction/advance lines, is a separate trigger and stayed
+  `draft`-only; see below.)
 - **View `payroll_items_live`** *(migration 0026)*: recomputes
   `days_worked`/`rate`/`base_amount`/`overtime_amount` fresh from CURRENT
   `attendance`/`employee_private`/`overtime_entries`, mirroring
   `create_draft_payroll_run`'s formula exactly. The app
-  (`buildPayrollRunRows`, `src/lib/domain/payroll-view.ts`) reads this view
-  only for items whose run is still `draft` and overlays it onto the stored
-  snapshot, so a Draft left open across several days reflects each day's
-  attendance instead of silently going stale (the earlier gap this closes —
-  the stored snapshot alone had no way to pick up corrections short of
-  cancelling and regenerating the whole run). The moment a run leaves draft
-  this view is no longer consulted; the stored columns are the permanent
-  record.
-- **Function `approve_payroll_run(p_run_id)`** *(migration 0026)*: what
-  `payroll:approve` actually calls (`src/lib/actions/payroll.ts`). In one
-  transaction it (1) writes the CURRENT `payroll_items_live` figures into
-  `payroll_items` for that run — the last write the immutability trigger
-  allows while `status = 'draft'` — then (2) flips `payroll_runs.status` to
-  `'approved'`. This makes the frozen record "what the Payroll Admin was
-  looking at when they approved it," not "whatever attendance said the
-  moment the draft was first generated" — without it, approving would
-  silently discard every attendance/overtime correction the live Draft view
-  had already picked up.
+  (`buildPayrollRunRows`, `src/lib/domain/payroll-view.ts`,
+  `isPayrollLive()`) reads this view for items whose run is `draft` OR
+  `approved` and overlays it onto the stored snapshot, so a run left open
+  across several days — including after Owner sign-off — reflects each day's
+  attendance instead of silently going stale. The moment a run is `paid` (or
+  `cancelled`) this view is no longer consulted; the stored columns become
+  the permanent record.
+- **Function `pay_payroll_run(p_run_id)`** *(migration 0028; supersedes
+  0026's `approve_payroll_run`, now dropped)* — what `markPayrollRunPaid`
+  calls (`src/lib/actions/payroll.ts`). In one transaction it (1) writes the
+  CURRENT `payroll_items_live` figures into `payroll_items` for that run —
+  the last write the immutability trigger allows while `status = 'approved'`
+  — then (2) flips `payroll_runs.status` to `'paid'`. This is the actual
+  freeze point now: a run stays live all the way through Draft and Approved
+  (Approve is just the Owner sign-off checkpoint, still enforced by
+  `enforce_payroll_run_immutable`, no longer a data freeze), so marking Paid
+  is what needs to capture "whatever the Payroll Admin was looking at" —
+  without it, paying would silently discard every attendance/overtime
+  correction recorded since generation.
 
 ### payroll_item_lines  *(Fourth pass — deductions / advances)*
 `id`, `payroll_item_id → payroll_items` (cascade), `kind`

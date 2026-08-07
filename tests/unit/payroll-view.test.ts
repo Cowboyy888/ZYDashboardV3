@@ -41,17 +41,17 @@ function run(overrides: Partial<PayrollRunLike> = {}): PayrollRunLike {
   };
 }
 
-describe('buildPayrollRunRows — live recompute for Draft runs (payroll_items_live overlay)', () => {
+const LIVE_ROW = {
+  id: 'item-1',
+  live_days_worked: 12,
+  live_rate: 15,
+  live_base_amount: 180,
+  live_overtime_amount: 8,
+};
+
+describe('buildPayrollRunRows — live recompute stays on through Draft AND Approved, freezes at Paid', () => {
   it('uses the live figures (not the stored snapshot) for a Draft run when a live row is present', () => {
-    const rows = buildPayrollRunRows([run()], [item()], [], [], employees, [
-      {
-        id: 'item-1',
-        live_days_worked: 12,
-        live_rate: 15,
-        live_base_amount: 180,
-        live_overtime_amount: 8,
-      },
-    ]);
+    const rows = buildPayrollRunRows([run()], [item()], [], [], employees, [LIVE_ROW]);
     const row = rows[0]!.items[0]!;
     expect(row.daysWorked).toBe(12);
     expect(row.baseAmount).toBe(180);
@@ -68,15 +68,19 @@ describe('buildPayrollRunRows — live recompute for Draft runs (payroll_items_l
     expect(row.isLive).toBe(false);
   });
 
-  it('ignores live rows once the run has left Draft — an Approved payslip never changes', () => {
+  it('also stays live once a run is Approved — Approve is a sign-off checkpoint, not a data freeze', () => {
     const rows = buildPayrollRunRows([run({ status: 'approved' })], [item()], [], [], employees, [
-      {
-        id: 'item-1',
-        live_days_worked: 99,
-        live_rate: 15,
-        live_base_amount: 1485,
-        live_overtime_amount: 0,
-      },
+      LIVE_ROW,
+    ]);
+    const row = rows[0]!.items[0]!;
+    expect(row.daysWorked).toBe(12);
+    expect(row.baseAmount).toBe(180);
+    expect(row.isLive).toBe(true);
+  });
+
+  it('ignores live rows once a run is Paid — a paid payslip never changes again', () => {
+    const rows = buildPayrollRunRows([run({ status: 'paid' })], [item()], [], [], employees, [
+      { ...LIVE_ROW, live_days_worked: 99, live_base_amount: 1485 },
     ]);
     const row = rows[0]!.items[0]!;
     expect(row.daysWorked).toBe(10);
@@ -84,16 +88,17 @@ describe('buildPayrollRunRows — live recompute for Draft runs (payroll_items_l
     expect(row.isLive).toBe(false);
   });
 
-  it('carries the live base amount through into the run-level gross/net totals', () => {
-    const rows = buildPayrollRunRows([run()], [item()], [], [], employees, [
-      {
-        id: 'item-1',
-        live_days_worked: 12,
-        live_rate: 15,
-        live_base_amount: 180,
-        live_overtime_amount: 8,
-      },
+  it('ignores live rows once a run is Cancelled', () => {
+    const rows = buildPayrollRunRows([run({ status: 'cancelled' })], [item()], [], [], employees, [
+      { ...LIVE_ROW, live_days_worked: 99, live_base_amount: 1485 },
     ]);
+    const row = rows[0]!.items[0]!;
+    expect(row.daysWorked).toBe(10);
+    expect(row.isLive).toBe(false);
+  });
+
+  it('carries the live base amount through into the run-level gross/net totals', () => {
+    const rows = buildPayrollRunRows([run()], [item()], [], [], employees, [LIVE_ROW]);
     expect(rows[0]!.grossTotal).toBe(180);
     expect(rows[0]!.netTotal).toBe(188);
   });

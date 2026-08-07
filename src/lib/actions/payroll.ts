@@ -154,21 +154,43 @@ async function transitionRun(
 }
 
 /**
- * Approving a Draft run first snapshots the CURRENT live-recomputed figures
- * (payroll_items_live) into payroll_items, then flips the run to Approved —
- * both inside one DB transaction (approve_payroll_run RPC, 0026 migration).
- * This is deliberately NOT the shared transitionRun() helper used by
- * markPayrollRunPaid/cancelPayrollRun: those are plain status flips, but
- * approving must also carry forward whatever attendance/overtime corrections
- * happened after generation — otherwise the frozen record would silently
- * revert to the stale generation-time snapshot the Draft view no longer
- * shows.
+ * Approving is a plain status transition — it no longer freezes anything.
+ * A run's days-worked/base/overtime figures stay live through Draft AND
+ * Approved (payroll_items_live, 0026/0028 migrations); Approve is just the
+ * Owner sign-off checkpoint (enforced by the DB trigger), not the point pay
+ * stops tracking attendance. See markPayrollRunPaid for where the freeze
+ * actually happens.
  */
 export async function approvePayrollRun(
   _prev: ActionState,
   formData: FormData,
 ): Promise<ActionState> {
-  const user = await assertPermission('payroll:approve');
+  return transitionRun(
+    String(formData.get('id') ?? ''),
+    'payroll:approve',
+    canApproveRun,
+    'Only a Draft payroll run can be approved.',
+    { status: 'approved', approved_at: new Date().toISOString() },
+    'payroll_run.approve',
+    'Payroll run approved',
+  );
+}
+
+/**
+ * Marking Paid first snapshots the CURRENT live-recomputed figures
+ * (payroll_items_live) into payroll_items, then flips the run to Paid — both
+ * inside one DB transaction (pay_payroll_run RPC, 0028 migration). This is
+ * deliberately NOT the shared transitionRun() helper: a run has been live
+ * (tracking attendance/overtime) all the way through Draft and Approved, so
+ * this is the one moment that actually needs to freeze it — otherwise the
+ * "frozen" record would just be whatever stale figures were last written at
+ * generation time, ignoring every correction since.
+ */
+export async function markPayrollRunPaid(
+  _prev: ActionState,
+  formData: FormData,
+): Promise<ActionState> {
+  const user = await assertPermission('payroll:manage');
   const id = String(formData.get('id') ?? '');
   if (!id) return fail('Missing payroll run');
 
@@ -179,43 +201,26 @@ export async function approvePayrollRun(
     .eq('id', id)
     .maybeSingle();
   if (!run) return fail('Payroll run not found');
-  if (!canApproveRun(run.status as PayrollStatus))
-    return fail('Only a Draft payroll run can be approved.');
+  if (!canMarkPaid(run.status as PayrollStatus))
+    return fail('Only an Approved payroll run can be marked Paid.');
 
-  const { error } = await supabase.rpc('approve_payroll_run', { p_run_id: id });
+  const { error } = await supabase.rpc('pay_payroll_run', { p_run_id: id });
   if (error) {
-    if (error.message.includes('PAYROLL_APPROVE_OWNER_ONLY'))
-      return fail('Only an Owner may approve a payroll run.');
-    if (error.message.includes('PAYROLL_APPROVE_NOT_DRAFT'))
-      return fail('Only a Draft payroll run can be approved.');
+    if (error.message.includes('PAYROLL_PAY_NOT_APPROVED'))
+      return fail('Only an Approved payroll run can be marked Paid.');
     return fail(error.message);
   }
 
   await writeAudit(user, {
-    action: 'payroll_run.approve',
+    action: 'payroll_run.pay',
     entity: 'payroll_runs',
     entityId: id,
     oldValue: { status: run.status },
-    newValue: { status: 'approved' },
+    newValue: { status: 'paid' },
   });
   revalidatePath(`/payroll/${id}`);
   revalidatePath('/payroll');
-  return ok('Payroll run approved');
-}
-
-export async function markPayrollRunPaid(
-  _prev: ActionState,
-  formData: FormData,
-): Promise<ActionState> {
-  return transitionRun(
-    String(formData.get('id') ?? ''),
-    'payroll:manage',
-    canMarkPaid,
-    'Only an Approved payroll run can be marked Paid.',
-    { status: 'paid', paid_at: new Date().toISOString() },
-    'payroll_run.pay',
-    'Payroll run marked Paid',
-  );
+  return ok('Payroll run marked Paid');
 }
 
 export async function cancelPayrollRun(
