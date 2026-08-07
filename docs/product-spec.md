@@ -91,20 +91,27 @@ Seeded opening stock (Storage Room): 拔丝料 10厘 = 10 捆; 拔丝料 6厘 = 
 - **Second pass — Purchasing (built, later simplified to header-only):**
   suppliers, purchase orders (USD/KHR/CNY, `PO-YYYY-####`, Draft → Ordered →
   Cancelled). Purchase orders are records that an order was placed — supplier,
-  dates, currency, notes, attachment — with no line items, no quantities, no
-  costs, and no structured receiving; nothing about a purchase updates
-  inventory automatically. (Line items + goods receiving + an over-receipt
-  guard were originally built, mirroring Sales below, then deliberately
-  removed at the user's request — the underlying DB tables/triggers/RPCs
-  remain in the schema, dormant, since migrations are additive-only; see
-  `docs/data-dictionary.md`.) Costs restricted to Owner/System Admin/Warehouse
-  Admin. The Telegram inventory report does not include supplier/PO
-  information — see `docs/data-dictionary.md` and `docs/test-plan.md` for the
-  schema and tests. Overdue/Expected Arrival Date tracking (a per-PO ETA
-  field plus an overdue badge/dashboard stat, mirroring Sales' delivery-date
-  tracking) was also built and then removed at the user's request — same
-  dormant-column posture as above (`expected_arrival_date` stays in the
-  `purchase_orders` table, unused).
+  dates, currency, notes, attachment — plus free-text product lines
+  (`purchase_order_manual_items`: product name, quantity, unit, unit price —
+  no SKU/family catalog connection at all, no inventory effect); no
+  structured, catalog-linked quantities/costs and no structured receiving —
+  nothing about a purchase updates inventory automatically. (A catalog-linked
+  line-items version, mirroring Sales below — real SKU/location picks, qty,
+  unit cost — plus goods receiving and an over-receipt guard were originally
+  built, then deliberately removed at the user's request; a second attempt at
+  catalog-linked line items was built and reverted again within the same
+  session, this time replaced with the free-text version above since a
+  connection to the product catalog was explicitly not wanted. The
+  underlying DB tables/triggers/RPCs for the catalog-linked version and for
+  receiving remain in the schema, dormant, since migrations are
+  additive-only; see `docs/data-dictionary.md`.) Costs restricted to
+  Owner/System Admin/Warehouse Admin. The Telegram inventory report does not
+  include supplier/PO information — see `docs/data-dictionary.md` and
+  `docs/test-plan.md` for the schema and tests. Overdue/Expected Arrival Date
+  tracking (a per-PO ETA field plus an overdue badge/dashboard stat,
+  mirroring Sales' delivery-date tracking) was also built and then removed
+  at the user's request — same dormant-column posture as above
+  (`expected_arrival_date` stays in the `purchase_orders` table, unused).
 - **Third pass — Sales (built):** customers, sales orders (USD/KHR/CNY,
   `SO-YYYY-####`, Draft → Confirmed → Partially Delivered/Delivered/Cancelled),
   delivery from a location (creates `sale_delivery`, immutable ledger,

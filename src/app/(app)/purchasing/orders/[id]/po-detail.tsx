@@ -3,9 +3,21 @@ import { useRouter } from 'next/navigation';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from '@/components/ui/table';
 import { ConfirmActionButton } from '@/components/forms/confirm-action-button';
 import { useT } from '@/components/i18n-provider';
-import { issuePurchaseOrder, cancelPurchaseOrder } from '@/lib/actions/purchasing';
+import {
+  issuePurchaseOrder,
+  cancelPurchaseOrder,
+  removePurchaseOrderManualItem,
+} from '@/lib/actions/purchasing';
 import {
   PO_STATUS_LABELS,
   CURRENCY_LABELS,
@@ -14,8 +26,9 @@ import {
 } from '@/lib/domain/purchasing';
 import { formatDDMMYYYY } from '@/lib/domain/datetime';
 import type { PurchaseOrderRow } from '@/lib/domain/purchasing-view';
-import type { PurchaseOrderRow as PoRow } from '@/lib/db/types';
+import type { PurchaseOrderRow as PoRow, PurchaseOrderManualItemRow } from '@/lib/db/types';
 import { EditPoDialog } from './edit-po-dialog';
+import { AddPoManualItemDialog } from './add-po-manual-item-dialog';
 
 const STATUS_VARIANT = {
   draft: 'outline',
@@ -27,11 +40,13 @@ export function PoDetail({
   row,
   po,
   suppliers,
+  manualItems,
   canManage,
 }: {
   row: PurchaseOrderRow;
   po: PoRow;
   suppliers: { id: string; name: string }[];
+  manualItems: PurchaseOrderManualItemRow[];
   canManage: boolean;
 }) {
   const { t, locale } = useT();
@@ -63,6 +78,9 @@ export function PoDetail({
                 suppliers={suppliers}
                 onSaved={() => router.refresh()}
               />
+            )}
+            {canManage && (
+              <AddPoManualItemDialog purchaseOrderId={po.id} onAdded={() => router.refresh()} />
             )}
             {canManage && po.status === 'draft' && (
               <ConfirmActionButton
@@ -113,6 +131,65 @@ export function PoDetail({
               <div>{po.notes}</div>
             </div>
           )}
+        </CardContent>
+      </Card>
+
+      <Card>
+        <CardHeader>
+          <CardTitle className="text-base">{t('pur.products')}</CardTitle>
+        </CardHeader>
+        <CardContent className="p-0">
+          <Table>
+            <TableHeader>
+              <TableRow>
+                <TableHead>{t('pur.productName')}</TableHead>
+                <TableHead className="text-right">{t('pur.orderedQty')}</TableHead>
+                <TableHead>{t('common.unit')}</TableHead>
+                <TableHead className="text-right">{t('pur.unitCost')}</TableHead>
+                <TableHead className="text-right">{t('pur.lineTotal')}</TableHead>
+                {canManage && <TableHead className="text-right">{t('common.actions')}</TableHead>}
+              </TableRow>
+            </TableHeader>
+            <TableBody>
+              {manualItems.map((item) => (
+                <TableRow key={item.id}>
+                  <TableCell className="max-w-[320px]">
+                    <span className="truncate">{item.product_name}</span>
+                  </TableCell>
+                  <TableCell className="text-right tabular-nums">{item.quantity ?? '—'}</TableCell>
+                  <TableCell>{item.unit ?? '—'}</TableCell>
+                  <TableCell className="text-right tabular-nums">
+                    {item.unit_price ?? '—'}
+                  </TableCell>
+                  <TableCell className="text-right tabular-nums">
+                    {item.line_total ?? '—'}
+                  </TableCell>
+                  {canManage && (
+                    <TableCell className="text-right">
+                      <ConfirmActionButton
+                        action={removePurchaseOrderManualItem}
+                        formData={{ itemId: item.id, purchaseOrderId: po.id }}
+                        label={t('common.delete')}
+                        confirmText={t('pur.confirmRemoveProduct')}
+                        variant="destructive"
+                        onSuccess={() => router.refresh()}
+                      />
+                    </TableCell>
+                  )}
+                </TableRow>
+              ))}
+              {manualItems.length === 0 && (
+                <TableRow>
+                  <TableCell
+                    colSpan={canManage ? 6 : 5}
+                    className="text-center text-muted-foreground"
+                  >
+                    {t('pur.noProducts')}
+                  </TableCell>
+                </TableRow>
+              )}
+            </TableBody>
+          </Table>
         </CardContent>
       </Card>
     </div>

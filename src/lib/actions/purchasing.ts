@@ -8,6 +8,7 @@ import {
   supplierUpdateSchema,
   createPurchaseOrderSchema,
   updatePurchaseOrderSchema,
+  addPurchaseOrderManualItemSchema,
 } from '@/lib/validation/schemas';
 import { canCancel } from '@/lib/domain/purchasing';
 import { fail, ok, zodFieldErrors, type ActionState } from './types';
@@ -342,4 +343,86 @@ export async function cancelPurchaseOrder(
   revalidatePath('/purchasing/orders');
   revalidatePath('/purchasing');
   return ok('Purchase order cancelled');
+}
+
+// --- Manual product lines (free text, no catalog connection) -------------------
+
+/**
+ * Add one free-text product line to a purchase order — no sku_id, not tied
+ * to the product/family catalog at all. Editable at any PO status (same
+ * posture as the header's own notes field), since these lines never touch
+ * stock and aren't a binding commercial commitment the way catalog-linked
+ * line items would be.
+ */
+export async function addPurchaseOrderManualItem(
+  _prev: ActionState,
+  formData: FormData,
+): Promise<ActionState> {
+  const user = await assertPermission('purchasing:manage');
+  const parsed = addPurchaseOrderManualItemSchema.safeParse({
+    purchaseOrderId: formData.get('purchaseOrderId'),
+    productName: formData.get('productName'),
+    quantity: formData.get('quantity'),
+    unit: formData.get('unit'),
+    unitPrice: formData.get('unitPrice'),
+  });
+  if (!parsed.success)
+    return fail('Please check the highlighted fields', zodFieldErrors(parsed.error.issues));
+  const d = parsed.data;
+
+  const supabase = await createSupabaseServerClient();
+  const { data: po } = await supabase
+    .from('purchase_orders')
+    .select('id')
+    .eq('id', d.purchaseOrderId)
+    .maybeSingle();
+  if (!po) return fail('Purchase order not found');
+
+  const { data, error } = await supabase
+    .from('purchase_order_manual_items')
+    .insert({
+      purchase_order_id: d.purchaseOrderId,
+      product_name: d.productName,
+      quantity: d.quantity ?? null,
+      unit: d.unit ?? null,
+      unit_price: d.unitPrice ?? null,
+    })
+    .select('id')
+    .single();
+  if (error) return fail(error.message);
+
+  await writeAudit(user, {
+    action: 'purchase_order.add_manual_item',
+    entity: 'purchase_order_manual_items',
+    entityId: data.id,
+    newValue: { productName: d.productName, quantity: d.quantity, unitPrice: d.unitPrice },
+  });
+  revalidatePath(`/purchasing/orders/${d.purchaseOrderId}`);
+  revalidatePath('/purchasing/orders');
+  return ok('Product added');
+}
+
+export async function removePurchaseOrderManualItem(
+  _prev: ActionState,
+  formData: FormData,
+): Promise<ActionState> {
+  const user = await assertPermission('purchasing:manage');
+  const itemId = String(formData.get('itemId') ?? '');
+  const purchaseOrderId = String(formData.get('purchaseOrderId') ?? '');
+  if (!itemId) return fail('Missing product line');
+
+  const supabase = await createSupabaseServerClient();
+  const { error } = await supabase.from('purchase_order_manual_items').delete().eq('id', itemId);
+  if (error) return fail(error.message);
+
+  await writeAudit(user, {
+    action: 'purchase_order.remove_manual_item',
+    entity: 'purchase_order_manual_items',
+    entityId: itemId,
+  });
+  if (purchaseOrderId) {
+    revalidatePath(`/purchasing/orders/${purchaseOrderId}`);
+    revalidatePath('/purchasing/orders');
+  }
+  return ok('Product removed');
 }

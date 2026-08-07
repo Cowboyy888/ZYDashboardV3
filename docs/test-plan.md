@@ -44,7 +44,7 @@ CI stays green; run it locally/staging with `PLAYWRIGHT=1 npm run verify` after
 | 10 | Unauthorized users cannot access salary / private photos | `tests/unit/rbac.test.ts` (sensitive-data matrix); RLS on `employee_private` + private Storage buckets; schema check |
 | 11 | Create, edit while Draft, issue, and cancel a purchase order (header-only: supplier, dates, currency, notes — no line items, no receiving); editing is no longer offered once issued | `tests/e2e/purchasing.spec.ts` |
 | 12 | A cancelled purchase order cannot be issued or re-cancelled | `tests/unit/purchasing.test.ts` (`canCancel`); DB trigger `enforce_po_header_immutable`; schema check |
-| 13 | Purchase order costs (if ever repopulated — `purchase_order_items` is currently dormant) visible only to Owner/System Admin/Warehouse Admin | `tests/unit/rbac.test.ts`; RLS on `suppliers`/`purchase_orders`; schema check |
+| 13 | Purchase order costs (if ever repopulated — `purchase_order_items` is currently dormant) visible only to Owner/System Admin/Warehouse Admin | `tests/unit/rbac.test.ts`; RLS on `suppliers`/`purchase_orders`/`purchase_order_manual_items`; schema check |
 | 14 | Telegram inventory report never includes supplier/PO/cost information | `tests/integration/reports-render.test.ts` |
 | 15 | Create a sales order (draft, header + line items) | `tests/integration/sales-flows.test.ts` |
 | 16 | Partial delivery updates status/outstanding, keeps SO open | `tests/unit/sales.test.ts`; `tests/integration/sales-flows.test.ts` |
@@ -65,6 +65,7 @@ CI stays green; run it locally/staging with `PLAYWRIGHT=1 npm run verify` after
 | 31 | A deposit invoice may only be generated for a confirmed SO, and only one active invoice per SO | `tests/unit/deposit-invoice.test.ts` (`canGenerateDepositInvoice`); partial unique index on `deposit_invoices`; schema check |
 | 32 | Deposit amount / remaining balance = total × percentage (and its complement) — generated columns, never hand-entered | `tests/unit/deposit-invoice.test.ts` (`computeDepositAmount`/`computeRemainingBalance`); generated columns on `deposit_invoices`; schema check |
 | 33 | A deposit invoice's status derives from its payments ledger, never set directly, and mirrors onto the sales order's `payment_status` | `tests/unit/deposit-invoice.test.ts` (`computeDepositInvoiceStatus`); DB triggers `recompute_deposit_invoice_status`/`mirror_deposit_invoice_status`; `tests/e2e/deposit-invoice.spec.ts` |
+| 34 | A Purchase Order's free-text product lines (product name, quantity, unit, unit price — no SKU/family catalog connection) are addable/removable at any PO status, including after Issue | `tests/e2e/purchasing.spec.ts` |
 
 Additional coverage: `tests/unit/datetime.test.ts` (Asia/Bangkok ⇄ UTC,
 dd/mm/yyyy, business-date boundary), `tests/unit/inventory-view.test.ts`

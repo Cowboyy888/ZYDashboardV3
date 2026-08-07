@@ -1,7 +1,12 @@
 import { notFound } from 'next/navigation';
 import { requirePermission } from '@/lib/auth';
 import { hasPermission } from '@/lib/domain/rbac';
-import { getPurchaseOrder, getSupplier, getSuppliers } from '@/lib/db/queries';
+import {
+  getPurchaseOrder,
+  getPurchaseOrderManualItems,
+  getSupplier,
+  getSuppliers,
+} from '@/lib/db/queries';
 import { buildPurchaseOrderRows } from '@/lib/domain/purchasing-view';
 import { PageHeader } from '@/components/page-header';
 import { PoDetail } from './po-detail';
@@ -19,9 +24,10 @@ export default async function PurchaseOrderDetailPage({
   const po = await getPurchaseOrder(id);
   if (!po) notFound();
 
-  const [supplier, suppliers] = await Promise.all([
+  const [supplier, suppliers, manualItems] = await Promise.all([
     getSupplier(po.supplier_id),
     getSuppliers(true), // include archived — the PO's own supplier might have been archived since
+    getPurchaseOrderManualItems(id),
   ]);
 
   const rows = buildPurchaseOrderRows(
@@ -38,6 +44,7 @@ export default async function PurchaseOrderDetailPage({
         row={row}
         po={po}
         suppliers={suppliers.map((s) => ({ id: s.id, name: s.name }))}
+        manualItems={manualItems}
         canManage={hasPermission(user.role, 'purchasing:manage')}
       />
     </div>

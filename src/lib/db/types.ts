@@ -360,6 +360,18 @@ export interface PurchaseOrderRow {
   updated_at: string;
 }
 
+/** Free-text product line on a PO — no sku_id, no catalog connection. */
+export interface PurchaseOrderManualItemRow {
+  id: string;
+  purchase_order_id: string;
+  product_name: string;
+  quantity: number | null;
+  unit: string | null;
+  unit_price: number | null;
+  line_total: number | null;
+  created_at: string;
+}
+
 // --- Sales (Third pass) -------------------------------------------------------
 
 export interface CustomerRow {

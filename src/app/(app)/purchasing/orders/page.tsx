@@ -1,7 +1,7 @@
 import Link from 'next/link';
 import { requirePermission } from '@/lib/auth';
 import { hasPermission } from '@/lib/domain/rbac';
-import { getPurchaseOrders, getSuppliers } from '@/lib/db/queries';
+import { getPurchaseOrders, getSuppliers, getPurchaseOrderManualItems } from '@/lib/db/queries';
 import { buildPurchaseOrderRows } from '@/lib/domain/purchasing-view';
 import { getLocale } from '@/lib/i18n/locale';
 import { translator } from '@/lib/i18n';
@@ -16,9 +16,17 @@ export default async function PurchaseOrdersPage() {
   const user = await requirePermission('purchasing:view');
   const locale = await getLocale();
   const t = translator(locale);
-  const [pos, suppliers] = await Promise.all([getPurchaseOrders(), getSuppliers(true)]);
+  const [pos, suppliers, manualItems] = await Promise.all([
+    getPurchaseOrders(),
+    getSuppliers(true),
+    getPurchaseOrderManualItems(),
+  ]);
 
   const rows = buildPurchaseOrderRows(pos, suppliers);
+  const productsByPo: Record<string, string[]> = {};
+  for (const item of manualItems) {
+    (productsByPo[item.purchase_order_id] ??= []).push(item.product_name);
+  }
 
   return (
     <div>
@@ -39,7 +47,7 @@ export default async function PurchaseOrdersPage() {
         }
       />
       <PurchasingNav active="orders" />
-      <OrdersList rows={rows} />
+      <OrdersList rows={rows} productsByPo={productsByPo} />
     </div>
   );
 }

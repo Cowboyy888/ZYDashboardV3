@@ -573,6 +573,17 @@ export const dictionary = {
   },
   'pur.confirmCancel': { en: 'Cancel this purchase order?', zh: '确认取消此采购订单？' },
 
+  // --- PO manual product lines (free text, no catalog connection) --------------
+  'pur.products': { en: 'Products', zh: '产品' },
+  'pur.productName': { en: 'Product name', zh: '产品名称' },
+  'pur.addProduct': { en: 'Add product', zh: '新增产品' },
+  'pur.orderedQty': { en: 'Quantity', zh: '数量' },
+  'pur.unitCost': { en: 'Unit cost', zh: '单价' },
+  'pur.lineTotal': { en: 'Line total', zh: '小计' },
+  'pur.noProducts': { en: 'No products added yet.', zh: '暂无产品。' },
+  'pur.confirmRemoveProduct': { en: 'Remove this product?', zh: '确认删除此产品？' },
+  'pur.moreProducts': { en: 'more', zh: '更多' },
+
   // --- Sales (Third pass) ------------------------------------------------------
   'sal.dashboard': { en: 'Dashboard', zh: '仪表盘' },
   'sal.customers': { en: 'Customers', zh: '客户' },
@@ -1038,6 +1049,9 @@ const PHRASES: Record<string, string> = {
   'Purchase order not found': '未找到采购订单',
   'Missing purchase order': '缺少采购订单',
   'Only a Draft purchase order can be issued.': '仅草稿状态的采购订单可以下单确认。',
+  'Product added': '已添加产品',
+  'Product removed': '已移除产品',
+  'Missing product line': '缺少产品明细',
   'Goods received': '已完成收货',
   'Invalid line items': '明细项无效',
   'One of the selected specifications was not found.': '未找到所选的其中一个规格。',

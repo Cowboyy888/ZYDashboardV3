@@ -303,6 +303,20 @@ export const updatePurchaseOrderSchema = createPurchaseOrderSchema
   .extend({ id: z.string().uuid() });
 export type UpdatePurchaseOrderInput = z.infer<typeof updatePurchaseOrderSchema>;
 
+/**
+ * A free-text product line on a Purchase Order — no sku_id, no connection
+ * to the product/family catalog. Quantity/unit/unit price are all optional;
+ * only the product name is required.
+ */
+export const addPurchaseOrderManualItemSchema = z.object({
+  purchaseOrderId: z.string().uuid(),
+  productName: nonEmpty.max(200),
+  quantity: optionalNumber,
+  unit: optionalText,
+  unitPrice: optionalNumber,
+});
+export type AddPurchaseOrderManualItemInput = z.infer<typeof addPurchaseOrderManualItemSchema>;
+
 // --- Sales (Third pass) --------------------------------------------------------
 
 export const customerSchema = z.object({

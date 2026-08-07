@@ -173,12 +173,34 @@ suppliers`, `order_date`, `currency`, `status`, `notes`, `attachment_path`,
 
 ### purchase_order_items  *(dormant — table remains in the DB, unused by the app)*
 Purchasing was simplified to header-only records; nothing creates, reads, or
-deletes rows in this table anymore. Left in the schema rather than dropped
-(migrations are additive-only) — see `purchase_orders` above for what a PO
-actually is now. Historical columns, for reference only: `id`,
-`purchase_order_id → purchase_orders` (cascade), `sku_id → skus`,
-`location_id → locations`, `unit`, `ordered_qty`, `unit_cost`, `line_total`.
-Trigger `enforce_po_item_immutable` (UPDATE + DELETE) is likewise dormant.
+deletes rows in this table anymore. A catalog-linked (SKU/location, qty,
+unit cost) version of this feature was reactivated and then reverted at the
+user's request within the same session — the app went back to not using
+this table at all. Left in the schema rather than dropped (migrations are
+additive-only) — see `purchase_orders` above for what a PO actually is now.
+Historical columns, for reference only: `id`, `purchase_order_id →
+purchase_orders` (cascade), `sku_id → skus`, `location_id → locations`,
+`unit`, `ordered_qty`, `unit_cost`, `line_total`. Trigger
+`enforce_po_item_immutable` (UPDATE + DELETE) is likewise dormant.
+
+### purchase_order_manual_items  *(active — free text, NO catalog connection)*
+What Purchasing actually uses to record what's being bought: `id`,
+`purchase_order_id → purchase_orders` (cascade), `product_name` (required,
+free text), `quantity` (nullable), `unit` (nullable, free text), `unit_price`
+(nullable), `line_total` (**generated column**, `quantity * unit_price`,
+null when either input is null — never separately stored). Deliberately has
+**no `sku_id`, no `location_id`, no FK to `skus`/`product_families` at
+all** — the user explicitly asked for a manual product field with no
+connection to the family/SKU catalog, so this is a plain descriptive table,
+not an inventory-affecting one (never referenced by `stock_movements`).
+- **No immutability trigger** — freely addable/removable at any PO status
+  (`addPurchaseOrderManualItem`/`removePurchaseOrderManualItem`,
+  `src/lib/actions/purchasing.ts`), same editability posture as the header's
+  own `notes`/`attachment_path` fields, since these lines are plain
+  description text, not a binding commercial commitment the way the
+  catalog-linked line items above were.
+- RLS matches `purchase_orders`/`suppliers` exactly (owner/system_admin/
+  warehouse_admin select; owner/warehouse_admin write).
 
 ### customers  *(editable master data, Third pass)*
 `id`, `name`, `name_chinese`, `name_english`, `contact_person`, `phone`,
@@ -386,7 +408,7 @@ line on this run, not tracked as a loan against future runs).
 | audit_log | owner/system_admin | insert: any authenticated · no update/delete |
 | sent_reports | owner/system_admin | insert: owner/system_admin (+ service role) |
 | telegram_settings | owner/system_admin | owner/system_admin |
-| suppliers / purchase_orders | owner/system_admin/warehouse | owner/warehouse (system_admin is view-only). `purchase_order_items` has the same RLS but is dormant — the app no longer writes to it. |
+| suppliers / purchase_orders / purchase_order_manual_items | owner/system_admin/warehouse | owner/warehouse (system_admin is view-only). `purchase_order_items` has the same RLS but is dormant — the app no longer writes to it. |
 | customers / sales_orders / sales_order_items | owner/system_admin/sales | owner/sales (system_admin is view-only — this is also what keeps prices, which live on these same rows, out of every other role) |
 | payroll_runs / payroll_items / payroll_item_lines | owner/system_admin/payroll | owner/payroll (system_admin is view-only — approving a run additionally requires Owner specifically, enforced by a DB trigger) |
 

@@ -25,6 +25,7 @@ import type {
   ProductFamilyRow,
   ProfileRow,
   PurchaseOrderRow,
+  PurchaseOrderManualItemRow,
   SalesInquiryRow,
   SalesOrderItemDeliveredRow,
   SalesOrderItemRow,
@@ -374,6 +375,22 @@ export async function getPurchaseOrder(id: string): Promise<PurchaseOrderRow | n
   } catch (e) {
     console.error('[queries] getPurchaseOrder', e);
     return null;
+  }
+}
+
+/** Free-text product lines — mirrors getPurchaseOrderItems' shape, no sku_id. */
+export async function getPurchaseOrderManualItems(
+  purchaseOrderId?: string,
+): Promise<PurchaseOrderManualItemRow[]> {
+  try {
+    const supabase = await client();
+    let q = supabase.from('purchase_order_manual_items').select('*').order('created_at');
+    if (purchaseOrderId) q = q.eq('purchase_order_id', purchaseOrderId);
+    const { data } = await q;
+    return (data as PurchaseOrderManualItemRow[]) ?? [];
+  } catch (e) {
+    console.error('[queries] getPurchaseOrderManualItems', e);
+    return [];
   }
 }
 

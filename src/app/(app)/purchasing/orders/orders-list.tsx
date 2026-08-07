@@ -21,8 +21,22 @@ const STATUS_VARIANT: Record<PoStatus, 'secondary' | 'destructive' | 'outline'> 
   cancelled: 'destructive',
 };
 
-export function OrdersList({ rows }: { rows: PurchaseOrderRow[] }) {
+export function OrdersList({
+  rows,
+  productsByPo,
+}: {
+  rows: PurchaseOrderRow[];
+  productsByPo: Record<string, string[]>;
+}) {
   const { t, locale } = useT();
+
+  function productsPreview(poId: string): string {
+    const names = productsByPo[poId] ?? [];
+    if (names.length === 0) return '—';
+    if (names.length === 1) return names[0]!;
+    return `${names[0]} +${names.length - 1} ${t('pur.moreProducts')}`;
+  }
+
   return (
     <Card>
       <CardContent className="p-0">
@@ -32,6 +46,7 @@ export function OrdersList({ rows }: { rows: PurchaseOrderRow[] }) {
               <TableHead>{t('pur.poNumber')}</TableHead>
               <TableHead>{t('pur.supplier')}</TableHead>
               <TableHead>{t('pur.orderDate')}</TableHead>
+              <TableHead>{t('pur.products')}</TableHead>
               <TableHead>{t('common.status')}</TableHead>
             </TableRow>
           </TableHeader>
@@ -48,6 +63,9 @@ export function OrdersList({ rows }: { rows: PurchaseOrderRow[] }) {
                 </TableCell>
                 <TableCell>{r.supplierName}</TableCell>
                 <TableCell>{formatDDMMYYYY(r.orderDate)}</TableCell>
+                <TableCell className="max-w-[240px] truncate text-sm text-muted-foreground">
+                  {productsPreview(r.poId)}
+                </TableCell>
                 <TableCell>
                   <Badge variant={STATUS_VARIANT[r.status] ?? 'outline'}>
                     {PO_STATUS_LABELS[r.status]?.[locale] ?? r.status}
@@ -57,7 +75,7 @@ export function OrdersList({ rows }: { rows: PurchaseOrderRow[] }) {
             ))}
             {rows.length === 0 && (
               <TableRow>
-                <TableCell colSpan={4} className="text-center text-muted-foreground">
+                <TableCell colSpan={5} className="text-center text-muted-foreground">
                   {t('pur.noOrders')}
                 </TableCell>
               </TableRow>
