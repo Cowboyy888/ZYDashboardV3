@@ -1,9 +1,10 @@
 /**
  * Purchasing — pure, no-I/O business rules.
  *
- * Purchase orders are header-only records (supplier, dates, currency, notes)
- * — no line items, no receiving, no automatic inventory updates. `status` is
- * an explicit user transition (Issue/Cancel), never receipt-derived.
+ * Purchase orders carry line items (SKU, location, quantity, unit cost) —
+ * freely editable while Draft, immutable once Issued. Receiving/goods-receipt
+ * stays out of scope: `status` is an explicit user transition (Issue/
+ * Cancel), never receipt-derived.
  */
 export const CURRENCIES = ['USD', 'KHR', 'CNY'] as const;
 export type Currency = (typeof CURRENCIES)[number];
@@ -20,6 +21,10 @@ export const CURRENCY_LABELS: Record<Currency, { en: string; zh: string }> = {
 
 export const PO_STATUSES = ['draft', 'ordered', 'cancelled'] as const;
 export type PoStatus = (typeof PO_STATUSES)[number];
+
+export function isPoStatus(value: unknown): value is PoStatus {
+  return typeof value === 'string' && (PO_STATUSES as readonly string[]).includes(value);
+}
 
 export const PO_STATUS_LABELS: Record<PoStatus, { en: string; zh: string }> = {
   draft: { en: 'Draft', zh: '草稿' },

@@ -288,20 +288,45 @@ export type SupplierInput = z.infer<typeof supplierSchema>;
 
 export const supplierUpdateSchema = supplierSchema.extend({ id: z.string().uuid() });
 
+/** One PO line — mirrors soItemInputSchema, no area/m² fields (not a purchasing concept). */
+const poItemInputSchema = z.object({
+  skuId: z.string().uuid(),
+  locationId: z.string().uuid(),
+  orderedQty: positiveQty,
+  unitCost: z.coerce.number().min(0, 'Unit cost cannot be negative'),
+});
+
 export const createPurchaseOrderSchema = z.object({
   supplierId: z.string().uuid(),
   orderDate: isoDate,
   currency: z.enum(CURRENCIES),
   notes: optionalText,
   attachmentPath: optionalText,
+  items: z.array(poItemInputSchema).min(1, 'Add at least one line item'),
 });
 export type CreatePurchaseOrderInput = z.infer<typeof createPurchaseOrderSchema>;
 
-/** Draft-only header edit (supplier/currency/order date/notes) — attachment is not re-editable here. */
+/**
+ * Draft-only header edit (supplier/currency/order date/notes) — attachment is
+ * not re-editable here, and items are edited separately
+ * (addPurchaseOrderItem/removePurchaseOrderItem), NOT through this schema —
+ * `items` must stay omitted here or the existing Edit PO dialog (which never
+ * submits an items array) would start failing validation.
+ */
 export const updatePurchaseOrderSchema = createPurchaseOrderSchema
-  .omit({ attachmentPath: true })
+  .omit({ attachmentPath: true, items: true })
   .extend({ id: z.string().uuid() });
 export type UpdatePurchaseOrderInput = z.infer<typeof updatePurchaseOrderSchema>;
+
+/** Add one line item to an already-existing Draft purchase order. */
+export const addPurchaseOrderItemSchema = z.object({
+  purchaseOrderId: z.string().uuid(),
+  skuId: z.string().uuid(),
+  locationId: z.string().uuid(),
+  orderedQty: positiveQty,
+  unitCost: z.coerce.number().min(0, 'Unit cost cannot be negative'),
+});
+export type AddPurchaseOrderItemInput = z.infer<typeof addPurchaseOrderItemSchema>;
 
 // --- Sales (Third pass) --------------------------------------------------------
 

@@ -42,9 +42,11 @@ CI stays green; run it locally/staging with `PLAYWRIGHT=1 npm run verify` after
 | 8 | Telegram scheduled send does not duplicate a report | `tests/integration/telegram-idempotency.test.ts` |
 | 9 | Payroll draft reads attendance & respects the confirmed pay rules | `tests/unit/payroll.test.ts`; `tests/integration/payroll-flows.test.ts`; DB function `create_draft_payroll_run` |
 | 10 | Unauthorized users cannot access salary / private photos | `tests/unit/rbac.test.ts` (sensitive-data matrix); RLS on `employee_private` + private Storage buckets; schema check |
-| 11 | Create, edit while Draft, issue, and cancel a purchase order (header-only: supplier, dates, currency, notes — no line items, no receiving); editing is no longer offered once issued | `tests/e2e/purchasing.spec.ts` |
+| 11 | Create a purchase order with line items (supplier, dates, currency, notes, at least one SKU/location/qty/unit cost line), edit the header while Draft, issue it, and cancel it; editing is no longer offered once issued | `tests/e2e/purchasing.spec.ts` |
 | 12 | A cancelled purchase order cannot be issued or re-cancelled | `tests/unit/purchasing.test.ts` (`canCancel`); DB trigger `enforce_po_header_immutable`; schema check |
-| 13 | Purchase order costs (if ever repopulated — `purchase_order_items` is currently dormant) visible only to Owner/System Admin/Warehouse Admin | `tests/unit/rbac.test.ts`; RLS on `suppliers`/`purchase_orders`; schema check |
+| 13 | Purchase order costs visible only to Owner/System Admin/Warehouse Admin | `tests/unit/rbac.test.ts`; RLS on `suppliers`/`purchase_orders`/`purchase_order_items`; schema check |
+| 34 | PO line items are freely addable/removable while Draft, immutable once Issued; a Draft PO cannot be issued with zero line items | `tests/e2e/purchasing.spec.ts`; `tests/unit/purchasing-view.test.ts`; DB triggers `enforce_po_item_immutable` (`trg_po_items_no_insert`/`no_update`/`no_delete`), `enforce_po_header_immutable` (`PO_ISSUE_NO_ITEMS`); schema check |
+| 35 | Purchase Orders list filters (PO number, supplier, status, order-date range, item by product family) and the Download PDF/Excel exports honor the same filters as what's shown on screen | `tests/e2e/purchasing.spec.ts` |
 | 14 | Telegram inventory report never includes supplier/PO/cost information | `tests/integration/reports-render.test.ts` |
 | 15 | Create a sales order (draft, header + line items) | `tests/integration/sales-flows.test.ts` |
 | 16 | Partial delivery updates status/outstanding, keeps SO open | `tests/unit/sales.test.ts`; `tests/integration/sales-flows.test.ts` |
@@ -80,9 +82,12 @@ The domain tests assert the rules; the database enforces them independently:
   attendance/stock never hard-deleted.
 - RLS on `employee_private` + private buckets — salary/photos restricted.
 - `enforce_po_header_immutable` — a PO's commercial terms lock once issued
-  (Draft only). (`enforce_purchase_receipt_rules`/`enforce_po_item_immutable`
-  still exist but are dormant — Purchasing has no line items or receiving.)
-- RLS on `suppliers`/`purchase_orders` — restricted to
+  (Draft only), and a Draft PO cannot move to Ordered with zero line items
+  (`PO_ISSUE_NO_ITEMS`).
+- `enforce_po_item_immutable` — PO line items lock (INSERT + UPDATE + DELETE)
+  once the parent PO is no longer Draft. (`enforce_purchase_receipt_rules`
+  still exists but is dormant — receiving stays out of scope.)
+- RLS on `suppliers`/`purchase_orders`/`purchase_order_items` — restricted to
   owner/system_admin/warehouse_admin, which is also what keeps purchase costs
   out of every other role.
 - `enforce_sale_delivery_rules` — no delivering against a draft/cancelled SO;

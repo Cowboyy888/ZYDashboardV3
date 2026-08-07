@@ -1,5 +1,11 @@
 import { requirePermission } from '@/lib/auth';
-import { getPurchaseOrders, getSuppliers } from '@/lib/db/queries';
+import {
+  getPurchaseOrders,
+  getPurchaseOrderItems,
+  getSuppliers,
+  getSkus,
+  getFamilies,
+} from '@/lib/db/queries';
 import { buildPurchaseOrderRows } from '@/lib/domain/purchasing-view';
 import { getLocale } from '@/lib/i18n/locale';
 import { translator } from '@/lib/i18n';
@@ -14,8 +20,14 @@ export default async function PurchasingPage() {
   const locale = await getLocale();
   const t = translator(locale);
 
-  const [pos, suppliers] = await Promise.all([getPurchaseOrders(), getSuppliers(true)]);
-  const rows = buildPurchaseOrderRows(pos, suppliers);
+  const [pos, items, suppliers, skus, families] = await Promise.all([
+    getPurchaseOrders(),
+    getPurchaseOrderItems(),
+    getSuppliers(true),
+    getSkus(true),
+    getFamilies(true),
+  ]);
+  const rows = buildPurchaseOrderRows(pos, items, suppliers, skus, families, locale);
 
   return (
     <div>
