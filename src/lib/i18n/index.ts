@@ -553,8 +553,8 @@ export const dictionary = {
   'pur.newPo': { en: 'New purchase order', zh: '新建采购订单' },
   'pur.editPo': { en: 'Edit purchase order', zh: '编辑采购订单' },
   'pur.newPoDesc': {
-    en: 'Create a draft with supplier, dates, currency, and line items — nothing is ordered until you issue it.',
-    zh: '创建包含供应商、日期、货币与明细项的草稿 — 下单确认前不会生效。',
+    en: 'Create a record with supplier, dates, currency, and notes — nothing is ordered until you issue it.',
+    zh: '创建包含供应商、日期、货币与备注的记录 — 下单确认前不会生效。',
   },
   'pur.poNumber': { en: 'PO number', zh: '采购订单号' },
   'pur.supplier': { en: 'Supplier', zh: '供应商' },
@@ -572,33 +572,6 @@ export const dictionary = {
     zh: '确认下单？下单后供应商与货币将无法更改。',
   },
   'pur.confirmCancel': { en: 'Cancel this purchase order?', zh: '确认取消此采购订单？' },
-
-  // --- PO line items -----------------------------------------------------------
-  'pur.lineItems': { en: 'Line items', zh: '明细项' },
-  'pur.addItem': { en: 'Add line', zh: '新增一行' },
-  'pur.addNewSpec': { en: '+ New specification', zh: '+ 新增规格' },
-  'pur.orderedQty': { en: 'Ordered qty', zh: '订购数量' },
-  'pur.unitCost': { en: 'Unit cost', zh: '单价' },
-  'pur.lineTotal': { en: 'Line total', zh: '小计' },
-  'pur.grandTotal': { en: 'Grand total', zh: '总计' },
-  'pur.noItems': { en: 'No line items yet.', zh: '暂无明细项。' },
-  'pur.confirmRemoveItem': { en: 'Remove this line item?', zh: '确认删除此明细项？' },
-  'pur.itemsSuffix': { en: 'item(s)', zh: '项' },
-  'pur.amount': { en: 'Amount', zh: '金额' },
-
-  // --- PO filters + export ------------------------------------------------------
-  'pur.downloadExcel': { en: 'Download Excel', zh: '下载 Excel' },
-  'pur.downloadPdf': { en: 'Download PDF', zh: '下载 PDF' },
-  'pur.filters': { en: 'Filters', zh: '筛选条件' },
-  'pur.applyFilters': { en: 'Apply', zh: '应用筛选' },
-  'pur.clearFilters': { en: 'Clear', zh: '清除筛选' },
-  'pur.filterPoNumber': { en: 'PO number', zh: '采购订单号' },
-  'pur.filterItem': { en: 'Item', zh: '品类' },
-  'pur.from': { en: 'From', zh: '开始日期' },
-  'pur.to': { en: 'To', zh: '结束日期' },
-  'pur.allSuppliers': { en: 'All suppliers', zh: '全部供应商' },
-  'pur.allStatuses': { en: 'All statuses', zh: '全部状态' },
-  'pur.allItems': { en: 'All items', zh: '全部品类' },
 
   // --- Sales (Third pass) ------------------------------------------------------
   'sal.dashboard': { en: 'Dashboard', zh: '仪表盘' },
@@ -1077,16 +1050,6 @@ const PHRASES: Record<string, string> = {
   'Receiving this quantity would exceed the ordered amount (Owner override required).':
     '此数量将超过订购数量（需老板超收批准）。',
   'Purchase order item not found': '未找到采购订单明细项',
-  'Items can only be added while the purchase order is Draft.':
-    '仅草稿状态的采购订单可以新增明细。',
-  'Items can only be removed while the purchase order is Draft.':
-    '仅草稿状态的采购订单可以删除明细。',
-  'Item added': '已添加明细',
-  'Item removed': '已移除明细',
-  'Missing line item': '缺少明细项',
-  'A purchase order needs at least one line item': '采购订单至少需要一条明细',
-  'Add at least one line item before issuing this purchase order.':
-    '下单确认前，采购订单至少需要一条明细。',
   // Sales
   'Customer added': '已新增客户',
   'Customer updated': '已更新客户',

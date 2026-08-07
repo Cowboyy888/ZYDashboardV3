@@ -154,37 +154,33 @@ begin
 
   -- 1) Draft — not yet issued.
   po_id := public.create_draft_purchase_order(
-    sup_gz, date '2026-07-20', 'CNY', 'Draft — awaiting confirmation', null,
+    sup_gz, date '2026-07-20', date '2026-08-05', 'CNY', 'Draft — awaiting confirmation', null,
     jsonb_build_array(
       jsonb_build_object('skuId', sku_mesh_normal, 'locationId', loc_storage, 'unit', '张', 'orderedQty', 500, 'unitCost', 12.5)
     )
   );
 
-  -- 2) Ordered.
+  -- 2) Ordered, due within the next 7 days (shows in "expected this week" + Telegram).
   po_id := public.create_draft_purchase_order(
-    sup_kh, date '2026-07-18', 'USD', 'Regular restock', null,
+    sup_kh, date '2026-07-18', date '2026-07-30', 'USD', 'Regular restock', null,
     jsonb_build_array(
       jsonb_build_object('skuId', sku_mesh_normal, 'locationId', loc_warehouse, 'unit', '张', 'orderedQty', 300, 'unitCost', 2.10)
     )
   );
   update public.purchase_orders set status = 'ordered', issued_at = now() where id = po_id;
 
-  -- 3) Ordered.
+  -- 3) Ordered, overdue (expected date already passed, nothing received yet).
   po_id := public.create_draft_purchase_order(
-    sup_wire, date '2026-06-25', 'KHR', 'Supplier confirmed late', null,
+    sup_wire, date '2026-06-25', date '2026-07-10', 'KHR', 'Supplier confirmed late', null,
     jsonb_build_array(
       jsonb_build_object('skuId', sku_wire_10, 'locationId', loc_storage, 'unit', '捆', 'orderedQty', 25, 'unitCost', 180000)
     )
   );
   update public.purchase_orders set status = 'ordered', issued_at = now() where id = po_id;
 
-  -- 4) Partially received — the receiving RPCs/columns stay dormant at the
-  -- app level, but the raw ledger objects still work fine at the SQL level,
-  -- so seeding stock this way (rather than only via opening_balance, which
-  -- only ever targets Storage Room) is still the right tool to get realistic
-  -- opening stock into the Warehouse location for the sales seed below.
+  -- 4) Partially received.
   po_id := public.create_draft_purchase_order(
-    sup_gz, date '2026-07-10', 'CNY', 'Split delivery expected', null,
+    sup_gz, date '2026-07-10', date '2026-07-22', 'CNY', 'Split delivery expected', null,
     jsonb_build_array(
       jsonb_build_object('skuId', sku_mesh_normal, 'locationId', loc_storage, 'unit', '张', 'orderedQty', 400, 'unitCost', 12.0)
     )
@@ -193,10 +189,11 @@ begin
   select id into item_id from public.purchase_order_items where purchase_order_id = po_id;
   insert into public.stock_movements (sku_id, location_id, type, quantity, business_date, purchase_order_item_id, batch_reference, notes)
   values (sku_mesh_normal, loc_storage, 'purchase_receipt', 150, date '2026-07-19', item_id, 'BATCH-001', 'First partial delivery');
+  update public.purchase_orders set status = 'partially_received' where id = po_id;
 
   -- 5) Fully received.
   po_id := public.create_draft_purchase_order(
-    sup_kh, date '2026-06-15', 'USD', null, null,
+    sup_kh, date '2026-06-15', date '2026-06-28', 'USD', null, null,
     jsonb_build_array(
       jsonb_build_object('skuId', sku_wire_10, 'locationId', loc_warehouse, 'unit', '捆', 'orderedQty', 10, 'unitCost', 45.0)
     )
@@ -205,10 +202,11 @@ begin
   select id into item_id from public.purchase_order_items where purchase_order_id = po_id;
   insert into public.stock_movements (sku_id, location_id, type, quantity, business_date, purchase_order_item_id, batch_reference)
   values (sku_wire_10, loc_warehouse, 'purchase_receipt', 10, date '2026-06-27', item_id, 'BATCH-002');
+  update public.purchase_orders set status = 'received' where id = po_id;
 
   -- 6) Cancelled.
   po_id := public.create_draft_purchase_order(
-    sup_wire, date '2026-07-01', 'USD', 'Supplier could not fulfil', null,
+    sup_wire, date '2026-07-01', date '2026-07-15', 'USD', 'Supplier could not fulfil', null,
     jsonb_build_array(
       jsonb_build_object('skuId', sku_mesh_normal, 'locationId', loc_storage, 'unit', '张', 'orderedQty', 100, 'unitCost', 13.0)
     )

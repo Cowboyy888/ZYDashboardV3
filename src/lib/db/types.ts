@@ -360,18 +360,6 @@ export interface PurchaseOrderRow {
   updated_at: string;
 }
 
-export interface PurchaseOrderItemRow {
-  id: string;
-  purchase_order_id: string;
-  sku_id: string;
-  location_id: string;
-  unit: string;
-  ordered_qty: number;
-  unit_cost: number;
-  line_total: number;
-  created_at: string;
-}
-
 // --- Sales (Third pass) -------------------------------------------------------
 
 export interface CustomerRow {

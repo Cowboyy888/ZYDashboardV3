@@ -366,7 +366,7 @@ export async function createSku(_prev: ActionState, formData: FormData): Promise
 
   revalidatePath('/settings/products');
   revalidatePath('/inventory');
-  return ok('Specification added', { id: data.id });
+  return ok('Specification added');
 }
 
 export async function updateSku(_prev: ActionState, formData: FormData): Promise<ActionState> {

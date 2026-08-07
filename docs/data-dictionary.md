@@ -63,11 +63,10 @@ enforced by `skus_signature_uidx` over the (case/space-normalised) attribute set
   — `sale_delivery` is outbound, so it is always stored **negative**.
 - Trigger `enforce_stock_rules` blocks negative balances unless Owner + reason.
 - Trigger `enforce_purchase_receipt_rules` (Second pass) still exists in the DB
-  but is **dormant** — goods receiving stays deliberately out of scope even
-  after line items came back (Seventh pass; see `purchase_order_items`
-  below), so nothing in the app posts `purchase_receipt` rows or calls this
-  trigger's path. Left in place rather than dropped, since migrations are
-  additive-only.
+  but is **dormant** — Purchasing was simplified to header-only records with no
+  structured receiving, so nothing in the app posts `purchase_receipt` rows or
+  calls this trigger's path anymore. Left in place rather than dropped, since
+  migrations are additive-only.
 - Trigger `enforce_sale_delivery_rules` (Third pass) is the mirror image and
   IS still active: blocks delivering against a draft/cancelled SO, and blocks
   over-delivery (delivered > ordered on that item) unless Owner + a recorded
@@ -77,7 +76,7 @@ enforced by `skus_signature_uidx` over the (case/space-normalised) attribute set
   (`security_invoker`, so RLS applies).
 - **View `purchase_order_item_received`** still exists in the DB but is
   **dormant** for the same reason as `enforce_purchase_receipt_rules` above —
-  receiving stays out of scope, so nothing queries it.
+  nothing queries it anymore now that Purchasing has no line items.
 - **View `sales_order_item_delivered`** = `SUM(-quantity)` of `sale_delivery` rows
   (negated back to a positive count) grouped by `sales_order_item_id` —
   delivered/outstanding quantity is likewise never stored.
@@ -144,7 +143,7 @@ the attendance report is currently always sent in Chinese), `updated_at`.
 purchase history cannot be hard-deleted (archive instead); `deleteSupplier`
 pre-checks this and the FK is the backstop.
 
-### purchase_orders  *(header + line items — no receiving)*
+### purchase_orders  *(header-only record — no line items, no receiving)*
 `id`, `po_number` (unique, auto `PO-YYYY-####` — atomic per-calendar-year
 counter via `purchase_order_seq` + `assign_po_number` trigger), `supplier_id →
 suppliers`, `order_date`, `currency`, `status`, `notes`, `attachment_path`,
@@ -153,10 +152,7 @@ suppliers`, `order_date`, `currency`, `status`, `notes`, `attachment_path`,
 - One currency per PO; no exchange-rate conversion.
 - Trigger `enforce_po_header_immutable`: once `status <> 'draft'`, `supplier_id`
   /`currency`/`order_date` can no longer change (`notes`, `attachment_path`,
-  `status` remain editable). It also blocks `draft -> ordered` when the PO has
-  zero line items (`PO_ISSUE_NO_ITEMS`, added Seventh pass, mirrors
-  `enforce_so_header_immutable`'s `SO_CONFIRM_NO_ITEMS` guard) — covers the
-  case where every item is removed from a Draft PO before Issue.
+  `status` remain editable).
 - `status` is a plain stored field, set only by the app on Issue/Cancel — no
   receiving, so nothing recomputes it afterward.
 - **Editable while Draft** — `updatePurchaseOrderHeader`
@@ -173,33 +169,16 @@ suppliers`, `order_date`, `currency`, `status`, `notes`, `attachment_path`,
   app, but the column was left in place rather than dropped (migrations are
   additive-only, and dropping it would destroy any historical values already
   recorded on existing production orders). Nothing reads or writes it
-  anymore — unrelated to and unaffected by `purchase_order_items` below,
-  which is active again.
+  anymore — same posture as `purchase_order_items` below.
 
-### purchase_order_items  *(active — SKU, location, quantity, unit cost)*
-`id`, `purchase_order_id → purchase_orders` (cascade), `sku_id → skus`
-(restrict), `location_id → locations` (restrict), `unit` (copied from the
-SKU at insert time, never user-chosen), `ordered_qty numeric(14,3)` (`> 0`),
-`unit_cost numeric(14,4)` (`>= 0`), `line_total` (**generated column**,
-`ordered_qty * unit_cost`, never separately stored), `created_at`.
-- Freely addable/removable while the parent PO is Draft (`addPurchaseOrderItem`
-  / `removePurchaseOrderItem`, `src/lib/actions/purchasing.ts`), immutable
-  once the PO is Issued or Cancelled — trigger `enforce_po_item_immutable`
-  guards `UPDATE`, `DELETE`, **and** `INSERT` (the `INSERT` guard,
-  `trg_po_items_no_insert`, was added Seventh pass — items previously only
-  ever arrived via the atomic creation RPC, so `INSERT` was unguarded; once a
-  plain post-creation insert became possible it needed the same "only while
-  draft" rule the `UPDATE`/`DELETE` triggers already had, mirroring the exact
-  fix `0027_quotation_to_sales_order.sql` applied to `sales_order_items`).
-- `create_draft_purchase_order(p_supplier_id, p_order_date, p_currency,
-  p_notes, p_attachment_path, p_items)` creates a PO and its items atomically
-  in one call (`SECURITY INVOKER`; RLS still governs who may call it) —
-  requires at least one item. `p_expected_arrival_date` was dropped from the
-  original 7-arg signature (that field stays dormant on `purchase_orders`,
-  unrelated to this reactivation).
-- Receiving (goods-receipt) stays deliberately out of scope — see
-  `stock_movements`'s `enforce_purchase_receipt_rules`/
-  `purchase_order_item_received` notes above, both still dormant.
+### purchase_order_items  *(dormant — table remains in the DB, unused by the app)*
+Purchasing was simplified to header-only records; nothing creates, reads, or
+deletes rows in this table anymore. Left in the schema rather than dropped
+(migrations are additive-only) — see `purchase_orders` above for what a PO
+actually is now. Historical columns, for reference only: `id`,
+`purchase_order_id → purchase_orders` (cascade), `sku_id → skus`,
+`location_id → locations`, `unit`, `ordered_qty`, `unit_cost`, `line_total`.
+Trigger `enforce_po_item_immutable` (UPDATE + DELETE) is likewise dormant.
 
 ### customers  *(editable master data, Third pass)*
 `id`, `name`, `name_chinese`, `name_english`, `contact_person`, `phone`,
@@ -407,7 +386,7 @@ line on this run, not tracked as a loan against future runs).
 | audit_log | owner/system_admin | insert: any authenticated · no update/delete |
 | sent_reports | owner/system_admin | insert: owner/system_admin (+ service role) |
 | telegram_settings | owner/system_admin | owner/system_admin |
-| suppliers / purchase_orders / purchase_order_items | owner/system_admin/warehouse | owner/warehouse (system_admin is view-only) |
+| suppliers / purchase_orders | owner/system_admin/warehouse | owner/warehouse (system_admin is view-only). `purchase_order_items` has the same RLS but is dormant — the app no longer writes to it. |
 | customers / sales_orders / sales_order_items | owner/system_admin/sales | owner/sales (system_admin is view-only — this is also what keeps prices, which live on these same rows, out of every other role) |
 | payroll_runs / payroll_items / payroll_item_lines | owner/system_admin/payroll | owner/payroll (system_admin is view-only — approving a run additionally requires Owner specifically, enforced by a DB trigger) |
 
@@ -432,17 +411,11 @@ warehouse/sales/admins/viewer, write by warehouse/sales/admins.
   only by an Owner via the service-role admin API (Settings → Users).
 - `assign_po_number()` — atomic `PO-YYYY-####` counter, resets per calendar year.
 - `enforce_po_header_immutable()` — locks PO commercial terms once issued
-  (Draft is the only editable state); also blocks issuing a PO with zero line
-  items (`PO_ISSUE_NO_ITEMS`).
-- `enforce_po_item_immutable()` — locks PO line items (INSERT + UPDATE +
-  DELETE) once the parent PO is no longer Draft.
-- `create_draft_purchase_order(p_supplier_id, p_order_date, p_currency,
-  p_notes, p_attachment_path, p_items)` — atomic header + all line items in
-  one call (`SECURITY INVOKER`; RLS still governs who may call it); requires
-  at least one item.
-- `post_purchase_receipt(...)` remains **dormant** — receiving stays out of
-  scope even though line items are active again; see `stock_movements`'s
-  notes above.
+  (Draft is the only editable state). Its sibling `enforce_po_item_immutable()`,
+  and the RPCs `create_draft_purchase_order(...)`/`post_purchase_receipt(...)`,
+  are **dormant** — nothing in the app calls them now that Purchasing is
+  header-only; `createDraftPurchaseOrder` does a plain insert into
+  `purchase_orders` instead.
 - `assign_so_number()` — atomic `SO-YYYY-####` counter, resets per calendar year.
 - `enforce_so_header_immutable()` / `enforce_so_item_immutable()` — lock SO
   commercial terms/items once confirmed (Draft is the only editable state).

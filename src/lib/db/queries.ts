@@ -1,6 +1,5 @@
 import 'server-only';
 import { createSupabaseServerClient } from '@/lib/supabase/server';
-import type { PoStatus } from '@/lib/domain/purchasing';
 import type {
   AttendanceGroupRow,
   AttendanceRow,
@@ -26,7 +25,6 @@ import type {
   ProductFamilyRow,
   ProfileRow,
   PurchaseOrderRow,
-  PurchaseOrderItemRow,
   SalesInquiryRow,
   SalesOrderItemDeliveredRow,
   SalesOrderItemRow,
@@ -354,55 +352,18 @@ export async function getOpenPurchaseOrderCount(): Promise<number> {
   }
 }
 
-export interface PurchaseOrderFilters {
-  poNumber?: string; // partial, case-insensitive match on po_number
-  supplierId?: string;
-  status?: PoStatus;
-  from?: string; // order_date >= (YYYY-MM-DD)
-  to?: string; // order_date <= (YYYY-MM-DD)
-  familyId?: string; // via purchase_order_items -> skus -> family_id (broad category)
-}
-
-export async function getPurchaseOrders(
-  filters: PurchaseOrderFilters = {},
-): Promise<PurchaseOrderRow[]> {
+export async function getPurchaseOrders(): Promise<PurchaseOrderRow[]> {
   try {
     const supabase = await client();
-    let q = supabase.from('purchase_orders').select('*').order('created_at', { ascending: false });
-    if (filters.poNumber) q = q.ilike('po_number', `%${filters.poNumber}%`);
-    if (filters.supplierId) q = q.eq('supplier_id', filters.supplierId);
-    if (filters.status) q = q.eq('status', filters.status);
-    if (filters.from) q = q.gte('order_date', filters.from);
-    if (filters.to) q = q.lte('order_date', filters.to);
-    if (filters.familyId) {
-      const poIds = await getPurchaseOrderIdsForFamily(filters.familyId);
-      if (poIds.length === 0) return [];
-      q = q.in('id', poIds);
-    }
-    const { data } = await q;
+    const { data } = await supabase
+      .from('purchase_orders')
+      .select('*')
+      .order('created_at', { ascending: false });
     return (data as PurchaseOrderRow[]) ?? [];
   } catch (e) {
     console.error('[queries] getPurchaseOrders', e);
     return [];
   }
-}
-
-/**
- * PO ids with >=1 item in the given product family — powers the list's
- * "Item" filter (family-level, not exact SKU, per product decision). Two
- * flat queries, no PostgREST relationship embedding, matching this file's
- * existing "fetch flat, join in memory" idiom (e.g. getSalesOrdersByQuotationIds).
- */
-async function getPurchaseOrderIdsForFamily(familyId: string): Promise<string[]> {
-  const supabase = await client();
-  const { data: skuRows } = await supabase.from('skus').select('id').eq('family_id', familyId);
-  const skuIds = (skuRows ?? []).map((s) => s.id as string);
-  if (skuIds.length === 0) return [];
-  const { data: itemRows } = await supabase
-    .from('purchase_order_items')
-    .select('purchase_order_id')
-    .in('sku_id', skuIds);
-  return [...new Set((itemRows ?? []).map((i) => i.purchase_order_id as string))];
 }
 
 export async function getPurchaseOrder(id: string): Promise<PurchaseOrderRow | null> {
@@ -413,22 +374,6 @@ export async function getPurchaseOrder(id: string): Promise<PurchaseOrderRow | n
   } catch (e) {
     console.error('[queries] getPurchaseOrder', e);
     return null;
-  }
-}
-
-/** All items (or one PO's) — mirrors getSalesOrderItems. */
-export async function getPurchaseOrderItems(
-  purchaseOrderId?: string,
-): Promise<PurchaseOrderItemRow[]> {
-  try {
-    const supabase = await client();
-    let q = supabase.from('purchase_order_items').select('*').order('created_at');
-    if (purchaseOrderId) q = q.eq('purchase_order_id', purchaseOrderId);
-    const { data } = await q;
-    return (data as PurchaseOrderItemRow[]) ?? [];
-  } catch (e) {
-    console.error('[queries] getPurchaseOrderItems', e);
-    return [];
   }
 }
 

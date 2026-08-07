@@ -3,21 +3,9 @@ import { useRouter } from 'next/navigation';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from '@/components/ui/table';
 import { ConfirmActionButton } from '@/components/forms/confirm-action-button';
 import { useT } from '@/components/i18n-provider';
-import {
-  issuePurchaseOrder,
-  cancelPurchaseOrder,
-  removePurchaseOrderItem,
-} from '@/lib/actions/purchasing';
+import { issuePurchaseOrder, cancelPurchaseOrder } from '@/lib/actions/purchasing';
 import {
   PO_STATUS_LABELS,
   CURRENCY_LABELS,
@@ -28,7 +16,6 @@ import { formatDDMMYYYY } from '@/lib/domain/datetime';
 import type { PurchaseOrderRow } from '@/lib/domain/purchasing-view';
 import type { PurchaseOrderRow as PoRow } from '@/lib/db/types';
 import { EditPoDialog } from './edit-po-dialog';
-import { AddPoItemDialog } from './add-po-item-dialog';
 
 const STATUS_VARIANT = {
   draft: 'outline',
@@ -40,24 +27,15 @@ export function PoDetail({
   row,
   po,
   suppliers,
-  locationName,
-  skuOptions,
-  families,
   canManage,
-  canCreateSpec,
 }: {
   row: PurchaseOrderRow;
   po: PoRow;
   suppliers: { id: string; name: string }[];
-  locationName: Record<string, string>;
-  skuOptions: { id: string; unit: string; label: string }[];
-  families: { id: string; name: string; nameEnglish: string | null }[];
   canManage: boolean;
-  canCreateSpec: boolean;
 }) {
   const { t, locale } = useT();
   const router = useRouter();
-  const locations = Object.entries(locationName).map(([id, name]) => ({ id, name }));
 
   return (
     <div className="space-y-4">
@@ -84,16 +62,6 @@ export function PoDetail({
                 notes={po.notes}
                 suppliers={suppliers}
                 onSaved={() => router.refresh()}
-              />
-            )}
-            {canManage && po.status === 'draft' && (
-              <AddPoItemDialog
-                purchaseOrderId={po.id}
-                locations={locations}
-                skuOptions={skuOptions}
-                families={families}
-                canCreateSpec={canCreateSpec}
-                onAdded={() => router.refresh()}
               />
             )}
             {canManage && po.status === 'draft' && (
@@ -133,12 +101,6 @@ export function PoDetail({
                 row.currency}
             </div>
           </div>
-          <div>
-            <div className="text-muted-foreground">{t('pur.grandTotal')}</div>
-            <div className="font-medium tabular-nums">
-              {row.currency} {row.grandTotal.toFixed(2)}
-            </div>
-          </div>
           {po.attachment_path && (
             <div>
               <div className="text-muted-foreground">{t('pur.attachment')}</div>
@@ -151,65 +113,6 @@ export function PoDetail({
               <div>{po.notes}</div>
             </div>
           )}
-        </CardContent>
-      </Card>
-
-      <Card>
-        <CardHeader>
-          <CardTitle className="text-base">{t('pur.lineItems')}</CardTitle>
-        </CardHeader>
-        <CardContent className="p-0">
-          <Table>
-            <TableHeader>
-              <TableRow>
-                <TableHead>{t('inv.specification')}</TableHead>
-                <TableHead>{t('common.location')}</TableHead>
-                <TableHead className="text-right">{t('pur.orderedQty')}</TableHead>
-                <TableHead className="text-right">{t('pur.unitCost')}</TableHead>
-                <TableHead className="text-right">{t('pur.lineTotal')}</TableHead>
-                {canManage && po.status === 'draft' && (
-                  <TableHead className="text-right">{t('common.actions')}</TableHead>
-                )}
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {row.items.map((item) => (
-                <TableRow key={item.itemId}>
-                  <TableCell className="max-w-[320px]">
-                    <span className="truncate">{item.skuLabel}</span>
-                  </TableCell>
-                  <TableCell>{locationName[item.locationId] ?? '—'}</TableCell>
-                  <TableCell className="text-right tabular-nums">
-                    {item.orderedQty} {item.unit}
-                  </TableCell>
-                  <TableCell className="text-right tabular-nums">{item.unitCost}</TableCell>
-                  <TableCell className="text-right tabular-nums">{item.lineTotal}</TableCell>
-                  {canManage && po.status === 'draft' && (
-                    <TableCell className="text-right">
-                      <ConfirmActionButton
-                        action={removePurchaseOrderItem}
-                        formData={{ itemId: item.itemId, purchaseOrderId: po.id }}
-                        label={t('common.delete')}
-                        confirmText={t('pur.confirmRemoveItem')}
-                        variant="destructive"
-                        onSuccess={() => router.refresh()}
-                      />
-                    </TableCell>
-                  )}
-                </TableRow>
-              ))}
-              {row.items.length === 0 && (
-                <TableRow>
-                  <TableCell
-                    colSpan={canManage && po.status === 'draft' ? 6 : 5}
-                    className="text-center text-muted-foreground"
-                  >
-                    {t('pur.noItems')}
-                  </TableCell>
-                </TableRow>
-              )}
-            </TableBody>
-          </Table>
         </CardContent>
       </Card>
     </div>

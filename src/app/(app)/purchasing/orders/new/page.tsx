@@ -1,7 +1,5 @@
 import { requirePermission } from '@/lib/auth';
-import { hasPermission } from '@/lib/domain/rbac';
-import { getSuppliers, getLocations, getSkus, getFamilies } from '@/lib/db/queries';
-import { buildSkuLabel } from '@/lib/domain/products';
+import { getSuppliers } from '@/lib/db/queries';
 import { businessDate } from '@/lib/domain/datetime';
 import { getLocale } from '@/lib/i18n/locale';
 import { translator } from '@/lib/i18n';
@@ -12,34 +10,10 @@ import { NewPoForm } from './new-po-form';
 export const dynamic = 'force-dynamic';
 
 export default async function NewPurchaseOrderPage() {
-  const user = await requirePermission('purchasing:manage');
+  await requirePermission('purchasing:manage');
   const locale = await getLocale();
   const t = translator(locale);
-  const [suppliers, locations, skus, families] = await Promise.all([
-    getSuppliers(),
-    getLocations(),
-    getSkus(),
-    getFamilies(true),
-  ]);
-
-  const familyName = new Map(families.map((f) => [f.id, f.name]));
-  const skuOptions = skus.map((s) => ({
-    id: s.id,
-    unit: s.unit,
-    label: buildSkuLabel(
-      {
-        familyName: familyName.get(s.family_id) ?? '—',
-        diameter: s.diameter,
-        size: s.size,
-        hole: s.hole,
-        rodCount: s.rod_count,
-        extra: s.extra,
-        condition: s.condition,
-        unit: s.unit,
-      },
-      locale,
-    ),
-  }));
+  const suppliers = await getSuppliers();
 
   return (
     <div>
@@ -51,12 +25,6 @@ export default async function NewPurchaseOrderPage() {
           name: s.name,
           defaultCurrency: s.default_currency,
         }))}
-        locations={locations.map((l) => ({ id: l.id, name: l.name }))}
-        skuOptions={skuOptions}
-        families={families
-          .filter((f) => f.is_active)
-          .map((f) => ({ id: f.id, name: f.name, nameEnglish: f.name_english }))}
-        canCreateSpec={hasPermission(user.role, 'products:manage')}
         today={businessDate()}
       />
     </div>
