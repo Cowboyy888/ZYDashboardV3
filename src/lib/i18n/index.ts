@@ -551,6 +551,7 @@ export const dictionary = {
   'pur.deleteSupplier': { en: 'Delete', zh: '删除' },
 
   'pur.newPo': { en: 'New purchase order', zh: '新建采购订单' },
+  'pur.editPo': { en: 'Edit purchase order', zh: '编辑采购订单' },
   'pur.newPoDesc': {
     en: 'Create a record with supplier, dates, currency, and notes — nothing is ordered until you issue it.',
     zh: '创建包含供应商、日期、货币与备注的记录 — 下单确认前不会生效。',

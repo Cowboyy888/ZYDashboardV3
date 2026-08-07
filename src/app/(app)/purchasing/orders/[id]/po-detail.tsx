@@ -6,10 +6,16 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { ConfirmActionButton } from '@/components/forms/confirm-action-button';
 import { useT } from '@/components/i18n-provider';
 import { issuePurchaseOrder, cancelPurchaseOrder } from '@/lib/actions/purchasing';
-import { PO_STATUS_LABELS, CURRENCY_LABELS, canCancel } from '@/lib/domain/purchasing';
+import {
+  PO_STATUS_LABELS,
+  CURRENCY_LABELS,
+  canCancel,
+  type Currency,
+} from '@/lib/domain/purchasing';
 import { formatDDMMYYYY } from '@/lib/domain/datetime';
 import type { PurchaseOrderRow } from '@/lib/domain/purchasing-view';
 import type { PurchaseOrderRow as PoRow } from '@/lib/db/types';
+import { EditPoDialog } from './edit-po-dialog';
 
 const STATUS_VARIANT = {
   draft: 'outline',
@@ -20,10 +26,12 @@ const STATUS_VARIANT = {
 export function PoDetail({
   row,
   po,
+  suppliers,
   canManage,
 }: {
   row: PurchaseOrderRow;
   po: PoRow;
+  suppliers: { id: string; name: string }[];
   canManage: boolean;
 }) {
   const { t, locale } = useT();
@@ -45,6 +53,17 @@ export function PoDetail({
             <Button variant="outline" size="sm" onClick={() => window.print()}>
               {t('pur.print')}
             </Button>
+            {canManage && po.status === 'draft' && (
+              <EditPoDialog
+                poId={po.id}
+                supplierId={po.supplier_id}
+                currency={row.currency as Currency}
+                orderDate={po.order_date}
+                notes={po.notes}
+                suppliers={suppliers}
+                onSaved={() => router.refresh()}
+              />
+            )}
             {canManage && po.status === 'draft' && (
               <ConfirmActionButton
                 action={issuePurchaseOrder}

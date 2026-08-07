@@ -155,6 +155,14 @@ suppliers`, `order_date`, `currency`, `status`, `notes`, `attachment_path`,
   `status` remain editable).
 - `status` is a plain stored field, set only by the app on Issue/Cancel — no
   receiving, so nothing recomputes it afterward.
+- **Editable while Draft** — `updatePurchaseOrderHeader`
+  (`src/lib/actions/purchasing.ts`) lets a Draft PO's supplier/currency/order
+  date/notes be corrected via `EditPoDialog`, mirroring Payroll's
+  `EditRunDialog`/`updatePayrollRunDates` pattern exactly. Attachment is not
+  re-editable in this dialog (the upload widget has no way to show/preserve
+  an existing file) — create a new PO if the wrong file was attached. The DB
+  trigger above is the actual enforcement; the action just checks
+  `status === 'draft'` first for a friendly message.
 - The table still has an `expected_arrival_date` column (nullable) and an
   `expected_arrival_idx` index — the Overdue/Expected Arrival Date feature
   (and its `isOverdue`/`isDueWithinDays` domain helpers) was removed from the

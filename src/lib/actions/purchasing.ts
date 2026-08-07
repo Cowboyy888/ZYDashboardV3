@@ -7,6 +7,7 @@ import {
   supplierSchema,
   supplierUpdateSchema,
   createPurchaseOrderSchema,
+  updatePurchaseOrderSchema,
 } from '@/lib/validation/schemas';
 import { canCancel } from '@/lib/domain/purchasing';
 import { fail, ok, zodFieldErrors, type ActionState } from './types';
@@ -208,6 +209,66 @@ export async function createDraftPurchaseOrder(
   revalidatePath('/purchasing/orders');
   revalidatePath('/purchasing');
   return ok('Purchase order created as Draft', { id: data.id });
+}
+
+/**
+ * Draft-only: correct a PO's supplier/currency/order date/notes. The DB
+ * trigger (enforce_po_header_immutable, 0013_purchasing.sql) already allows
+ * this while status = 'draft' and blocks it otherwise (PO_HEADER_LOCKED) —
+ * checked here first for a friendly message. Attachment isn't editable here
+ * (AttachmentField has no way to show/preserve an existing upload); use a
+ * new PO if the wrong file was attached.
+ */
+export async function updatePurchaseOrderHeader(
+  _prev: ActionState,
+  formData: FormData,
+): Promise<ActionState> {
+  const user = await assertPermission('purchasing:manage');
+  const parsed = updatePurchaseOrderSchema.safeParse({
+    id: formData.get('id'),
+    supplierId: formData.get('supplierId'),
+    orderDate: formData.get('orderDate'),
+    currency: formData.get('currency'),
+    notes: formData.get('notes'),
+  });
+  if (!parsed.success)
+    return fail('Please check the highlighted fields', zodFieldErrors(parsed.error.issues));
+  const d = parsed.data;
+
+  const supabase = await createSupabaseServerClient();
+  const { data: po } = await supabase
+    .from('purchase_orders')
+    .select('status')
+    .eq('id', d.id)
+    .maybeSingle();
+  if (!po) return fail('Purchase order not found');
+  if (po.status !== 'draft') return fail('Only a Draft purchase order can be edited.');
+
+  const { error } = await supabase
+    .from('purchase_orders')
+    .update({
+      supplier_id: d.supplierId,
+      order_date: d.orderDate,
+      currency: d.currency,
+      notes: d.notes ?? null,
+    })
+    .eq('id', d.id);
+  if (error) {
+    if (error.message.includes('PO_HEADER_LOCKED'))
+      return fail('Only a Draft purchase order can be edited.');
+    return fail(error.message);
+  }
+
+  await writeAudit(user, {
+    action: 'purchase_order.update',
+    entity: 'purchase_orders',
+    entityId: d.id,
+    newValue: { supplierId: d.supplierId, currency: d.currency },
+  });
+  revalidatePath(`/purchasing/orders/${d.id}`);
+  revalidatePath('/purchasing/orders');
+  revalidatePath('/purchasing');
+  return ok('Purchase order updated');
 }
 
 export async function issuePurchaseOrder(

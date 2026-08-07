@@ -42,7 +42,7 @@ CI stays green; run it locally/staging with `PLAYWRIGHT=1 npm run verify` after
 | 8 | Telegram scheduled send does not duplicate a report | `tests/integration/telegram-idempotency.test.ts` |
 | 9 | Payroll draft reads attendance & respects the confirmed pay rules | `tests/unit/payroll.test.ts`; `tests/integration/payroll-flows.test.ts`; DB function `create_draft_payroll_run` |
 | 10 | Unauthorized users cannot access salary / private photos | `tests/unit/rbac.test.ts` (sensitive-data matrix); RLS on `employee_private` + private Storage buckets; schema check |
-| 11 | Create, issue, and cancel a purchase order (header-only: supplier, dates, currency, notes — no line items, no receiving) | `tests/e2e/purchasing.spec.ts` |
+| 11 | Create, edit while Draft, issue, and cancel a purchase order (header-only: supplier, dates, currency, notes — no line items, no receiving); editing is no longer offered once issued | `tests/e2e/purchasing.spec.ts` |
 | 12 | A cancelled purchase order cannot be issued or re-cancelled | `tests/unit/purchasing.test.ts` (`canCancel`); DB trigger `enforce_po_header_immutable`; schema check |
 | 13 | Purchase order costs (if ever repopulated — `purchase_order_items` is currently dormant) visible only to Owner/System Admin/Warehouse Admin | `tests/unit/rbac.test.ts`; RLS on `suppliers`/`purchase_orders`; schema check |
 | 14 | Telegram inventory report never includes supplier/PO/cost information | `tests/integration/reports-render.test.ts` |

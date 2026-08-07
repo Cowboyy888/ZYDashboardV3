@@ -297,6 +297,12 @@ export const createPurchaseOrderSchema = z.object({
 });
 export type CreatePurchaseOrderInput = z.infer<typeof createPurchaseOrderSchema>;
 
+/** Draft-only header edit (supplier/currency/order date/notes) — attachment is not re-editable here. */
+export const updatePurchaseOrderSchema = createPurchaseOrderSchema
+  .omit({ attachmentPath: true })
+  .extend({ id: z.string().uuid() });
+export type UpdatePurchaseOrderInput = z.infer<typeof updatePurchaseOrderSchema>;
+
 // --- Sales (Third pass) --------------------------------------------------------
 
 export const customerSchema = z.object({
