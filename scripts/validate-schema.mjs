@@ -53,6 +53,7 @@ const tables = [
   'suppliers',
   'purchase_orders',
   'purchase_order_items',
+  'purchase_order_manual_items',
   'customers',
   'sales_orders',
   'sales_order_items',
