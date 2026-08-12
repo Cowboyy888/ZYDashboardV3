@@ -337,7 +337,7 @@ function EditDepositPctDialog({
     }
   }, [row]);
 
-  function onSubmit(e: React.FormEvent) {
+  function onSubmit(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault();
     if (!row) return;
     setError(null);
@@ -398,15 +398,22 @@ function EditDepositPctDialog({
 }
 
 /**
- * Issues the document number (once, for managers), then downloads the real
- * PDF from /api/sales/quotations/[id]/pdf. Viewers who cannot manage sales
- * still get to download the PDF, just without assigning a number.
+ * Downloads the real PDF from /api/sales/quotations/[id]/pdf. Viewers who
+ * cannot manage sales just get a plain download link — no number to assign.
  *
- * The window is opened SYNCHRONOUSLY inside the click handler, before the
- * async issueDocument call — mobile browsers (iOS Safari especially) only
- * allow `window.open` when it traces directly back to a user gesture; doing
- * it afterward in a `.then`/effect gets silently blocked with no error, the
- * previous bug here ("view PDF didn't show on phone").
+ * Managers issue the document number (once) first, via the server action,
+ * THEN navigate to the PDF via `window.location.href` — a same-tab
+ * navigation, not `window.open` (no new window/tab is ever created here).
+ * That distinction matters on iOS: popup blockers only restrict opening a
+ * *new* browsing context from outside a direct user gesture; navigating the
+ * *current* tab is always allowed, gesture or not. An earlier version of
+ * this button pre-opened a blank popup synchronously so it would have
+ * somewhere to redirect once the async step finished — but the PDF is a
+ * forced download (`Content-Disposition: attachment`), which never renders
+ * anything, so that popup stayed a permanently blank tab with no visible
+ * download indicator ("PDF doesn't show" on iPhone). Navigating the tab the
+ * user is already looking at shows Safari's normal download UI instead,
+ * matching every other Download PDF button in the app.
  */
 function DocButton({
   icon,
@@ -421,23 +428,25 @@ function DocButton({
   kind: DocumentKind;
   canManage: boolean;
 }) {
-  const { t } = useT();
+  const { m } = useT();
   const router = useRouter();
   const [pending, start] = useTransition();
   const [error, setError] = useState<string | null>(null);
 
   const pdfUrl = `/api/sales/quotations/${quotationId}/pdf?kind=${kind}`;
 
+  if (!canManage) {
+    return (
+      <Button asChild variant="outline" size="sm">
+        <a href={pdfUrl}>
+          {icon}
+          {label}
+        </a>
+      </Button>
+    );
+  }
+
   function onClick() {
-    const w = window.open('', '_blank', 'width=900,height=1000');
-    if (!canManage) {
-      if (!w) {
-        setError(t('common.popupBlocked'));
-        return;
-      }
-      w.location.href = pdfUrl;
-      return;
-    }
     setError(null);
     start(async () => {
       const fd = new FormData();
@@ -445,17 +454,12 @@ function DocButton({
       fd.set('kind', kind);
       const res = await issueDocument(null, fd);
       if (!res?.ok) {
-        w?.close();
         setError(res?.error ?? 'Failed to issue document');
-        return;
-      }
-      if (!w) {
-        setError(t('common.popupBlocked'));
         return;
       }
       // Refresh so the list's document badge picks up the newly-issued number.
       router.refresh();
-      w.location.href = pdfUrl;
+      window.location.href = pdfUrl;
     });
   }
 
@@ -465,7 +469,7 @@ function DocButton({
         {pending ? <Loader2 className="h-4 w-4 animate-spin" /> : icon}
         {label}
       </Button>
-      {error && <span className="text-xs text-destructive">{error}</span>}
+      {error && <span className="text-xs text-destructive">{m(error)}</span>}
     </div>
   );
 }
