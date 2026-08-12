@@ -2,7 +2,7 @@
 import { useActionState, useEffect, useMemo, useState, useTransition } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
-import { Eye, FileText, Loader2, Pencil, Plus, Receipt, Trash2, Wallet, X } from 'lucide-react';
+import { FileText, Loader2, Pencil, Plus, Receipt, Trash2, Wallet, X } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -37,7 +37,6 @@ import {
   markPaid,
 } from '@/lib/actions/quotations';
 import { quotationTotals, lineAmount, validUntil, type DocumentKind } from '@/lib/domain/quotation';
-import { buildQuotationDocHtml, type DocLine } from '@/lib/reports/quotation-doc-html';
 import { formatDDMMYYYY, businessDate } from '@/lib/domain/datetime';
 import type { ActionState } from '@/lib/actions/types';
 import type { QuotationRow, QuotationItemRow } from '@/lib/db/types';
@@ -102,66 +101,6 @@ export function QuotationsClient({
     () => new Map(linkedOrders.map((o) => [o.quotationId, o])),
     [linkedOrders],
   );
-
-  /**
-   * Fill an ALREADY-OPEN window with a branded document for review. The
-   * window must be opened synchronously inside the triggering click handler
-   * (see DocButton) — mobile browsers (iOS Safari especially) block
-   * `window.open` unless it traces directly back to a user gesture, so it
-   * can't be deferred until after the async issueDocument call resolves.
-   * The document itself carries a "Print / Save as PDF" button, so nothing
-   * is printed until the user explicitly asks for it there.
-   */
-  function previewDocument(
-    w: Window | null,
-    q: QuotationRow,
-    kind: DocumentKind,
-    justIssuedDocNo?: string,
-  ) {
-    if (!w) return;
-    const lines: DocLine[] = (itemsByQuotation.get(q.id) ?? []).map((it) => ({
-      description: it.description,
-      wireDia: it.wire_dia,
-      steelGrade: it.steel_grade,
-      unit: it.unit,
-      unitPrice: Number(it.unit_price),
-      quantity: Number(it.quantity),
-    }));
-    // `q` comes from this render's (possibly stale) props — when this button
-    // just issued the number itself, use that fresh value instead of waiting
-    // on a router refresh to catch up.
-    const docNo =
-      justIssuedDocNo ??
-      (kind === 'quotation' ? q.quotation_no : kind === 'deposit' ? q.deposit_no : q.balance_no);
-    const issuedIso =
-      (kind === 'quotation'
-        ? q.quotation_issued_on
-        : kind === 'deposit'
-          ? q.deposit_issued_on
-          : q.balance_issued_on) ?? businessDate();
-
-    const html = buildQuotationDocHtml({
-      kind,
-      docNo: docNo ?? '',
-      issuedOn: formatDDMMYYYY(issuedIso),
-      issuedOnIso: issuedIso,
-      customerName: q.customer_name,
-      contact: q.contact,
-      projectSite: q.project_site,
-      currency: q.currency,
-      validDays: q.valid_days,
-      depositPct: Number(q.deposit_pct),
-      lines,
-      refQuotationNo: q.quotation_no,
-      refDepositNo: q.deposit_no,
-      pricingBasis: q.pricing_basis,
-    });
-
-    w.document.open();
-    w.document.write(html);
-    w.document.close();
-    w.focus();
-  }
 
   return (
     <div className="space-y-4">
@@ -286,7 +225,6 @@ export function QuotationsClient({
                           quotationId={q.id}
                           kind="quotation"
                           canManage={canManage}
-                          onOpen={(w, docNo) => previewDocument(w, q, 'quotation', docNo)}
                         />
                         <DocButton
                           icon={<Receipt className="h-4 w-4" />}
@@ -294,7 +232,6 @@ export function QuotationsClient({
                           quotationId={q.id}
                           kind="deposit"
                           canManage={canManage}
-                          onOpen={(w, docNo) => previewDocument(w, q, 'deposit', docNo)}
                         />
                         <DocButton
                           icon={<Wallet className="h-4 w-4" />}
@@ -302,7 +239,6 @@ export function QuotationsClient({
                           quotationId={q.id}
                           kind="balance"
                           canManage={canManage}
-                          onOpen={(w, docNo) => previewDocument(w, q, 'balance', docNo)}
                         />
                         {canManage && (
                           <>
@@ -462,9 +398,9 @@ function EditDepositPctDialog({
 }
 
 /**
- * Issues the document number (once), then fills in the review window.
- * Viewers who cannot manage sales still get to review the PDF, just without
- * assigning a number.
+ * Issues the document number (once, for managers), then downloads the real
+ * PDF from /api/sales/quotations/[id]/pdf. Viewers who cannot manage sales
+ * still get to download the PDF, just without assigning a number.
  *
  * The window is opened SYNCHRONOUSLY inside the click handler, before the
  * async issueDocument call — mobile browsers (iOS Safari especially) only
@@ -478,24 +414,28 @@ function DocButton({
   quotationId,
   kind,
   canManage,
-  onOpen,
 }: {
   icon: React.ReactNode;
   label: string;
   quotationId: string;
   kind: DocumentKind;
   canManage: boolean;
-  onOpen: (w: Window | null, docNo?: string) => void;
 }) {
   const { t } = useT();
   const router = useRouter();
   const [pending, start] = useTransition();
   const [error, setError] = useState<string | null>(null);
 
+  const pdfUrl = `/api/sales/quotations/${quotationId}/pdf?kind=${kind}`;
+
   function onClick() {
     const w = window.open('', '_blank', 'width=900,height=1000');
     if (!canManage) {
-      onOpen(w);
+      if (!w) {
+        setError(t('common.popupBlocked'));
+        return;
+      }
+      w.location.href = pdfUrl;
       return;
     }
     setError(null);
@@ -513,11 +453,9 @@ function DocButton({
         setError(t('common.popupBlocked'));
         return;
       }
-      // Refresh so the list's document badge picks up the newly-issued
-      // number too — the preview itself uses `res.data.docNo` directly
-      // rather than waiting on this, since router.refresh() is async.
+      // Refresh so the list's document badge picks up the newly-issued number.
       router.refresh();
-      onOpen(w, res.data?.docNo as string | undefined);
+      w.location.href = pdfUrl;
     });
   }
 
@@ -526,7 +464,6 @@ function DocButton({
       <Button type="button" variant="outline" size="sm" onClick={onClick} disabled={pending}>
         {pending ? <Loader2 className="h-4 w-4 animate-spin" /> : icon}
         {label}
-        {canManage && <Eye className="h-3.5 w-3.5 opacity-60" />}
       </Button>
       {error && <span className="text-xs text-destructive">{error}</span>}
     </div>

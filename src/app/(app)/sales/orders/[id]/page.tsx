@@ -89,15 +89,10 @@ export default async function SalesOrderDetailPage({
 
   return (
     <div>
-      <PageHeader
-        title={row.soNumber}
-        description={customer?.name ?? '—'}
-        className="print:hidden"
-      />
+      <PageHeader title={row.soNumber} description={customer?.name ?? '—'} />
       <SoDetail
         row={row}
         so={so}
-        customer={customer}
         locationName={Object.fromEntries(locationName)}
         deliveries={deliveries}
         profileName={Object.fromEntries(profileName)}

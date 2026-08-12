@@ -1,5 +1,6 @@
 'use client';
 import { useRouter } from 'next/navigation';
+import { Download } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -64,9 +65,11 @@ export function PoDetail({
               </Badge>
             </CardTitle>
           </div>
-          <div className="flex gap-2 print:hidden">
-            <Button variant="outline" size="sm" onClick={() => window.print()}>
-              {t('pur.print')}
+          <div className="flex gap-2">
+            <Button asChild variant="outline" size="sm">
+              <a href={`/api/purchasing/orders/${po.id}/pdf`}>
+                <Download className="h-4 w-4" /> {t('pur.print')}
+              </a>
             </Button>
             {canManage && po.status === 'draft' && (
               <EditPoDialog

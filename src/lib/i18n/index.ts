@@ -566,7 +566,7 @@ export const dictionary = {
   'pur.noOrders': { en: 'No purchase orders yet.', zh: '暂无采购订单。' },
   'pur.issue': { en: 'Issue', zh: '下单确认' },
   'pur.cancel': { en: 'Cancel PO', zh: '取消订单' },
-  'pur.print': { en: 'Print', zh: '打印' },
+  'pur.print': { en: 'Download PDF', zh: '下载 PDF' },
   'pur.confirmIssue': {
     en: 'Issue this purchase order? Supplier and currency cannot be changed afterward.',
     zh: '确认下单？下单后供应商与货币将无法更改。',
@@ -628,7 +628,7 @@ export const dictionary = {
   'quo.deposit': { en: 'Deposit', zh: '订金' },
   'quo.balance': { en: 'Balance', zh: '尾款' },
   'quo.documents': { en: 'Documents', zh: '单据' },
-  'quo.generatePdf': { en: 'Review as PDF', zh: '预览 PDF' },
+  'quo.generatePdf': { en: 'Download PDF', zh: '下载 PDF' },
   'quo.docQuotation': { en: 'Quotation', zh: '报价单' },
   'quo.docDeposit': { en: 'Deposit', zh: '订金发票' },
   'quo.docBalance': { en: 'Balance', zh: '尾款发票' },
@@ -780,7 +780,7 @@ export const dictionary = {
   'sal.noOrders': { en: 'No sales orders yet.', zh: '暂无销售订单。' },
   'sal.confirm': { en: 'Confirm', zh: '确认订单' },
   'sal.cancel': { en: 'Cancel SO', zh: '取消订单' },
-  'sal.print': { en: 'Print', zh: '打印' },
+  'sal.print': { en: 'Download PDF', zh: '下载 PDF' },
   'sal.confirmConfirm': {
     en: 'Confirm this sales order? Customer, currency, and line items cannot be changed afterward.',
     zh: '确认此销售订单？确认后客户、货币与明细项将无法更改。',
@@ -826,7 +826,7 @@ export const dictionary = {
   'sal.paymentDate': { en: 'Payment date', zh: '付款日期' },
   'sal.paymentMethod': { en: 'Method', zh: '付款方式' },
   'sal.paymentMethodPlaceholder': { en: 'e.g. Bank transfer, Cash', zh: '例如：银行转账、现金' },
-  'sal.printInvoice': { en: 'Print invoice', zh: '打印发票' },
+  'sal.printInvoice': { en: 'Download invoice PDF', zh: '下载发票 PDF' },
 
   // --- Payroll (Fourth pass) ----------------------------------------------------
   'pay.title': { en: 'Payroll', zh: '工资' },

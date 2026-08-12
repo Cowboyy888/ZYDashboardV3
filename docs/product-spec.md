@@ -170,8 +170,12 @@ Seeded opening stock (Storage Room): 拔丝料 10厘 = 10 捆; 拔丝料 6厘 = 
   per-m² pricing breakdown (Area/sheet, Price/m²) so the invoice can show
   Price/m² × Area/sheet = Price/sheet alongside the total, deposit amount,
   and remaining balance; `unit_price` stays the stored source of truth
-  either way. The invoice is printable (self-contained HTML → browser Save
-  as PDF, same pattern as the Customer Price Inquiry report). Payment status
+  either way. The invoice downloads as a real PDF, rendered server-side from
+  self-contained HTML (same pattern as the Customer Price Inquiry report,
+  Quotation documents, Sales Order, and Purchase Order — see
+  `src/lib/reports/pdf.ts`; replaced the original browser-print-to-PDF flow,
+  which had no visible "save" option in iOS Safari's print sheet). Payment
+  status
   (Pending Deposit → Partially Paid → Paid) is a new field on the sales
   order, orthogonal to its delivery-tracking status, and is always derived
   from an append-only payments ledger — never hand-set — via "Record

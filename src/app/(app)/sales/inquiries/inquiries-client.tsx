@@ -1,6 +1,6 @@
 'use client';
 import { useActionState, useEffect, useMemo, useRef, useState } from 'react';
-import { Download, Loader2, Pencil, Plus, Printer, Trash2, X } from 'lucide-react';
+import { Download, Loader2, Pencil, Plus, Trash2, X } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -43,12 +43,6 @@ import {
   summarizeInquiries,
   type StatusCategory,
 } from '@/lib/domain/sales-inquiry';
-import {
-  buildInquiryReportHtml,
-  toReportRow,
-  type InquiryReportResolvers,
-} from '@/lib/reports/inquiry-report-html';
-import { businessDate, formatDDMMYYYY } from '@/lib/domain/datetime';
 import type { ActionState } from '@/lib/actions/types';
 import type {
   SalesInquiryRow,
@@ -92,10 +86,6 @@ export function InquiriesClient({
 
   const empName = useMemo(() => new Map(employees.map((e) => [e.id, e.name])), [employees]);
   const familyName = useMemo(() => new Map(families.map((f) => [f.id, f.name])), [families]);
-  const typeName = useMemo(
-    () => new Map(customerTypes.map((c) => [c.id, c.name])),
-    [customerTypes],
-  );
   const statusById = useMemo(() => new Map(statuses.map((s) => [s.id, s])), [statuses]);
   const inquiryById = useMemo(() => new Map(inquiries.map((i) => [i.id, i])), [inquiries]);
   const activeTypes = customerTypes.filter((c) => c.is_active);
@@ -123,40 +113,6 @@ export function InquiriesClient({
   const [showCreate, setShowCreate] = useState(false);
   const [editing, setEditing] = useState<SalesInquiryRow | null>(null);
   const [deleting, setDeleting] = useState<SalesInquiryRow | null>(null);
-  const [pdfError, setPdfError] = useState<string | null>(null);
-
-  // Print-to-PDF: build the same branded report the Excel export uses, open
-  // it in a bare window (synchronously, in this click gesture — mobile
-  // browsers block window.open() otherwise), and write it in. The document
-  // carries its own "Print / Save as PDF" button, so nothing here needs to
-  // auto-trigger print() — see inquiry-report-html.ts for why that used to
-  // silently fail on mobile.
-  function downloadPdf() {
-    setPdfError(null);
-    const w = window.open('', '_blank', 'width=1100,height=800');
-    if (!w) {
-      setPdfError(t('common.popupBlocked'));
-      return;
-    }
-    const resolvers: InquiryReportResolvers = {
-      salespersonName: (id) => (id ? empName.get(id) : '') || '',
-      typeName: (id) => (id ? typeName.get(id) : '') || '',
-      familyName: (id) => (id ? familyName.get(id) : '') || '',
-      status: (id) => {
-        const s = id ? statusById.get(id) : undefined;
-        return s ? { name: s.name, category: s.category } : null;
-      },
-    };
-    const html = buildInquiryReportHtml({
-      generatedOn: formatDDMMYYYY(businessDate()),
-      summary,
-      rows: inquiries.map((i) => toReportRow(i, resolvers)),
-    });
-    w.document.open();
-    w.document.write(html);
-    w.document.close();
-    w.focus();
-  }
 
   const statusBadge = (id: string | null) => {
     const s = id ? statusById.get(id) : undefined;
@@ -203,12 +159,11 @@ export function InquiriesClient({
               <Download className="h-4 w-4" /> {t('inq.downloadExcel')}
             </a>
           </Button>
-          <div className="flex flex-col items-end gap-1">
-            <Button variant="outline" onClick={downloadPdf}>
-              <Printer className="h-4 w-4" /> {t('inq.downloadPdf')}
-            </Button>
-            {pdfError && <span className="text-xs text-destructive">{pdfError}</span>}
-          </div>
+          <Button asChild variant="outline">
+            <a href="/api/export/inquiries/pdf">
+              <Download className="h-4 w-4" /> {t('inq.downloadPdf')}
+            </a>
+          </Button>
           {canManage && (
             <Button onClick={() => setShowCreate(true)}>
               <Plus className="h-4 w-4" /> {t('inq.new')}

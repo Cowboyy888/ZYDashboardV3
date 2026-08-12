@@ -1,7 +1,7 @@
 /**
  * Quotation / Deposit invoice / Balance invoice as print-ready HTML — pure, no
- * DOM and no server deps, so it renders identically on the client (print →
- * Save as PDF) and in tests.
+ * DOM and no server deps, so it renders identically via the server PDF
+ * renderer (pdf.ts, see /api/sales/quotations/[id]/pdf) and in tests.
  *
  * Layout is a direct transcription of ZY_Steel_Quotation.xlsx: letterhead,
  * red title bar, "QUOTATION/INVOICE TO" block opposite the document meta, a
@@ -286,28 +286,10 @@ export function buildQuotationDocHtml(d: QuotationDocData): string {
     background: ${RED}; color: #fff; font-weight: 700; text-align: center;
     padding: 7px; margin-top: 26px; font-size: 9.5px;
   }
-  .toolbar {
-    position: fixed; top: 14px; right: 14px; z-index: 100;
-    display: flex; align-items: center; gap: 10px;
-    background: #fff; border: 1px solid #d8d8d8; border-radius: 8px;
-    padding: 8px 12px; box-shadow: 0 2px 10px rgba(0,0,0,.15);
-    font-family: Arial, sans-serif;
-  }
-  .toolbar button {
-    background: ${RED}; color: #fff; border: none; border-radius: 6px;
-    padding: 7px 14px; font-size: 12px; font-weight: 700; cursor: pointer;
-  }
-  .toolbar button:hover { opacity: .9; }
-  .toolbar .hint { font-size: 10px; color: ${MUTED}; }
   @page { size: A4 portrait; margin: 12mm; }
-  @media print { .no-print { display: none !important; } }
 </style>
 </head>
 <body>
-  <div class="toolbar no-print">
-    <button type="button" onclick="window.print()">Print / Save as PDF</button>
-    <span class="hint">Reviewing only — nothing has been printed yet.</span>
-  </div>
   <div class="letterhead">
     <img src="/brand/zysteel-logo.png" alt="ZY Steel 中粤铁网" class="logo" />
     <div>

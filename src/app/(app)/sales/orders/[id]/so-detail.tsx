@@ -2,6 +2,7 @@
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { Fragment, useState } from 'react';
+import { Download } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -33,13 +34,11 @@ import type { SalesOrderRow } from '@/lib/domain/sales-view';
 import type {
   SalesOrderRow as SoRow,
   StockMovementRow,
-  CustomerRow,
   DepositInvoiceRow,
   QuotationRow,
   QuotationItemRow,
 } from '@/lib/db/types';
 import { DeliverForm } from './deliver-form';
-import { SoPrint } from './so-print';
 import { GenerateDepositInvoiceDialog } from './generate-deposit-invoice-dialog';
 import { RecordPaymentDialog } from './record-payment-dialog';
 import { PrintDepositInvoiceButton } from './print-deposit-invoice-button';
@@ -63,7 +62,6 @@ const DEPOSIT_STATUS_VARIANT = {
 export function SoDetail({
   row,
   so,
-  customer,
   locationName,
   deliveries,
   profileName,
@@ -77,7 +75,6 @@ export function SoDetail({
 }: {
   row: SalesOrderRow;
   so: SoRow;
-  customer: CustomerRow | null;
   locationName: Record<string, string>;
   deliveries: StockMovementRow[];
   profileName: Record<string, string>;
@@ -97,8 +94,7 @@ export function SoDetail({
 
   return (
     <div className="space-y-4">
-      <SoPrint row={row} so={so} customer={customer} locale={locale} />
-      <Card className="print:hidden">
+      <Card>
         <CardHeader className="flex flex-row items-start justify-between">
           <div>
             <CardTitle className="flex items-center gap-2 text-base">
@@ -125,9 +121,11 @@ export function SoDetail({
               </div>
             )}
           </div>
-          <div className="flex gap-2 print:hidden">
-            <Button variant="outline" size="sm" onClick={() => window.print()}>
-              {t('sal.print')}
+          <div className="flex gap-2">
+            <Button asChild variant="outline" size="sm">
+              <a href={`/api/sales/orders/${so.id}/pdf`}>
+                <Download className="h-4 w-4" /> {t('sal.print')}
+              </a>
             </Button>
             {canManage && canGenerateDepositInvoice(so.status, !!depositInvoice) && (
               <GenerateDepositInvoiceDialog
@@ -208,7 +206,7 @@ export function SoDetail({
       </Card>
 
       {depositInvoice && (
-        <Card className="print:hidden">
+        <Card>
           <CardHeader className="flex flex-row items-start justify-between">
             <CardTitle className="flex items-center gap-2 text-base">
               {depositInvoice.invoice_number}
@@ -217,7 +215,7 @@ export function SoDetail({
               </Badge>
             </CardTitle>
             <div className="flex gap-2">
-              <PrintDepositInvoiceButton invoice={depositInvoice} row={row} customer={customer} />
+              <PrintDepositInvoiceButton invoice={depositInvoice} />
               {canManage && canRecordPayment(depositInvoice.status) && (
                 <RecordPaymentDialog
                   depositInvoiceId={depositInvoice.id}
@@ -255,7 +253,7 @@ export function SoDetail({
       )}
 
       {sourceQuotation && sourceQuotationItems.length > 0 && row.items.length === 0 && (
-        <Card className="border-dashed print:hidden">
+        <Card className="border-dashed">
           <CardHeader>
             <CardTitle className="text-base">{t('sal.quotationRefTitle')}</CardTitle>
             <p className="text-xs text-muted-foreground">{t('sal.quotationRefHint')}</p>
@@ -289,7 +287,7 @@ export function SoDetail({
         </Card>
       )}
 
-      <Card className="print:hidden">
+      <Card>
         <CardHeader>
           <CardTitle className="text-base">{t('sal.lineItems')}</CardTitle>
         </CardHeader>
@@ -303,9 +301,7 @@ export function SoDetail({
                 <TableHead className="text-right">{t('common.status')}</TableHead>
                 <TableHead className="text-right">{t('sal.unitPrice')}</TableHead>
                 <TableHead className="text-right">{t('sal.lineTotal')}</TableHead>
-                {canManage && (
-                  <TableHead className="text-right print:hidden">{t('common.actions')}</TableHead>
-                )}
+                {canManage && <TableHead className="text-right">{t('common.actions')}</TableHead>}
               </TableRow>
             </TableHeader>
             <TableBody>
@@ -330,7 +326,7 @@ export function SoDetail({
                     <TableCell className="text-right tabular-nums">{item.unitPrice}</TableCell>
                     <TableCell className="text-right tabular-nums">{item.lineTotal}</TableCell>
                     {canManage && (
-                      <TableCell className="text-right print:hidden">
+                      <TableCell className="text-right">
                         {canDeliverAgainst(so.status as Parameters<typeof canDeliverAgainst>[0]) &&
                           item.outstandingQty > 0 && (
                             <Button
@@ -382,7 +378,7 @@ export function SoDetail({
         </CardContent>
       </Card>
 
-      <Card className="print:hidden">
+      <Card>
         <CardHeader>
           <CardTitle className="text-base">{t('sal.deliveryHistory')}</CardTitle>
         </CardHeader>
