@@ -1,6 +1,6 @@
 'use client';
 import { useActionState, useEffect, useMemo, useRef, useState } from 'react';
-import { Download, Loader2, Pencil, Plus, Trash2, X } from 'lucide-react';
+import { Download, FileText, Loader2, Pencil, Plus, Trash2, X } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -160,8 +160,8 @@ export function InquiriesClient({
             </a>
           </Button>
           <Button asChild variant="outline">
-            <a href="/api/export/inquiries/pdf">
-              <Download className="h-4 w-4" /> {t('inq.downloadPdf')}
+            <a href="/api/export/inquiries/pdf" target="_blank" rel="noopener noreferrer">
+              <FileText className="h-4 w-4" /> {t('inq.downloadPdf')}
             </a>
           </Button>
           {canManage && (

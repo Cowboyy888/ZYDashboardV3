@@ -65,12 +65,18 @@ export async function renderHtmlToPdf(
   }
 }
 
-/** Wrap a generated buffer as a downloadable .pdf HTTP response. */
+/**
+ * Wrap a generated buffer as a viewable .pdf HTTP response — `inline`, not
+ * `attachment`, so the browser opens it in its own native PDF viewer (Chrome,
+ * desktop Safari, and iOS Safari all support this well) instead of silently
+ * downloading it. That viewer supplies its own Print and Save/Download
+ * controls — reliable on every platform, unlike printing an HTML page.
+ */
 export function pdfResponse(buffer: Buffer, filename: string): Response {
   return new Response(new Uint8Array(buffer), {
     headers: {
       'Content-Type': 'application/pdf',
-      'Content-Disposition': `attachment; filename="${filename}"`,
+      'Content-Disposition': `inline; filename="${filename}"`,
     },
   });
 }

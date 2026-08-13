@@ -398,22 +398,19 @@ function EditDepositPctDialog({
 }
 
 /**
- * Downloads the real PDF from /api/sales/quotations/[id]/pdf. Viewers who
- * cannot manage sales just get a plain download link — no number to assign.
+ * Opens the real PDF from /api/sales/quotations/[id]/pdf in a new tab, where
+ * the browser's own native PDF viewer supplies Print and Save controls —
+ * reliable on iPhone and PC alike (the PDF is served `inline`, not
+ * `attachment`; see src/lib/reports/pdf.ts). Viewers who cannot manage sales
+ * just get a plain link — no number to assign.
  *
- * Managers issue the document number (once) first, via the server action,
- * THEN navigate to the PDF via `window.location.href` — a same-tab
- * navigation, not `window.open` (no new window/tab is ever created here).
- * That distinction matters on iOS: popup blockers only restrict opening a
- * *new* browsing context from outside a direct user gesture; navigating the
- * *current* tab is always allowed, gesture or not. An earlier version of
- * this button pre-opened a blank popup synchronously so it would have
- * somewhere to redirect once the async step finished — but the PDF is a
- * forced download (`Content-Disposition: attachment`), which never renders
- * anything, so that popup stayed a permanently blank tab with no visible
- * download indicator ("PDF doesn't show" on iPhone). Navigating the tab the
- * user is already looking at shows Safari's normal download UI instead,
- * matching every other Download PDF button in the app.
+ * Managers issue the document number (once) first, via a server action — the
+ * PDF only shows the number once it's assigned. Since that step is async,
+ * the tab is opened SYNCHRONOUSLY inside the click handler (before the
+ * await) and redirected once the number is ready: mobile browsers (iOS
+ * Safari especially) only allow `window.open` when it traces directly back
+ * to a user gesture; opening it afterward in a `.then`/effect gets silently
+ * blocked with no error.
  */
 function DocButton({
   icon,
@@ -428,7 +425,7 @@ function DocButton({
   kind: DocumentKind;
   canManage: boolean;
 }) {
-  const { m } = useT();
+  const { t, m } = useT();
   const router = useRouter();
   const [pending, start] = useTransition();
   const [error, setError] = useState<string | null>(null);
@@ -438,7 +435,7 @@ function DocButton({
   if (!canManage) {
     return (
       <Button asChild variant="outline" size="sm">
-        <a href={pdfUrl}>
+        <a href={pdfUrl} target="_blank" rel="noopener noreferrer">
           {icon}
           {label}
         </a>
@@ -447,6 +444,7 @@ function DocButton({
   }
 
   function onClick() {
+    const w = window.open('', '_blank', 'width=900,height=1000');
     setError(null);
     start(async () => {
       const fd = new FormData();
@@ -454,12 +452,17 @@ function DocButton({
       fd.set('kind', kind);
       const res = await issueDocument(null, fd);
       if (!res?.ok) {
+        w?.close();
         setError(res?.error ?? 'Failed to issue document');
+        return;
+      }
+      if (!w) {
+        setError(t('common.popupBlocked'));
         return;
       }
       // Refresh so the list's document badge picks up the newly-issued number.
       router.refresh();
-      window.location.href = pdfUrl;
+      w.location.href = pdfUrl;
     });
   }
 

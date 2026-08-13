@@ -2,7 +2,7 @@
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { Fragment, useState } from 'react';
-import { Download } from 'lucide-react';
+import { FileText } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -123,8 +123,8 @@ export function SoDetail({
           </div>
           <div className="flex gap-2">
             <Button asChild variant="outline" size="sm">
-              <a href={`/api/sales/orders/${so.id}/pdf`}>
-                <Download className="h-4 w-4" /> {t('sal.print')}
+              <a href={`/api/sales/orders/${so.id}/pdf`} target="_blank" rel="noopener noreferrer">
+                <FileText className="h-4 w-4" /> {t('sal.print')}
               </a>
             </Button>
             {canManage && canGenerateDepositInvoice(so.status, !!depositInvoice) && (
