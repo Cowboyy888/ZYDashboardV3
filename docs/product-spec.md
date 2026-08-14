@@ -195,6 +195,27 @@ Seeded opening stock (Storage Room): 拔丝料 10厘 = 10 捆; 拔丝料 6厘 = 
   rule that used to be enforced at creation time and moved to confirm time to
   make the empty-Draft-then-fill-in-by-hand flow possible. Both records show a
   cross-link once connected. Reuses `sales:manage`, no new permission.
+- **Seventh pass — Payment Receipts (built):** one Sales Order keeps its one
+  `so_number`, but every payment collected against it — deposit or
+  final/balance — is its own append-only `payment_receipts` row with its own
+  unique, auto-numbered Receipt No. (`REC-YYYY-####`), tagged `deposit` or
+  `final` so a receipt is never ambiguous about which payment it represents.
+  A "Record final payment" action becomes available once the deposit invoice
+  reaches Paid and a balance remains — any number of partial final payments
+  are allowed, same multi-entry ledger posture as deposit payments. The
+  Sales Order detail page shows total order amount, deposit paid, final paid,
+  and balance due — all derived fresh from the receipt list every time, never
+  a stored running total — plus the full payment history (every receipt,
+  newest first). A DB trigger (`enforce_payment_receipt_rules`) is the
+  authoritative guard that the sum of every receipt against a SO can never
+  exceed its total, and that a `final` receipt can't be recorded before the
+  deposit invoice is `paid`; the client mirrors both checks for a friendly
+  message first. Each receipt has its own branded PDF ("Deposit Receipt" or
+  "Final Payment Receipt", printed clearly on the document) — replaces
+  `deposit_invoice_payments` (Fifth pass) as the write target, which is left
+  in the schema, dormant, with its historical rows copied forward so payment
+  history stays complete. Reuses `sales:manage`, no new permission — see
+  `docs/data-dictionary.md` and `docs/test-plan.md` for the schema and tests.
 
 ## Explicit non-goals (v1)
 

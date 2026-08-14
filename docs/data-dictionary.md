@@ -287,19 +287,57 @@ complement), `currency`, `status`
   `recompute_deposit_invoice_status` derives it from the
   `deposit_invoice_payments` ledger after every payment insert (see below).
 
-### deposit_invoice_payments  *(Fifth pass — append-only ledger)*
+### deposit_invoice_payments  *(Fifth pass — DORMANT since Seventh pass)*
 `id`, `deposit_invoice_id → deposit_invoices` (restrict), `amount`,
+`paid_date`, `method`, `notes`, `recorded_by → profiles`, `created_at`.
+**Dormant as of `0030_payment_receipts.sql`** — `payment_receipts` (below)
+replaced it as the write target; the app no longer inserts here. Left in the
+schema rather than dropped (migrations are additive-only), same posture as
+`purchase_order_items`. Its historical rows were copied into
+`payment_receipts` by a one-time backfill in 0030, so payment history stays
+complete. Its own trigger (`recompute_deposit_invoice_status`, AFTER INSERT)
+is likewise dormant — untouched rather than repointed, so nothing about its
+old behaviour changed.
+
+### payment_receipts  *(Seventh pass — append-only ledger)*
+`id`, `receipt_number` (unique, auto `REC-YYYY-####`, same numbering shape as
+`so_number`/`invoice_number` via `receipt_seq` + `assign_receipt_number`),
+`sales_order_id → sales_orders` (restrict), `deposit_invoice_id →
+deposit_invoices` (restrict, required — every receipt is issued against the
+SO's deposit invoice), `receipt_type` (`deposit`/`final`), `amount`,
 `paid_date`, `method`, `notes`, `recorded_by → profiles`, `created_at`. No
-UPDATE/DELETE path from the app — matches `stock_movements`' posture: a
-mistake gets a correcting entry, not an edit.
-- `amount_paid` for an invoice is always `SUM(amount)` over this table, never
-  a stored balance ("ledger, not totals").
-- Trigger `recompute_deposit_invoice_status` (AFTER INSERT) sums payments for
-  the invoice and sets `deposit_invoices.status`: `pending_deposit` if
-  paid = 0, `partially_paid` if `0 < paid < deposit_amount`, `paid` if
-  `paid >= deposit_amount`. A second trigger,
-  `mirror_deposit_invoice_status`, then mirrors that status onto
-  `sales_orders.payment_status`.
+UPDATE/DELETE path from the app — matches `stock_movements`'/
+`deposit_invoice_payments`' posture: a mistake gets a correcting entry, not
+an edit.
+- What the app now writes for every payment against a Sales Order — both the
+  deposit (`receipt_type = 'deposit'`, gating the deposit invoice's status
+  same as before) and, once the deposit is fully paid, the remaining balance
+  (`receipt_type = 'final'`, possibly several partial entries). This is what
+  closes the gap `deposit_invoices.remaining_balance` always had: nothing
+  previously recorded what happened to the balance after the deposit.
+- Trigger `enforce_payment_receipt_rules` (BEFORE INSERT) is the
+  authoritative "total collected can never exceed the SO total" guard: it
+  recomputes the SO's total fresh as `SUM(sales_order_items.line_total)` and
+  blocks the insert (`PAYMENT_EXCEEDS_SO_TOTAL`) if
+  `SUM(existing payment_receipts for this SO) + new.amount` would exceed it —
+  across BOTH receipt types together. It also blocks a `deposit` receipt
+  against a void invoice, and blocks a `final` receipt unless the SO's
+  deposit invoice is already `status = 'paid'`.
+- Trigger `recompute_deposit_invoice_status_from_receipts` (AFTER INSERT,
+  `deposit`-type rows only) is the live successor to
+  `recompute_deposit_invoice_status`: identical arithmetic
+  (`pending_deposit`/`partially_paid`/`paid` from `SUM(amount)` vs
+  `deposit_amount`), just sourced from `payment_receipts` instead of
+  `deposit_invoice_payments`. `mirror_deposit_invoice_status` (unchanged)
+  still mirrors the resulting status onto `sales_orders.payment_status`.
+- Total paid / deposit paid / final paid / balance due are all derived
+  live from this table in the app (`src/lib/domain/payment-receipt.ts`),
+  never stored — same "ledger, not totals" posture as everywhere else in
+  this schema.
+- `receipt_seq` (the numbering counter table) has RLS enabled with **no
+  policies** (default-deny) — its only writer is the `security definer`
+  `assign_receipt_number()` trigger, which bypasses RLS regardless; mirrors
+  the 0022 fix applied to the sibling `*_seq` tables.
 
 ### quotations.deposit_paid_on → auto-created Sales Order  *(Sixth pass)*
 The first time a Quotation's `deposit_paid_on` transitions from `null` to a
@@ -410,6 +448,7 @@ line on this run, not tracked as a loan against future runs).
 | telegram_settings | owner/system_admin | owner/system_admin |
 | suppliers / purchase_orders / purchase_order_manual_items | owner/system_admin/warehouse | owner/warehouse (system_admin is view-only). `purchase_order_items` has the same RLS but is dormant — the app no longer writes to it. |
 | customers / sales_orders / sales_order_items | owner/system_admin/sales | owner/sales (system_admin is view-only — this is also what keeps prices, which live on these same rows, out of every other role) |
+| deposit_invoices / payment_receipts | owner/system_admin/sales | owner/sales (system_admin is view-only, same reasoning as sales_orders) |
 | payroll_runs / payroll_items / payroll_item_lines | owner/system_admin/payroll | owner/payroll (system_admin is view-only — approving a run additionally requires Owner specifically, enforced by a DB trigger) |
 
 Storage buckets (all **private**): `employee-photos`, `employee-docs` — read by
@@ -459,3 +498,12 @@ warehouse/sales/admins/viewer, write by warehouse/sales/admins.
   `SECURITY INVOKER`; RLS on
   `payroll_runs`/`payroll_items`/`employee_private`/`attendance` still
   governs who may call it and what it can see.
+- `assign_receipt_number()` — atomic `REC-YYYY-####` counter, resets per
+  calendar year (Seventh pass).
+- `enforce_payment_receipt_rules()` — the authoritative "total collected
+  (deposit + final) can never exceed the SO total" guard on
+  `payment_receipts`; also blocks a `deposit` receipt against a void invoice,
+  and blocks a `final` receipt unless the deposit invoice is already `paid`.
+- `recompute_deposit_invoice_status_from_receipts()` — live successor to
+  `recompute_deposit_invoice_status()`, sourced from `payment_receipts`
+  instead of the now-dormant `deposit_invoice_payments`.

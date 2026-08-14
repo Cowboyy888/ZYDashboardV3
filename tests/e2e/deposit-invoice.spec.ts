@@ -1,11 +1,13 @@
 import { test, expect } from '@playwright/test';
 
 /**
- * Deposit Invoice critical flow: create a confirmed SO whose one line item
- * uses the optional per-m² pricing breakdown (Price/m² × Area/sheet →
- * Price/sheet, computed client-side and re-derived server-side), generate a
- * 30% deposit invoice off it, then record two payments and verify the
- * invoice's status moves Pending Deposit → Partially Paid → Paid.
+ * Deposit Invoice + Payment Receipt critical flow: create a confirmed SO
+ * whose one line item uses the optional per-m² pricing breakdown (Price/m² ×
+ * Area/sheet → Price/sheet, computed client-side and re-derived
+ * server-side), generate a 30% deposit invoice off it, record two deposit
+ * payments (Pending Deposit → Partially Paid → Paid), then record two final
+ * payments against the remaining balance — one SO number, multiple payment
+ * receipts, each individually numbered and tagged Deposit or Final.
  */
 test('deposit invoice: generate off a confirmed SO, then record payments to Paid', async ({
   page,
@@ -69,4 +71,45 @@ test('deposit invoice: generate off a confirmed SO, then record payments to Paid
   await expect(payDialog2).toBeHidden();
   await expect(page.getByText(/^Paid$|^已付款$/).first()).toBeVisible();
   await expect(page.getByRole('button', { name: /Record payment|记录付款/ })).toHaveCount(0);
+
+  // Payment history so far: two Deposit-tagged receipts (100 + 62), each
+  // with its own Receipt No. — one SO, multiple receipts.
+  await expect(page.getByText(/^Deposit Receipt$|^定金收据$/)).toHaveCount(2);
+
+  // Deposit invoice reached Paid — Record final payment becomes available,
+  // with the remaining balance (540 − 162 = 378.00) pre-filled. (Two
+  // elements show 378.00 at this exact moment: the deposit invoice's fixed
+  // remaining_balance field set at generation time, and the live balance
+  // due — they coincide only because no final payment has landed yet.)
+  await expect(page.getByText(/378\.00/).first()).toBeVisible();
+  await page.getByRole('button', { name: /Record final payment|记录尾款/ }).click();
+  const finalDialog1 = page.getByRole('dialog');
+  await expect(finalDialog1.locator('input[name="amount"]')).toHaveValue('378.00');
+
+  // Partial final payment — less than the full 378.00 balance.
+  await finalDialog1.locator('input[name="amount"]').fill('200');
+  await finalDialog1.locator('input[name="paidDate"]').fill('2026-08-10');
+  await finalDialog1.getByRole('button', { name: /Record final payment|记录尾款/ }).click();
+  await expect(finalDialog1).toBeHidden();
+
+  // Balance drops to 178.00; still collectible, so the button remains.
+  await expect(page.getByText(/178\.00/)).toBeVisible();
+  await expect(page.getByText(/^Final Payment Receipt$|^尾款收据$/)).toHaveCount(1);
+  await expect(page.getByRole('button', { name: /Record final payment|记录尾款/ })).toHaveCount(1);
+
+  // Settle the remaining balance in full.
+  await page.getByRole('button', { name: /Record final payment|记录尾款/ }).click();
+  const finalDialog2 = page.getByRole('dialog');
+  await expect(finalDialog2.locator('input[name="amount"]')).toHaveValue('178.00');
+  await finalDialog2.locator('input[name="paidDate"]').fill('2026-08-10');
+  await finalDialog2.getByRole('button', { name: /Record final payment|记录尾款/ }).click();
+  await expect(finalDialog2).toBeHidden();
+
+  // Fully settled: balance is 0, no further final payment can be recorded,
+  // and the payment history shows all four receipts (2 deposit + 2 final)
+  // still linked to this single sales order.
+  await expect(page.getByText(/USD 0\.00/).first()).toBeVisible();
+  await expect(page.getByRole('button', { name: /Record final payment|记录尾款/ })).toHaveCount(0);
+  await expect(page.getByText(/^Deposit Receipt$|^定金收据$/)).toHaveCount(2);
+  await expect(page.getByText(/^Final Payment Receipt$|^尾款收据$/)).toHaveCount(2);
 });

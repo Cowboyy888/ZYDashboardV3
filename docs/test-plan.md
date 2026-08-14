@@ -66,6 +66,9 @@ CI stays green; run it locally/staging with `PLAYWRIGHT=1 npm run verify` after
 | 32 | Deposit amount / remaining balance = total × percentage (and its complement) — generated columns, never hand-entered | `tests/unit/deposit-invoice.test.ts` (`computeDepositAmount`/`computeRemainingBalance`); generated columns on `deposit_invoices`; schema check |
 | 33 | A deposit invoice's status derives from its payments ledger, never set directly, and mirrors onto the sales order's `payment_status` | `tests/unit/deposit-invoice.test.ts` (`computeDepositInvoiceStatus`); DB triggers `recompute_deposit_invoice_status`/`mirror_deposit_invoice_status`; `tests/e2e/deposit-invoice.spec.ts` |
 | 34 | A Purchase Order's free-text product lines (product name, quantity, unit, unit price — no SKU/family catalog connection) are addable/removable at any PO status, including after Issue | `tests/e2e/purchasing.spec.ts` |
+| 35 | One Sales Order keeps one `so_number`, but can carry multiple payment receipts (deposit and/or final), each with its own unique `receipt_number` and clearly tagged type — all linked to the same SO, no new SO created | `tests/unit/payment-receipt.test.ts`; `tests/e2e/deposit-invoice.spec.ts`; DB function `assign_receipt_number` |
+| 36 | A final payment can only be recorded once the deposit invoice is fully paid, and any number of partial final payments are allowed until the balance reaches zero | `tests/unit/payment-receipt.test.ts` (`canRecordFinalPayment`); DB trigger `enforce_payment_receipt_rules` (`FINAL_PAYMENT_REQUIRES_PAID_DEPOSIT`); `tests/e2e/deposit-invoice.spec.ts` |
+| 37 | The sum of every payment receipt (deposit + final) against a Sales Order can never exceed its total — enforced for real, not just by the UI | `tests/unit/payment-receipt.test.ts` (`wouldExceedSoTotal`); DB trigger `enforce_payment_receipt_rules` (`PAYMENT_EXCEEDS_SO_TOTAL`); schema check |
 
 Additional coverage: `tests/unit/datetime.test.ts` (Asia/Bangkok ⇄ UTC,
 dd/mm/yyyy, business-date boundary), `tests/unit/inventory-view.test.ts`
@@ -96,6 +99,13 @@ The domain tests assert the rules; the database enforces them independently:
 - RLS `movements_insert` includes `sales_admin` — otherwise a real Sales Admin
   user would be blocked from delivering goods despite the app-level RBAC
   allowing it (`post_sale_delivery` is `SECURITY INVOKER`).
+- `enforce_payment_receipt_rules` — sums every `payment_receipts` row
+  (deposit + final together) against the Sales Order's line-item total,
+  freshly computed on every insert, never a stored balance; also blocks a
+  `final` receipt until the deposit invoice is `paid`, and a `deposit`
+  receipt against a `void` invoice.
+- RLS on `payment_receipts` — restricted to owner/system_admin/sales_admin
+  (write: owner/sales_admin), same shape as `deposit_invoices`.
 - `enforce_payroll_run_immutable` — locks period/pay dates once a run leaves
   Draft, AND is the sole enforcement point requiring Owner specifically for
   the `draft → approved` transition (`PAYROLL_APPROVE_OWNER_ONLY`) — the app

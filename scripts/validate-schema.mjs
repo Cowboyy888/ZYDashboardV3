@@ -57,6 +57,7 @@ const tables = [
   'customers',
   'sales_orders',
   'sales_order_items',
+  'payment_receipts',
   'payroll_runs',
   'payroll_items',
   'payroll_item_lines',
@@ -266,6 +267,23 @@ check(
 check(
   /bucket_id in \('employee-photos','employee-docs'\)/i.test(sql),
   'private employee photo/doc buckets',
+);
+
+// --- Payment receipts (Seventh pass) ------------------------------------------
+check(/function public\.assign_receipt_number/i.test(sql), 'REC number assignment trigger fn');
+check(/'REC-' \|\| y \|\| '-' \|\| lpad/i.test(sql), 'REC-YYYY-#### number format');
+check(
+  /function public\.enforce_payment_receipt_rules/i.test(sql),
+  'payment receipt total/final-payment guard function',
+);
+check(/PAYMENT_EXCEEDS_SO_TOTAL/i.test(sql), 'payment-exceeds-SO-total block message');
+check(
+  /FINAL_PAYMENT_REQUIRES_PAID_DEPOSIT/i.test(sql),
+  'final-payment-requires-paid-deposit block message',
+);
+check(
+  /function public\.recompute_deposit_invoice_status_from_receipts/i.test(sql),
+  'deposit invoice status recompute (from payment_receipts) function',
 );
 
 // --- Seed sanity: the supplied example opening stock -------------------------

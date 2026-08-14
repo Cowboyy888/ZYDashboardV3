@@ -7,6 +7,7 @@ import type {
   CustomerRow,
   DepositInvoicePaymentRow,
   DepositInvoiceRow,
+  PaymentReceiptRow,
   EmployeeRow,
   EmployeePrivateRow,
   InquiryCustomerTypeRow,
@@ -577,7 +578,11 @@ export async function getDepositInvoice(id: string): Promise<DepositInvoiceRow |
   }
 }
 
-/** Payment ledger for one deposit invoice, newest first. */
+/**
+ * Payment ledger for one deposit invoice, newest first. DORMANT since
+ * 0030_payment_receipts.sql — the app no longer writes deposit_invoice_payments
+ * (payment_receipts replaced it); kept for reference only, not called anywhere.
+ */
 export async function getDepositInvoicePayments(
   depositInvoiceId: string,
 ): Promise<DepositInvoicePaymentRow[]> {
@@ -592,6 +597,33 @@ export async function getDepositInvoicePayments(
   } catch (e) {
     console.error('[queries] getDepositInvoicePayments', e);
     return [];
+  }
+}
+
+/** Full payment-receipt history (deposit + final) for a Sales Order, newest first. */
+export async function getPaymentReceiptsForSo(salesOrderId: string): Promise<PaymentReceiptRow[]> {
+  try {
+    const supabase = await client();
+    const { data } = await supabase
+      .from('payment_receipts')
+      .select('*')
+      .eq('sales_order_id', salesOrderId)
+      .order('created_at', { ascending: false });
+    return (data as PaymentReceiptRow[]) ?? [];
+  } catch (e) {
+    console.error('[queries] getPaymentReceiptsForSo', e);
+    return [];
+  }
+}
+
+export async function getPaymentReceipt(id: string): Promise<PaymentReceiptRow | null> {
+  try {
+    const supabase = await client();
+    const { data } = await supabase.from('payment_receipts').select('*').eq('id', id).maybeSingle();
+    return (data as PaymentReceiptRow) ?? null;
+  } catch (e) {
+    console.error('[queries] getPaymentReceipt', e);
+    return null;
   }
 }
 

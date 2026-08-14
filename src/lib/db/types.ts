@@ -16,6 +16,7 @@ import type { Currency, PoStatus } from '@/lib/domain/purchasing';
 import type { SoStatus } from '@/lib/domain/sales';
 import type { PayrollStatus, DeductionKind } from '@/lib/domain/payroll';
 import type { DepositInvoiceStatus, SoPaymentStatus } from '@/lib/domain/deposit-invoice';
+import type { PaymentReceiptType } from '@/lib/domain/payment-receipt';
 
 export interface ProfileRow {
   id: string;
@@ -448,6 +449,20 @@ export interface DepositInvoiceRow {
 export interface DepositInvoicePaymentRow {
   id: string;
   deposit_invoice_id: string;
+  amount: number;
+  paid_date: string;
+  method: string | null;
+  notes: string | null;
+  recorded_by: string | null;
+  created_at: string;
+}
+
+export interface PaymentReceiptRow {
+  id: string;
+  receipt_number: string | null;
+  sales_order_id: string;
+  deposit_invoice_id: string;
+  receipt_type: PaymentReceiptType;
   amount: number;
   paid_date: string;
   method: string | null;

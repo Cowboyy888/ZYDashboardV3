@@ -406,6 +406,15 @@ export const recordDepositPaymentSchema = z.object({
 });
 export type RecordDepositPaymentInput = z.infer<typeof recordDepositPaymentSchema>;
 
+export const recordFinalPaymentSchema = z.object({
+  depositInvoiceId: z.string().uuid(),
+  amount: z.coerce.number().positive('Amount must be greater than zero'),
+  paidDate: isoDate,
+  method: optionalText,
+  notes: optionalText,
+});
+export type RecordFinalPaymentInput = z.infer<typeof recordFinalPaymentSchema>;
+
 // --- Payroll (Fourth pass) -------------------------------------------------------
 
 export const createPayrollRunSchema = z

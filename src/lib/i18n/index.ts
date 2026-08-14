@@ -828,6 +828,20 @@ export const dictionary = {
   'sal.paymentMethodPlaceholder': { en: 'e.g. Bank transfer, Cash', zh: '例如：银行转账、现金' },
   'sal.printInvoice': { en: 'View invoice PDF', zh: '查看发票 PDF' },
 
+  // --- Payment receipts (0030) -----------------------------------------------------
+  'sal.depositPaid': { en: 'Deposit paid', zh: '已付定金' },
+  'sal.balanceDue': { en: 'Balance due', zh: '尾款余额' },
+  'sal.finalPaid': { en: 'Final payment paid', zh: '已付尾款' },
+  'sal.recordFinalPayment': { en: 'Record final payment', zh: '记录尾款' },
+  'sal.paymentHistory': { en: 'Payment history', zh: '付款记录' },
+  'sal.noPaymentReceipts': { en: 'No payments recorded yet.', zh: '暂无付款记录。' },
+  'sal.receiptNumber': { en: 'Receipt No.', zh: '收据编号' },
+  'sal.receiptType': { en: 'Type', zh: '类型' },
+  'sal.depositReceipt': { en: 'Deposit', zh: '定金' },
+  'sal.finalPaymentReceipt': { en: 'Final Payment', zh: '尾款' },
+  'sal.viewReceiptPdf': { en: 'View receipt PDF', zh: '查看收据 PDF' },
+  'sal.recordedBy': { en: 'Recorded by', zh: '记录人' },
+
   // --- Payroll (Fourth pass) ----------------------------------------------------
   'pay.title': { en: 'Payroll', zh: '工资' },
   'pay.desc': {
