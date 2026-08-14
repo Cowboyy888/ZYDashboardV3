@@ -1,7 +1,6 @@
 'use client';
 import { useState } from 'react';
 import { Loader2 } from 'lucide-react';
-import { createSupabaseBrowserClient } from '@/lib/supabase/client';
 import { bootstrapOwner } from '@/lib/actions/auth';
 import { useT } from '@/components/i18n-provider';
 import { Button } from '@/components/ui/button';
@@ -35,6 +34,7 @@ export function BootstrapForm() {
         setPending(false);
         return;
       }
+      const { createSupabaseBrowserClient } = await import('@/lib/supabase/client');
       const supabase = createSupabaseBrowserClient();
       const { error: signInErr } = await supabase.auth.signInWithPassword({ email, password });
       if (signInErr) {

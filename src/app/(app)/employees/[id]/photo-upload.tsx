@@ -4,7 +4,6 @@ import { useRouter } from 'next/navigation';
 import { Loader2, Upload } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { useT } from '@/components/i18n-provider';
-import { createSupabaseBrowserClient } from '@/lib/supabase/client';
 import { setEmployeePhoto } from '@/lib/actions/employees';
 
 /** Uploads a private photo to the employee-photos bucket, then records the path. */
@@ -20,6 +19,7 @@ export function PhotoUpload({ employeeId }: { employeeId: string }) {
     setError(null);
     start(async () => {
       try {
+        const { createSupabaseBrowserClient } = await import('@/lib/supabase/client');
         const supabase = createSupabaseBrowserClient();
         const ext = file.name.split('.').pop() || 'jpg';
         const path = `${employeeId}/${Date.now()}.${ext}`;

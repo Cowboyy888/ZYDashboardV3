@@ -5,7 +5,6 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { useT } from '@/components/i18n-provider';
-import { createSupabaseBrowserClient } from '@/lib/supabase/client';
 import { createEmployee, setEmployeePhoto } from '@/lib/actions/employees';
 import type { ActionState } from '@/lib/actions/types';
 import type { AttendanceGroupRow } from '@/lib/db/types';
@@ -64,6 +63,7 @@ export function CreateEmployeeForm({ groups }: { groups: AttendanceGroupRow[] })
       setPhotoStatus('uploading');
       void (async () => {
         try {
+          const { createSupabaseBrowserClient } = await import('@/lib/supabase/client');
           const supabase = createSupabaseBrowserClient();
           const ext = file.name.split('.').pop() || 'jpg';
           const path = `${employeeId}/${Date.now()}.${ext}`;

@@ -2,7 +2,6 @@
 import { useState, useTransition } from 'react';
 import { Loader2, Paperclip } from 'lucide-react';
 import { Button } from '@/components/ui/button';
-import { createSupabaseBrowserClient } from '@/lib/supabase/client';
 
 /**
  * Uploads a file to the shared private `attachments` bucket immediately on
@@ -29,6 +28,7 @@ export function AttachmentField({
     setError(null);
     start(async () => {
       try {
+        const { createSupabaseBrowserClient } = await import('@/lib/supabase/client');
         const supabase = createSupabaseBrowserClient();
         const ext = file.name.split('.').pop() || 'bin';
         const objectPath = `${folder}/${Date.now()}.${ext}`;

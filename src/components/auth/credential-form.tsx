@@ -1,7 +1,6 @@
 'use client';
 import { useState } from 'react';
 import { Loader2 } from 'lucide-react';
-import { createSupabaseBrowserClient } from '@/lib/supabase/client';
 import { env } from '@/lib/env';
 import { useT } from '@/components/i18n-provider';
 import { Button } from '@/components/ui/button';
@@ -34,6 +33,7 @@ export function CredentialForm({ mode }: { mode: 'signin' | 'signup' }) {
     }
     setPending(true);
     try {
+      const { createSupabaseBrowserClient } = await import('@/lib/supabase/client');
       const supabase = createSupabaseBrowserClient();
       const result =
         mode === 'signin'
