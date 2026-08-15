@@ -14,6 +14,7 @@ import type {
   InquiryFollowupRow,
   InquiryStatusRow,
   LocationRow,
+  LoginEventRow,
   OvertimeEntryRow,
   OvertimeSettingsRow,
   QuotationItemRow,
@@ -309,6 +310,21 @@ export async function getAuditLog(limit = 100): Promise<AuditLogRow[]> {
     return (data as AuditLogRow[]) ?? [];
   } catch (e) {
     console.error('[queries] getAuditLog', e);
+    return [];
+  }
+}
+
+export async function getLoginEvents(limit = 100): Promise<LoginEventRow[]> {
+  try {
+    const supabase = await client();
+    const { data } = await supabase
+      .from('login_events')
+      .select('*')
+      .order('created_at', { ascending: false })
+      .limit(limit);
+    return (data as LoginEventRow[]) ?? [];
+  } catch (e) {
+    console.error('[queries] getLoginEvents', e);
     return [];
   }
 }

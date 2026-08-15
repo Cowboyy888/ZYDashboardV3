@@ -69,6 +69,7 @@ CI stays green; run it locally/staging with `PLAYWRIGHT=1 npm run verify` after
 | 35 | One Sales Order keeps one `so_number`, but can carry multiple payment receipts (deposit and/or final), each with its own unique `receipt_number` and clearly tagged type — all linked to the same SO, no new SO created | `tests/unit/payment-receipt.test.ts`; `tests/e2e/deposit-invoice.spec.ts`; DB function `assign_receipt_number` |
 | 36 | A final payment can only be recorded once the deposit invoice is fully paid, and any number of partial final payments are allowed until the balance reaches zero | `tests/unit/payment-receipt.test.ts` (`canRecordFinalPayment`); DB trigger `enforce_payment_receipt_rules` (`FINAL_PAYMENT_REQUIRES_PAID_DEPOSIT`); `tests/e2e/deposit-invoice.spec.ts` |
 | 37 | The sum of every payment receipt (deposit + final) against a Sales Order can never exceed its total — enforced for real, not just by the UI | `tests/unit/payment-receipt.test.ts` (`wouldExceedSoTotal`); DB trigger `enforce_payment_receipt_rules` (`PAYMENT_EXCEEDS_SO_TOTAL`); schema check |
+| 38 | Every successful sign-in records one login_events row (who, when, IP, country/city), visible only to Owner/System Admin | `tests/unit/login-event.test.ts` (`parseClientIp`); `tests/e2e/login-history.spec.ts`; RLS on `login_events`; schema check |
 
 Additional coverage: `tests/unit/datetime.test.ts` (Asia/Bangkok ⇄ UTC,
 dd/mm/yyyy, business-date boundary), `tests/unit/inventory-view.test.ts`
@@ -98,6 +99,10 @@ The domain tests assert the rules; the database enforces them independently:
   every other role.
 - RLS `movements_insert` includes `sales_admin` — otherwise a real Sales Admin
   user would be blocked from delivering goods despite the app-level RBAC
+- RLS `login_events_insert` requires `user_id = auth.uid()` — every field
+  (IP/country/city/email) is derived server-side in `recordLoginEvent`, never
+  caller-supplied, so a client can only ever insert a row attributed to
+  itself.
   allowing it (`post_sale_delivery` is `SECURITY INVOKER`).
 - `enforce_payment_receipt_rules` — sums every `payment_receipts` row
   (deposit + final together) against the Sales Order's line-item total,

@@ -262,6 +262,7 @@ export const dictionary = {
   'set.telegram': { en: 'Telegram', zh: 'Telegram 设置' },
   'set.users': { en: 'Users & Roles', zh: '用户与角色' },
   'set.audit': { en: 'Audit Log', zh: '审计日志' },
+  'set.logins': { en: 'Login History', zh: '登录记录' },
   'set.addLocation': { en: 'Add location', zh: '新增地点' },
   'set.noLocations': { en: 'No locations yet.', zh: '暂无地点。' },
   'set.locationsDesc': {
@@ -366,6 +367,12 @@ export const dictionary = {
   'set.action': { en: 'Action', zh: '动作' },
   'set.entity': { en: 'Entity', zh: '实体' },
   'set.noAudit': { en: 'No audit entries yet.', zh: '暂无审计记录。' },
+  'set.loginsDesc': {
+    en: 'Successful sign-ins to the dashboard (who, when, IP, location).',
+    zh: '登录仪表盘的成功记录（谁、何时、IP、位置）。',
+  },
+  'set.ipAddress': { en: 'IP Address', zh: 'IP 地址' },
+  'set.noLogins': { en: 'No sign-ins recorded yet.', zh: '暂无登录记录。' },
 
   // Overtime 加班
   'ot.title': { en: 'Overtime', zh: '加班' },

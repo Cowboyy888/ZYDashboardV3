@@ -1,7 +1,7 @@
 'use client';
 import { useState } from 'react';
 import { Loader2 } from 'lucide-react';
-import { bootstrapOwner } from '@/lib/actions/auth';
+import { bootstrapOwner, recordLoginEvent } from '@/lib/actions/auth';
 import { useT } from '@/components/i18n-provider';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -41,6 +41,11 @@ export function BootstrapForm() {
         setError(signInErr.message);
         setPending(false);
         return;
+      }
+      try {
+        await recordLoginEvent();
+      } catch (err) {
+        console.error('[login] failed to record login event', err);
       }
       window.location.assign('/dashboard');
     } catch (err) {

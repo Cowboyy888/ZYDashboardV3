@@ -1,9 +1,39 @@
 'use server';
 import { redirect } from 'next/navigation';
+import { headers } from 'next/headers';
 import { z } from 'zod';
 import { createSupabaseServerClient } from '@/lib/supabase/server';
 import { createSupabaseAdminClient } from '@/lib/supabase/admin';
+import { parseClientIp } from '@/lib/domain/login-event';
 import { fail, ok, type ActionState } from './types';
+
+/**
+ * Record a successful sign-in for the Settings > Login History page. Called
+ * from the client right after signInWithPassword() succeeds. Every field is
+ * derived server-side (session + request headers), never caller-supplied, so
+ * a client can't forge who/where. Never throws — a logging failure must not
+ * block a real sign-in.
+ */
+export async function recordLoginEvent(): Promise<void> {
+  try {
+    const supabase = await createSupabaseServerClient();
+    const {
+      data: { user },
+    } = await supabase.auth.getUser();
+    if (!user) return;
+    const h = await headers();
+    await supabase.from('login_events').insert({
+      user_id: user.id,
+      email: user.email ?? null,
+      ip_address: parseClientIp(h),
+      country: h.get('x-vercel-ip-country'),
+      city: h.get('x-vercel-ip-city'),
+      user_agent: h.get('user-agent'),
+    });
+  } catch (err) {
+    console.error('[login-events] failed to record login event', err);
+  }
+}
 
 /** Sign the current user out and return to the login page. */
 export async function signOutAction() {

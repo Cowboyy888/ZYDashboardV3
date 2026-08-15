@@ -122,6 +122,21 @@ blocked by trigger.
 `old_value jsonb`, `new_value jsonb`, `created_at`. UPDATE/DELETE blocked by
 triggers. Never store secrets or raw salary values here.
 
+### login_events  *(append-only, Eighth pass)*
+`id`, `user_id → profiles (nullable, ON DELETE SET NULL)`, `email`,
+`ip_address`, `country`, `city`, `user_agent`, `created_at`. Distinct from
+`audit_log`: this records authentication events (successful sign-ins), not
+business actions. Populated by `recordLoginEvent` (`src/lib/actions/auth.ts`),
+called from the client right after `signInWithPassword()` succeeds, from both
+the normal sign-in form and the first-Owner bootstrap flow. `ip_address` /
+`country` / `city` come from Vercel's edge request headers
+(`x-vercel-forwarded-for`, `x-vercel-ip-country`, `x-vercel-ip-city`) — absent
+in local dev, expected. RLS insert check is `user_id = auth.uid()` (tighter
+than `audit_log`'s original policy, which needed a later hardening pass —
+see `0024`); every field is derived server-side, never caller-supplied. Read
+via Settings → Login History (`audit:view` permission, no dedicated
+permission added).
+
 ### sent_reports  *(Telegram idempotency)*
 `id`, `report_key` (unique), `report_type`, `business_date`, `chat_id`,
 `status` (`sent`/`failed`), `detail`, `created_at`. Scheduled key =
@@ -444,6 +459,7 @@ line on this run, not tracked as a loan against future runs).
 | attendance | owner/system_admin/attendance/payroll/viewer | insert/update: owner/system_admin/attendance · no delete |
 | attendance_groups | all authenticated | owner/system_admin |
 | audit_log | owner/system_admin | insert: any authenticated · no update/delete |
+| login_events | owner/system_admin | insert: own row only (`user_id = auth.uid()`) · no update/delete |
 | sent_reports | owner/system_admin | insert: owner/system_admin (+ service role) |
 | telegram_settings | owner/system_admin | owner/system_admin |
 | suppliers / purchase_orders / purchase_order_manual_items | owner/system_admin/warehouse | owner/warehouse (system_admin is view-only). `purchase_order_items` has the same RLS but is dormant — the app no longer writes to it. |

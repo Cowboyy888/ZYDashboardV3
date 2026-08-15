@@ -2,6 +2,7 @@
 import { useState } from 'react';
 import { Loader2 } from 'lucide-react';
 import { env } from '@/lib/env';
+import { recordLoginEvent } from '@/lib/actions/auth';
 import { useT } from '@/components/i18n-provider';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -46,6 +47,13 @@ export function CredentialForm({ mode }: { mode: 'signin' | 'signup' }) {
       if (result.error) {
         fail(result.error.message);
         return;
+      }
+      if (mode === 'signin') {
+        try {
+          await recordLoginEvent();
+        } catch (err) {
+          console.error('[login] failed to record login event', err);
+        }
       }
       window.location.assign('/dashboard');
     } catch (err) {

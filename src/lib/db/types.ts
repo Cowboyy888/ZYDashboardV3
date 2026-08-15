@@ -149,6 +149,17 @@ export interface AuditLogRow {
   created_at: string;
 }
 
+export interface LoginEventRow {
+  id: string;
+  user_id: string | null;
+  email: string | null;
+  ip_address: string | null;
+  country: string | null;
+  city: string | null;
+  user_agent: string | null;
+  created_at: string;
+}
+
 export interface SentReportRow {
   id: string;
   report_key: string; // idempotency key, e.g. attendance:morning:2026-07-24

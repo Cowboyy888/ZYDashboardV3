@@ -58,6 +58,7 @@ const tables = [
   'sales_orders',
   'sales_order_items',
   'payment_receipts',
+  'login_events',
   'payroll_runs',
   'payroll_items',
   'payroll_item_lines',

@@ -1,5 +1,5 @@
 import Link from 'next/link';
-import { MapPin, Package, Send, Users, ShieldCheck, ListOrdered } from 'lucide-react';
+import { MapPin, Package, Send, Users, ShieldCheck, ListOrdered, Globe } from 'lucide-react';
 import { requirePermission } from '@/lib/auth';
 import { getLocale } from '@/lib/i18n/locale';
 import { translator } from '@/lib/i18n';
@@ -49,6 +49,12 @@ export default async function SettingsPage() {
       href: '/settings/audit',
       icon: ShieldCheck,
       label: t('set.audit'),
+      show: hasPermission(user.role, 'audit:view'),
+    },
+    {
+      href: '/settings/logins',
+      icon: Globe,
+      label: t('set.logins'),
       show: hasPermission(user.role, 'audit:view'),
     },
   ].filter((i) => i.show);

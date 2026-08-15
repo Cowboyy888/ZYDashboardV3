@@ -216,6 +216,18 @@ Seeded opening stock (Storage Room): 拔丝料 10厘 = 10 捆; 拔丝料 6厘 = 
   in the schema, dormant, with its historical rows copied forward so payment
   history stays complete. Reuses `sales:manage`, no new permission — see
   `docs/data-dictionary.md` and `docs/test-plan.md` for the schema and tests.
+- **Eighth pass — Login History (built):** Settings gains a read-only page
+  showing successful sign-ins to the dashboard — who, when, IP address, and
+  country/city — for security visibility into who's accessing the system and
+  from where. Every sign-in (both the normal login form and the first-Owner
+  bootstrap flow) records one append-only `login_events` row immediately
+  after authentication succeeds; IP and location come from Vercel's edge
+  request headers, so no third-party geolocation service or API key is
+  needed (and both fields are simply blank for local/non-Vercel traffic).
+  Scoped to successful sign-ins only — failed-attempt tracking is a
+  different feature (no authenticated user to attribute the row to yet) and
+  isn't built here. Reuses `audit:view`, no new permission — see
+  `docs/data-dictionary.md` and `docs/test-plan.md` for the schema and tests.
 
 ## Explicit non-goals (v1)
 
