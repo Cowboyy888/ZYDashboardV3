@@ -71,7 +71,7 @@ export function buildSalesOrderHtml(d: SalesOrderDocData): string {
           .join('');
 
   const meta: Array<[string, string]> = [
-    ['Sales Order No.:', d.soNumber],
+    ['Order No.:', d.soNumber],
     ['Date:', d.orderDate],
     ['Expected Delivery:', d.expectedDeliveryDate ?? '—'],
     ['Currency:', d.currency],

@@ -1,6 +1,6 @@
 import { notFound } from 'next/navigation';
 import { requirePermission } from '@/lib/auth';
-import { getQuotation, getQuotationItems } from '@/lib/db/queries';
+import { getQuotation, getQuotationItems, getSalesOrdersByQuotationIds } from '@/lib/db/queries';
 import { businessDate, formatDDMMYYYY } from '@/lib/domain/datetime';
 import { DOCUMENT_KINDS, type DocumentKind } from '@/lib/domain/quotation';
 import { buildQuotationDocHtml, type DocLine } from '@/lib/reports/quotation-doc-html';
@@ -21,7 +21,11 @@ export async function GET(request: Request, { params }: { params: Promise<{ id: 
     return new Response('Invalid document kind', { status: 400 });
   }
 
-  const [quotation, items] = await Promise.all([getQuotation(id), getQuotationItems(id)]);
+  const [quotation, items, linkedOrders] = await Promise.all([
+    getQuotation(id),
+    getQuotationItems(id),
+    getSalesOrdersByQuotationIds([id]),
+  ]);
   if (!quotation) notFound();
 
   const lines: DocLine[] = items.map((it) => ({
@@ -60,6 +64,7 @@ export async function GET(request: Request, { params }: { params: Promise<{ id: 
     lines,
     refQuotationNo: quotation.quotation_no,
     refDepositNo: quotation.deposit_no,
+    orderNo: linkedOrders[0]?.so_number ?? null,
     pricingBasis: quotation.pricing_basis,
   });
 

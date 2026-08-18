@@ -131,6 +131,27 @@ describe('balance invoice', () => {
   });
 });
 
+describe("order number — distinct from this document's own invoice number", () => {
+  it('shows Order No. on a deposit/balance invoice once a Sales Order exists', () => {
+    const html = doc({ kind: 'balance', docNo: 'ZYS-BL2607-001', orderNo: 'ZYS-2026Y-006' });
+    expect(html).toContain('Order No.:');
+    expect(html).toContain('ZYS-2026Y-006');
+    // Both numbers are present and distinguishable — the document's own
+    // reference AND the order it belongs to, never conflated.
+    expect(html).toContain('ZYS-BL2607-001');
+  });
+
+  it('omits Order No. when no Sales Order has been created yet', () => {
+    const html = doc({ kind: 'deposit', docNo: 'ZYS-DP2607-001', orderNo: null });
+    expect(html).not.toContain('Order No.:');
+  });
+
+  it('never shows Order No. on the plain quotation document', () => {
+    const html = doc({ kind: 'quotation', orderNo: 'ZYS-2026Y-006' });
+    expect(html).not.toContain('Order No.:');
+  });
+});
+
 describe('empty state', () => {
   it('renders a placeholder row when there are no line items', () => {
     expect(doc({ lines: [] })).toContain('No line items');

@@ -44,6 +44,14 @@ export interface QuotationDocData {
   refQuotationNo?: string | null;
   /** Deposit invoice number the balance invoice offsets. */
   refDepositNo?: string | null;
+  /**
+   * The permanent Sales Order number this invoice is for, once the
+   * quotation's deposit has been paid and a Sales Order auto-created —
+   * distinct from this document's own (invoice-scoped) docNo. Absent on the
+   * plain Quotation doc, and on a Deposit Invoice printed before the deposit
+   * is paid.
+   */
+  orderNo?: string | null;
   pricingBasis?: string | null;
   /** Overrides the default terms (quotation only). */
   terms?: string[] | null;
@@ -135,6 +143,11 @@ export function buildQuotationDocHtml(d: QuotationDocData): string {
     meta.push(['Valid Until:', `${validUntil(d.issuedOnIso, d.validDays)} (${d.validDays} days)`]);
   } else if (d.refQuotationNo) {
     meta.push(['Ref. Quotation:', d.refQuotationNo]);
+  }
+  // Order No. is this invoice's link to the permanent Sales Order — a
+  // separate identity from docNo above, which only names this one document.
+  if (!isQuotation && d.orderNo) {
+    meta.push(['Order No.:', d.orderNo]);
   }
   meta.push(['Currency:', d.currency === 'USD' ? 'US Dollar (USD)' : d.currency]);
 

@@ -22,7 +22,7 @@ interface ExportRow {
 }
 
 const COLUMNS: XlsxColumn<ExportRow>[] = [
-  { header: 'SO Number 销售单号', width: 18, value: (r) => r.so.soNumber },
+  { header: 'Order No. 订单编号', width: 18, value: (r) => r.so.soNumber },
   { header: 'Customer 客户', width: 24, value: (r) => r.so.customerName },
   { header: 'Order Date 下单日期', width: 14, value: (r) => formatDDMMYYYY(r.so.orderDate) },
   {
