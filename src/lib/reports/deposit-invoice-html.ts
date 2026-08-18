@@ -159,7 +159,7 @@ export function buildDepositInvoiceHtml(data: DepositInvoiceData): string {
     <div>
       <div><span class="label">Invoice No.: </span>${esc(data.invoiceNumber)}</div>
       <div><span class="label">Date: </span>${esc(data.generatedOn)}</div>
-      <div><span class="label">Sales Order Ref.: </span>${esc(data.so.soNumber)} (${esc(data.so.orderDate)})</div>
+      <div><span class="label">Order No.: </span>${esc(data.so.soNumber)} (${esc(data.so.orderDate)})</div>
       <div><span class="label">Currency: </span>${esc(data.currency)}</div>
       <div class="status">${esc(data.statusLabel)}</div>
     </div>

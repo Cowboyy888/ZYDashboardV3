@@ -37,6 +37,9 @@ test('deposit invoice: generate off a confirmed SO, then record payments to Paid
   await page.getByRole('button', { name: /^Confirm$|确认订单/ }).click();
   await expect(page.getByText(/^Confirmed$|^已确认$/).first()).toBeVisible();
 
+  // The order's permanent Order Number, independent of any payment.
+  await expect(page.getByText(/ZYS-\d{4}Y-\d{3}/).first()).toBeVisible();
+
   // Generate a 30% deposit invoice. Total order amount = 5.4 × 100 = 540,
   // so deposit = 162.00, remaining balance = 378.00.
   await page.getByRole('button', { name: /Generate Deposit Invoice|生成定金发票/ }).click();
@@ -112,4 +115,9 @@ test('deposit invoice: generate off a confirmed SO, then record payments to Paid
   await expect(page.getByRole('button', { name: /Record final payment|记录尾款/ })).toHaveCount(0);
   await expect(page.getByText(/^Deposit Receipt$|^定金收据$/)).toHaveCount(2);
   await expect(page.getByText(/^Final Payment Receipt$|^尾款收据$/)).toHaveCount(2);
+
+  // Each of the four payments got its own independent Receipt Number
+  // (format ZYS-R-######, globally sequential, unrelated to the Order
+  // Number) — all four still linked to the one order number above.
+  await expect(page.getByText(/^ZYS-R-\d{6}$/)).toHaveCount(4);
 });

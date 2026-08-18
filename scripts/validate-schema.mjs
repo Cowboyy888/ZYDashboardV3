@@ -287,6 +287,15 @@ check(
   'deposit invoice status recompute (from payment_receipts) function',
 );
 
+// --- ZYS order/receipt numbering (Ninth pass) ---------------------------------
+check(/create table if not exists public\.order_number_seq/i.test(sql), 'order_number_seq table');
+check(/'ZYS-' \|\| y \|\| 'Y-' \|\| lpad/i.test(sql), 'ZYS-{YYYY}Y-### order number format');
+check(
+  /create sequence if not exists public\.receipt_number_seq/i.test(sql),
+  'receipt_number_seq (global, never-resetting) sequence',
+);
+check(/'ZYS-R-' \|\| lpad/i.test(sql), 'ZYS-R-###### receipt number format');
+
 // --- Seed sanity: the supplied example opening stock -------------------------
 for (const qty of ['10', '30.5', '329', '64', '903', '146', '902']) {
   check(seed.includes(qty), `seed contains opening qty ${qty}`);

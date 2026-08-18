@@ -121,7 +121,7 @@ export function buildPaymentReceiptHtml(data: PaymentReceiptData): string {
     <div>
       <div><span class="label">Receipt No.: </span>${esc(data.receiptNumber)}</div>
       <div><span class="label">Date: </span>${esc(data.paidDate)}</div>
-      <div><span class="label">Sales Order Ref.: </span>${esc(data.so.soNumber)} (${esc(data.so.orderDate)})</div>
+      <div><span class="label">Order No.: </span>${esc(data.so.soNumber)} (${esc(data.so.orderDate)})</div>
       <div><span class="label">Method: </span>${esc(data.method || '—')}</div>
       ${data.recordedBy ? `<div><span class="label">Recorded by: </span>${esc(data.recordedBy)}</div>` : ''}
     </div>

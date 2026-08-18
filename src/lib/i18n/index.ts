@@ -760,7 +760,7 @@ export const dictionary = {
     en: 'Create a draft with customer, dates, currency, and line items — nothing is confirmed until you confirm it.',
     zh: '创建包含客户、日期、货币与明细项的草稿 — 确认前不会生效。',
   },
-  'sal.soNumber': { en: 'SO number', zh: '销售订单号' },
+  'sal.soNumber': { en: 'Order No.', zh: '订单编号' },
   'sal.customer': { en: 'Customer', zh: '客户' },
   'sal.orderDate': { en: 'Order date', zh: '下单日期' },
   'sal.expectedDelivery': { en: 'Expected delivery date', zh: '预计发货日期' },
@@ -785,6 +785,11 @@ export const dictionary = {
   'sal.createDraft': { en: 'Create draft', zh: '创建草稿' },
 
   'sal.noOrders': { en: 'No sales orders yet.', zh: '暂无销售订单。' },
+  'sal.searchOrders': {
+    en: 'Search order no., customer, or date',
+    zh: '搜索订单编号、客户或日期',
+  },
+  'sal.noOrdersMatch': { en: 'No orders match your search.', zh: '没有符合搜索条件的订单。' },
   'sal.confirm': { en: 'Confirm', zh: '确认订单' },
   'sal.cancel': { en: 'Cancel SO', zh: '取消订单' },
   'sal.print': { en: 'View PDF', zh: '查看 PDF' },
