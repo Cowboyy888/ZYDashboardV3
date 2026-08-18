@@ -144,6 +144,12 @@ export function buildQuotationDocHtml(d: QuotationDocData): string {
   } else if (d.refQuotationNo) {
     meta.push(['Ref. Quotation:', d.refQuotationNo]);
   }
+  // The balance invoice offsets a specific deposit invoice — a different
+  // document from the quotation above, so it gets its own distinct line
+  // rather than being folded into Ref. Quotation.
+  if (d.kind === 'balance' && d.refDepositNo) {
+    meta.push(['Ref. Deposit:', d.refDepositNo]);
+  }
   // Order No. is this invoice's link to the permanent Sales Order — a
   // separate identity from docNo above, which only names this one document.
   if (!isQuotation && d.orderNo) {

@@ -97,6 +97,10 @@ describe('deposit invoice', () => {
     expect(html).toContain('ZYS-Q2607-001');
   });
 
+  it('never shows Ref. Deposit on the deposit invoice itself', () => {
+    expect(html).not.toContain('Ref. Deposit:');
+  });
+
   it('shows subtotal, deposit due and balance before delivery', () => {
     expect(html).toContain('Contract Subtotal:');
     expect(html).toContain('$7,905.60'); // 4,320 × 1.83
@@ -119,6 +123,13 @@ describe('balance invoice', () => {
     docNo: 'ZYS-BL2607-001',
     refQuotationNo: 'ZYS-Q2607-001',
     refDepositNo: 'ZYS-DP2607-001',
+  });
+
+  it('shows Ref. Quotation and Ref. Deposit as two distinct references', () => {
+    expect(html).toContain('Ref. Quotation:');
+    expect(html).toContain('Ref. Deposit:');
+    expect(html).toContain('ZYS-Q2607-001');
+    expect(html).toContain('ZYS-DP2607-001');
   });
 
   it('offsets the deposit as a negative credit citing its invoice', () => {
