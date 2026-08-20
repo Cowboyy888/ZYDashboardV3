@@ -1,4 +1,5 @@
 import 'server-only';
+import { buildCjkFontFaceCss } from './fonts/cjk-subset';
 
 /**
  * Renders one of this app's self-contained branded report HTML documents
@@ -46,7 +47,11 @@ export async function renderHtmlToPdf(
   html: string,
   { baseUrl }: RenderPdfOptions,
 ): Promise<Buffer> {
-  const withBase = html.replace('<head>', `<head>\n<base href="${baseUrl}/" />`);
+  // Subset Noto Sans SC down to just this document's actual Chinese
+  // characters and inject it — see fonts/cjk-subset.ts for why a static
+  // embed (like fonts/noto-sans-khmer.ts) doesn't work for a full CJK font.
+  const cjkFontFace = await buildCjkFontFaceCss(html);
+  const withBase = html.replace('<head>', `<head>\n<base href="${baseUrl}/" />${cjkFontFace}`);
 
   const browser = await launchBrowser();
   try {
