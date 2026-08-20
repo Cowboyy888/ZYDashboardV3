@@ -17,6 +17,7 @@ import {
   type DocumentKind,
   type QuotationLine,
 } from '@/lib/domain/quotation';
+import { KHMER_FONT_FACE_CSS } from './fonts/noto-sans-khmer';
 
 export interface DocLine extends QuotationLine {
   description: string;
@@ -252,10 +253,11 @@ export function buildQuotationDocHtml(d: QuotationDocData): string {
 <meta charset="utf-8" />
 <title>ZY Steel · ${esc(documentTitle(d.kind, d.depositPct))} ${esc(d.docNo)}</title>
 <style>
+${KHMER_FONT_FACE_CSS}
   * { box-sizing: border-box; }
   html, body { margin: 0; padding: 0; }
   body {
-    font-family: Arial, "Noto Sans SC", "PingFang SC", "Microsoft YaHei", sans-serif;
+    font-family: Arial, "Noto Sans Khmer", "Noto Sans SC", "PingFang SC", "Microsoft YaHei", sans-serif;
     color: ${INK};
     -webkit-print-color-adjust: exact;
     print-color-adjust: exact;

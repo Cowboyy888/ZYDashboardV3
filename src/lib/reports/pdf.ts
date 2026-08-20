@@ -54,6 +54,11 @@ export async function renderHtmlToPdf(
     // 'load' (the default, and the only option setContent supports) fires
     // after the letterhead logo <img> finishes loading too.
     await page.setContent(withBase, { waitUntil: 'load' });
+    // Embedded @font-face data (e.g. the Khmer subset — see
+    // fonts/noto-sans-khmer.ts) decodes asynchronously and isn't guaranteed
+    // ready by the 'load' event, so wait for it explicitly or page.pdf() can
+    // snapshot before it applies, printing tofu boxes for that text.
+    await page.evaluateHandle('document.fonts.ready');
     // The report HTML hides its on-page "Print / Save as PDF" toolbar (and
     // sets @page size/margins) under `@media print` — same CSS a real print
     // dialog would apply, so this keeps one styling source of truth.

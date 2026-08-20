@@ -9,6 +9,7 @@
  */
 import { esc } from './inquiry-report-html';
 import type { PaymentReceiptType } from '@/lib/domain/payment-receipt';
+import { KHMER_FONT_FACE_CSS } from './fonts/noto-sans-khmer';
 
 export interface PaymentReceiptData {
   receiptNumber: string;
@@ -63,10 +64,11 @@ export function buildPaymentReceiptHtml(data: PaymentReceiptData): string {
 <meta charset="utf-8" />
 <title>ZY Steel · ${esc(RECEIPT_TYPE_BAR[data.receiptType])} ${esc(data.receiptNumber)}</title>
 <style>
+${KHMER_FONT_FACE_CSS}
   * { box-sizing: border-box; }
   html, body { margin: 0; padding: 0; }
   body {
-    font-family: Arial, "Noto Sans SC", "PingFang SC", "Microsoft YaHei", sans-serif;
+    font-family: Arial, "Noto Sans Khmer", "Noto Sans SC", "PingFang SC", "Microsoft YaHei", sans-serif;
     color: ${INK};
     -webkit-print-color-adjust: exact;
     print-color-adjust: exact;

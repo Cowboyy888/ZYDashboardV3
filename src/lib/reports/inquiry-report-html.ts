@@ -11,6 +11,7 @@
  */
 import type { SalesInquiryRow } from '@/lib/db/types';
 import type { InquirySummary, StatusCategory } from '@/lib/domain/sales-inquiry';
+import { KHMER_FONT_FACE_CSS } from './fonts/noto-sans-khmer';
 
 export type ColumnKind = 'text' | 'num' | 'usd';
 
@@ -175,10 +176,11 @@ export function buildInquiryReportHtml(data: InquiryReportData): string {
 <meta charset="utf-8" />
 <title>ZY Steel · Customer Price Inquiry Report</title>
 <style>
+${KHMER_FONT_FACE_CSS}
   * { box-sizing: border-box; }
   html, body { margin: 0; padding: 0; }
   body {
-    font-family: Arial, "Noto Sans SC", "PingFang SC", "Microsoft YaHei", sans-serif;
+    font-family: Arial, "Noto Sans Khmer", "Noto Sans SC", "PingFang SC", "Microsoft YaHei", sans-serif;
     color: ${INK};
     -webkit-print-color-adjust: exact;
     print-color-adjust: exact;

@@ -6,6 +6,7 @@
  * (so-print.tsx, which this supersedes).
  */
 import { esc } from './inquiry-report-html';
+import { KHMER_FONT_FACE_CSS } from './fonts/noto-sans-khmer';
 
 export interface SalesOrderDocItem {
   skuLabel: string;
@@ -95,10 +96,11 @@ export function buildSalesOrderHtml(d: SalesOrderDocData): string {
 <meta charset="utf-8" />
 <title>ZY Steel · Sales Order ${esc(d.soNumber)}</title>
 <style>
+${KHMER_FONT_FACE_CSS}
   * { box-sizing: border-box; }
   html, body { margin: 0; padding: 0; }
   body {
-    font-family: Arial, "Noto Sans SC", "PingFang SC", "Microsoft YaHei", sans-serif;
+    font-family: Arial, "Noto Sans Khmer", "Noto Sans SC", "PingFang SC", "Microsoft YaHei", sans-serif;
     color: ${INK};
     -webkit-print-color-adjust: exact;
     print-color-adjust: exact;

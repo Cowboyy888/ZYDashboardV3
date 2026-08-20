@@ -13,6 +13,7 @@
  */
 import { esc } from './inquiry-report-html';
 import type { DepositInvoiceStatus } from '@/lib/domain/deposit-invoice';
+import { KHMER_FONT_FACE_CSS } from './fonts/noto-sans-khmer';
 
 export interface DepositInvoiceLineItem {
   skuLabel: string;
@@ -99,10 +100,11 @@ export function buildDepositInvoiceHtml(data: DepositInvoiceData): string {
 <meta charset="utf-8" />
 <title>ZY Steel · Deposit Invoice ${esc(data.invoiceNumber)}</title>
 <style>
+${KHMER_FONT_FACE_CSS}
   * { box-sizing: border-box; }
   html, body { margin: 0; padding: 0; }
   body {
-    font-family: Arial, "Noto Sans SC", "PingFang SC", "Microsoft YaHei", sans-serif;
+    font-family: Arial, "Noto Sans Khmer", "Noto Sans SC", "PingFang SC", "Microsoft YaHei", sans-serif;
     color: ${INK};
     -webkit-print-color-adjust: exact;
     print-color-adjust: exact;
