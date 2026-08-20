@@ -6,7 +6,7 @@ import {
   computeRemainingBalance,
   computeDepositInvoiceStatus,
   canGenerateDepositInvoice,
-  canRecordPayment,
+  computeSoPaymentStatus,
 } from '@/lib/domain/deposit-invoice';
 
 describe('computeUnitPriceFromArea', () => {
@@ -72,14 +72,20 @@ describe('canGenerateDepositInvoice', () => {
   });
 });
 
-describe('canRecordPayment', () => {
-  it('allows pending_deposit and partially_paid', () => {
-    expect(canRecordPayment('pending_deposit')).toBe(true);
-    expect(canRecordPayment('partially_paid')).toBe(true);
+describe('computeSoPaymentStatus', () => {
+  it('none when no deposit invoice has been generated yet', () => {
+    expect(computeSoPaymentStatus(false, null, null)).toBe('none');
   });
 
-  it('blocks paid and void', () => {
-    expect(canRecordPayment('paid')).toBe(false);
-    expect(canRecordPayment('void')).toBe(false);
+  it('pending_deposit once an invoice exists but nothing is marked paid', () => {
+    expect(computeSoPaymentStatus(true, null, null)).toBe('pending_deposit');
+  });
+
+  it('partially_paid once the deposit is marked paid but not the balance', () => {
+    expect(computeSoPaymentStatus(true, '2026-08-20', null)).toBe('partially_paid');
+  });
+
+  it('paid once both deposit and balance are marked paid', () => {
+    expect(computeSoPaymentStatus(true, '2026-08-20', '2026-08-25')).toBe('paid');
   });
 });

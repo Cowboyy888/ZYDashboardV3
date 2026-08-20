@@ -15,8 +15,11 @@ import {
   TableRow,
 } from '@/components/ui/table';
 import { ConfirmActionButton } from '@/components/forms/confirm-action-button';
+import { ActionForm } from '@/components/forms/action-form';
+import { SubmitButton } from '@/components/forms/submit-button';
 import { useT } from '@/components/i18n-provider';
 import { confirmSalesOrder, cancelSalesOrder, removeSalesOrderItem } from '@/lib/actions/sales';
+import { markSalesOrderPaid } from '@/lib/actions/payment-receipts';
 import {
   SO_STATUS_LABELS,
   CURRENCY_LABELS,
@@ -24,35 +27,22 @@ import {
   canCancel,
 } from '@/lib/domain/sales';
 import {
-  DEPOSIT_INVOICE_STATUS_LABELS,
   SO_PAYMENT_STATUS_LABELS,
   canGenerateDepositInvoice,
-  canRecordPayment,
+  computeSoPaymentStatus,
 } from '@/lib/domain/deposit-invoice';
-import {
-  PAYMENT_RECEIPT_TYPE_LABELS,
-  computeTotalPaid,
-  computeDepositPaid,
-  computeFinalPaid,
-  computeBalanceDue,
-  canRecordFinalPayment,
-} from '@/lib/domain/payment-receipt';
 import { formatDateTime, formatDDMMYYYY } from '@/lib/domain/datetime';
 import type { SalesOrderRow } from '@/lib/domain/sales-view';
 import type {
   SalesOrderRow as SoRow,
   StockMovementRow,
   DepositInvoiceRow,
-  PaymentReceiptRow,
   QuotationRow,
   QuotationItemRow,
 } from '@/lib/db/types';
 import { DeliverForm } from './deliver-form';
 import { GenerateDepositInvoiceDialog } from './generate-deposit-invoice-dialog';
-import { RecordPaymentDialog } from './record-payment-dialog';
-import { RecordFinalPaymentDialog } from './record-final-payment-dialog';
 import { PrintDepositInvoiceButton } from './print-deposit-invoice-button';
-import { PrintPaymentReceiptButton } from './print-payment-receipt-button';
 import { AddSoItemDialog } from './add-so-item-dialog';
 
 const STATUS_VARIANT = {
@@ -70,11 +60,6 @@ const DEPOSIT_STATUS_VARIANT = {
   void: 'destructive',
 } as const;
 
-const RECEIPT_TYPE_VARIANT = {
-  deposit: 'secondary',
-  final: 'success',
-} as const;
-
 export function SoDetail({
   row,
   so,
@@ -85,7 +70,6 @@ export function SoDetail({
   canManage,
   canOverride,
   depositInvoice,
-  paymentReceipts,
   sourceQuotation,
   sourceQuotationItems,
   skuOptions,
@@ -99,7 +83,6 @@ export function SoDetail({
   canManage: boolean;
   canOverride: boolean;
   depositInvoice: DepositInvoiceRow | null;
-  paymentReceipts: PaymentReceiptRow[];
   /** Set when this order was auto-created from a Quotation's paid deposit. */
   sourceQuotation: QuotationRow | null;
   sourceQuotationItems: QuotationItemRow[];
@@ -110,12 +93,11 @@ export function SoDetail({
   const [deliveringItem, setDeliveringItem] = useState<string | null>(null);
   const locations = Object.entries(locationName).map(([id, name]) => ({ id, name }));
 
-  const totalPaid = computeTotalPaid(paymentReceipts);
-  const depositPaid = computeDepositPaid(paymentReceipts);
-  const finalPaid = computeFinalPaid(paymentReceipts);
-  const balanceDue = depositInvoice
-    ? computeBalanceDue(depositInvoice.total_order_amount, totalPaid)
-    : 0;
+  const soPaymentStatus = computeSoPaymentStatus(
+    !!depositInvoice,
+    so.deposit_paid_on,
+    so.balance_paid_on,
+  );
 
   return (
     <div className="space-y-4">
@@ -127,9 +109,9 @@ export function SoDetail({
               <Badge variant={STATUS_VARIANT[row.status]}>
                 {SO_STATUS_LABELS[row.status][locale]}
               </Badge>
-              {so.payment_status !== 'none' && (
-                <Badge variant={DEPOSIT_STATUS_VARIANT[so.payment_status]}>
-                  {SO_PAYMENT_STATUS_LABELS[so.payment_status][locale]}
+              {soPaymentStatus !== 'none' && (
+                <Badge variant={DEPOSIT_STATUS_VARIANT[soPaymentStatus]}>
+                  {SO_PAYMENT_STATUS_LABELS[soPaymentStatus][locale]}
                 </Badge>
               )}
               {row.isOverdue && <Badge variant="destructive">{t('sal.overdueBadge')}</Badge>}
@@ -235,28 +217,15 @@ export function SoDetail({
           <CardHeader className="flex flex-row items-start justify-between">
             <CardTitle className="flex items-center gap-2 text-base">
               {depositInvoice.invoice_number}
-              <Badge variant={DEPOSIT_STATUS_VARIANT[depositInvoice.status]}>
-                {DEPOSIT_INVOICE_STATUS_LABELS[depositInvoice.status][locale]}
-              </Badge>
+              {soPaymentStatus !== 'none' && (
+                <Badge variant={DEPOSIT_STATUS_VARIANT[soPaymentStatus]}>
+                  {SO_PAYMENT_STATUS_LABELS[soPaymentStatus][locale]}
+                </Badge>
+              )}
             </CardTitle>
             <div className="flex gap-2">
-              <PrintDepositInvoiceButton invoice={depositInvoice} />
-              {canManage && canRecordPayment(depositInvoice.status) && (
-                <RecordPaymentDialog
-                  depositInvoiceId={depositInvoice.id}
-                  today={today}
-                  onRecorded={() => router.refresh()}
-                />
-              )}
-              {canManage && canRecordFinalPayment(depositInvoice.status, balanceDue) && (
-                <RecordFinalPaymentDialog
-                  depositInvoiceId={depositInvoice.id}
-                  balanceDue={balanceDue}
-                  currency={depositInvoice.currency}
-                  today={today}
-                  onRecorded={() => router.refresh()}
-                />
-              )}
+              <PrintDepositInvoiceButton invoice={depositInvoice} kind="deposit" />
+              <PrintDepositInvoiceButton invoice={depositInvoice} kind="balance" />
             </div>
           </CardHeader>
           <CardContent className="grid gap-3 text-sm sm:grid-cols-4">
@@ -282,77 +251,52 @@ export function SoDetail({
                 {depositInvoice.currency} {depositInvoice.remaining_balance.toFixed(2)}
               </div>
             </div>
-            <div>
-              <div className="text-muted-foreground">{t('sal.depositPaid')}</div>
-              <div className="tabular-nums">
-                {depositInvoice.currency} {depositPaid.toFixed(2)}
+            <div className="flex items-center gap-2">
+              <div>
+                <div className="text-muted-foreground">{t('sal.depositPaid')}</div>
+                <div className="font-medium">
+                  {so.deposit_paid_on ? (
+                    <span>
+                      {t('sal.depositPaidOn')} {formatDDMMYYYY(so.deposit_paid_on)}
+                    </span>
+                  ) : (
+                    <span className="text-muted-foreground">{t('sal.depositPending')}</span>
+                  )}
+                </div>
               </div>
+              {canManage && !so.deposit_paid_on && (
+                <ActionForm action={markSalesOrderPaid} className="space-y-0">
+                  <input type="hidden" name="id" value={so.id} />
+                  <input type="hidden" name="which" value="deposit" />
+                  <SubmitButton variant="outline" size="sm">
+                    {t('sal.markDepositPaid')}
+                  </SubmitButton>
+                </ActionForm>
+              )}
             </div>
-            <div>
-              <div className="text-muted-foreground">{t('sal.finalPaid')}</div>
-              <div className="tabular-nums">
-                {depositInvoice.currency} {finalPaid.toFixed(2)}
+            <div className="flex items-center gap-2">
+              <div>
+                <div className="text-muted-foreground">{t('sal.balanceDue')}</div>
+                <div className="font-medium">
+                  {so.balance_paid_on ? (
+                    <span>
+                      {t('sal.balancePaidOn')} {formatDDMMYYYY(so.balance_paid_on)}
+                    </span>
+                  ) : (
+                    <span className="text-muted-foreground">{t('sal.balancePending')}</span>
+                  )}
+                </div>
               </div>
+              {canManage && !so.balance_paid_on && (
+                <ActionForm action={markSalesOrderPaid} className="space-y-0">
+                  <input type="hidden" name="id" value={so.id} />
+                  <input type="hidden" name="which" value="balance" />
+                  <SubmitButton variant="outline" size="sm">
+                    {t('sal.markBalancePaid')}
+                  </SubmitButton>
+                </ActionForm>
+              )}
             </div>
-            <div>
-              <div className="text-muted-foreground">{t('sal.balanceDue')}</div>
-              <div className="font-medium tabular-nums">
-                {depositInvoice.currency} {balanceDue.toFixed(2)}
-              </div>
-            </div>
-          </CardContent>
-        </Card>
-      )}
-
-      {depositInvoice && (
-        <Card>
-          <CardHeader>
-            <CardTitle className="text-base">{t('sal.paymentHistory')}</CardTitle>
-          </CardHeader>
-          <CardContent className="p-0">
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead>{t('sal.receiptNumber')}</TableHead>
-                  <TableHead>{t('sal.receiptType')}</TableHead>
-                  <TableHead>{t('common.date')}</TableHead>
-                  <TableHead className="text-right">{t('sal.paymentAmount')}</TableHead>
-                  <TableHead>{t('sal.paymentMethod')}</TableHead>
-                  <TableHead>{t('sal.recordedBy')}</TableHead>
-                  <TableHead>{t('common.notes')}</TableHead>
-                  <TableHead className="text-right">{t('common.actions')}</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {paymentReceipts.map((r) => (
-                  <TableRow key={r.id}>
-                    <TableCell className="font-medium">{r.receipt_number ?? '—'}</TableCell>
-                    <TableCell>
-                      <Badge variant={RECEIPT_TYPE_VARIANT[r.receipt_type]}>
-                        {PAYMENT_RECEIPT_TYPE_LABELS[r.receipt_type][locale]}
-                      </Badge>
-                    </TableCell>
-                    <TableCell>{formatDDMMYYYY(r.paid_date)}</TableCell>
-                    <TableCell className="text-right tabular-nums">
-                      {depositInvoice.currency} {Number(r.amount).toFixed(2)}
-                    </TableCell>
-                    <TableCell>{r.method || '—'}</TableCell>
-                    <TableCell>{(r.recorded_by && profileName[r.recorded_by]) || '—'}</TableCell>
-                    <TableCell>{r.notes || '—'}</TableCell>
-                    <TableCell className="text-right">
-                      <PrintPaymentReceiptButton receiptId={r.id} />
-                    </TableCell>
-                  </TableRow>
-                ))}
-                {paymentReceipts.length === 0 && (
-                  <TableRow>
-                    <TableCell colSpan={8} className="text-center text-muted-foreground">
-                      {t('sal.noPaymentReceipts')}
-                    </TableCell>
-                  </TableRow>
-                )}
-              </TableBody>
-            </Table>
           </CardContent>
         </Card>
       )}

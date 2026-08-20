@@ -22,6 +22,7 @@ export async function GET(request: Request, { params }: { params: Promise<{ id: 
   await requirePermission('sales:view');
   const { id } = await params;
   const locale = await getLocale();
+  const kind = new URL(request.url).searchParams.get('kind') === 'balance' ? 'balance' : 'deposit';
 
   const invoice = await getDepositInvoice(id);
   if (!invoice) notFound();
@@ -52,6 +53,7 @@ export async function GET(request: Request, { params }: { params: Promise<{ id: 
 
   const html = buildDepositInvoiceHtml({
     invoiceNumber: invoice.invoice_number ?? '—',
+    documentKind: kind,
     generatedOn: formatDDMMYYYY(businessDate()),
     currency: invoice.currency,
     status: invoice.status,
@@ -82,5 +84,5 @@ export async function GET(request: Request, { params }: { params: Promise<{ id: 
   });
 
   const buffer = await renderHtmlToPdf(html, { baseUrl: new URL(request.url).origin });
-  return pdfResponse(buffer, `deposit-invoice-${invoice.invoice_number ?? invoice.id}.pdf`);
+  return pdfResponse(buffer, `${kind}-invoice-${invoice.invoice_number ?? invoice.id}.pdf`);
 }

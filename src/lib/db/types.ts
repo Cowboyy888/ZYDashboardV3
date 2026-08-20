@@ -417,6 +417,9 @@ export interface SalesOrderRow {
   attachment_path: string | null;
   /** Set when this order was auto-created from a Quotation's paid deposit — see markPaid. */
   quotation_id: string | null;
+  /** Simple paid flags — mirrors quotations.deposit_paid_on/balance_paid_on, not an amount ledger. */
+  deposit_paid_on: string | null;
+  balance_paid_on: string | null;
   created_by: string | null;
   confirmed_at: string | null;
   cancelled_at: string | null;

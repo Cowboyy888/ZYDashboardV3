@@ -12,7 +12,6 @@ import {
   getLocations,
   getProfiles,
   getDepositInvoiceForSo,
-  getPaymentReceiptsForSo,
   getQuotation,
   getQuotationItems,
 } from '@/lib/db/queries';
@@ -37,17 +36,15 @@ export default async function SalesOrderDetailPage({
   const so = await getSalesOrder(id);
   if (!so) notFound();
 
-  const [items, customer, skus, families, locations, profiles, depositInvoice, paymentReceipts] =
-    await Promise.all([
-      getSalesOrderItems(id),
-      getCustomer(so.customer_id),
-      getSkus(true),
-      getFamilies(true),
-      getLocations(true),
-      getProfiles(),
-      getDepositInvoiceForSo(id),
-      getPaymentReceiptsForSo(id),
-    ]);
+  const [items, customer, skus, families, locations, profiles, depositInvoice] = await Promise.all([
+    getSalesOrderItems(id),
+    getCustomer(so.customer_id),
+    getSkus(true),
+    getFamilies(true),
+    getLocations(true),
+    getProfiles(),
+    getDepositInvoiceForSo(id),
+  ]);
   const itemIds = items.map((i) => i.id);
   const [delivered, deliveries] = await Promise.all([
     getSalesOrderItemsDelivered(itemIds),
@@ -103,7 +100,6 @@ export default async function SalesOrderDetailPage({
         canManage={hasPermission(user.role, 'sales:manage')}
         canOverride={hasPermission(user.role, 'stock:override_negative')}
         depositInvoice={depositInvoice}
-        paymentReceipts={paymentReceipts}
         sourceQuotation={sourceQuotation}
         sourceQuotationItems={sourceQuotationItems}
         skuOptions={skuOptions}

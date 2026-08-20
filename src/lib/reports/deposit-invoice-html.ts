@@ -27,6 +27,8 @@ export interface DepositInvoiceLineItem {
 
 export interface DepositInvoiceData {
   invoiceNumber: string;
+  /** 'balance' prints the same document as a Balance Invoice — see buildDepositInvoiceHtml. */
+  documentKind?: 'deposit' | 'balance';
   generatedOn: string; // dd/mm/yyyy
   currency: string;
   status: DepositInvoiceStatus;
@@ -64,6 +66,10 @@ const INK = '#1a1a1a';
 
 /** A self-contained, print-optimized HTML document for a deposit invoice. */
 export function buildDepositInvoiceHtml(data: DepositInvoiceData): string {
+  const isBalance = data.documentKind === 'balance';
+  const barTitle = isBalance ? 'BALANCE INVOICE · 尾款发票' : 'DEPOSIT INVOICE · 定金发票';
+  const docTitle = isBalance ? 'Balance Invoice' : 'Deposit Invoice';
+
   const thead = `
     <th class="l">Product 产品</th>
     <th class="r">Price/m² 单价</th>
@@ -98,7 +104,7 @@ export function buildDepositInvoiceHtml(data: DepositInvoiceData): string {
 <html lang="en">
 <head>
 <meta charset="utf-8" />
-<title>ZY Steel · Deposit Invoice ${esc(data.invoiceNumber)}</title>
+<title>ZY Steel · ${docTitle} ${esc(data.invoiceNumber)}</title>
 <style>
 ${KHMER_FONT_FACE_CSS}
   * { box-sizing: border-box; }
@@ -148,7 +154,7 @@ ${KHMER_FONT_FACE_CSS}
       <div class="sub">Steel Mesh &amp; Wire Drawing Manufacturer&nbsp;·&nbsp;Phnom Penh, Cambodia</div>
     </div>
   </div>
-  <div class="bar">DEPOSIT INVOICE · 定金发票</div>
+  <div class="bar">${barTitle}</div>
 
   <div class="meta-grid">
     <div>
@@ -175,8 +181,8 @@ ${KHMER_FONT_FACE_CSS}
   <div class="summary">
     ${summaryRow('Total Order Amount', formatMoney(data.totalOrderAmount, data.currency))}
     ${summaryRow('Deposit Percentage', `${data.depositPercentage}%`)}
-    ${summaryRow('Deposit Amount', formatMoney(data.depositAmount, data.currency), true)}
-    ${summaryRow('Remaining Balance', formatMoney(data.remainingBalance, data.currency))}
+    ${summaryRow('Deposit Amount', formatMoney(data.depositAmount, data.currency), !isBalance)}
+    ${summaryRow('Remaining Balance', formatMoney(data.remainingBalance, data.currency), isBalance)}
   </div>
 
   <div class="payment">

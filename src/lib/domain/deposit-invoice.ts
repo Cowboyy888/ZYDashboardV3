@@ -101,7 +101,20 @@ export function canGenerateDepositInvoice(soStatus: SoStatus, hasActiveInvoice: 
   return soStatus !== 'draft' && soStatus !== 'cancelled';
 }
 
-/** A payment may only be recorded while the invoice hasn't reached a terminal state. */
-export function canRecordPayment(status: DepositInvoiceStatus): boolean {
-  return status !== 'paid' && status !== 'void';
+/**
+ * Live payment-status label for the SO header badge, derived from the simple
+ * deposit_paid_on/balance_paid_on flags (0037_so_deposit_balance_paid.sql) —
+ * NOT from the dormant payment_receipts-derived deposit_invoices.status/
+ * sales_orders.payment_status columns, which stop updating once a deposit
+ * invoice exists but nothing is ever recorded against its old ledger again.
+ */
+export function computeSoPaymentStatus(
+  hasDepositInvoice: boolean,
+  depositPaidOn: string | null,
+  balancePaidOn: string | null,
+): SoPaymentStatus {
+  if (!hasDepositInvoice) return 'none';
+  if (!depositPaidOn) return 'pending_deposit';
+  if (!balancePaidOn) return 'partially_paid';
+  return 'paid';
 }
