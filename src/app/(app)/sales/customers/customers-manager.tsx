@@ -109,7 +109,7 @@ function EditCustomerRow({ customer, onDone }: { customer: CustomerRow; onDone: 
 
   return (
     <TableRow>
-      <TableCell colSpan={6} className="bg-muted/30">
+      <TableCell colSpan={7} className="bg-muted/30">
         <form action={formAction} className="space-y-3 py-2">
           <input type="hidden" name="id" value={customer.id} />
           <CustomerFields defaults={customer} />
@@ -146,6 +146,9 @@ function CustomerRowItem({ customer, canManage }: { customer: CustomerRow; canMa
 
   return (
     <TableRow>
+      <TableCell className="whitespace-nowrap font-mono text-xs">
+        {customer.customer_code}
+      </TableCell>
       <TableCell className="font-medium">
         {customer.name}
         {customer.name_chinese && (
@@ -224,6 +227,7 @@ export function CustomersManager({
           <Table>
             <TableHeader>
               <TableRow>
+                <TableHead>{t('common.id')}</TableHead>
                 <TableHead>{t('sal.customerName')}</TableHead>
                 <TableHead>{t('sal.contactPerson')}</TableHead>
                 <TableHead>{t('sal.phone')}</TableHead>
@@ -238,7 +242,7 @@ export function CustomersManager({
               ))}
               {customers.length === 0 && (
                 <TableRow>
-                  <TableCell colSpan={6} className="text-center text-muted-foreground">
+                  <TableCell colSpan={7} className="text-center text-muted-foreground">
                     {t('sal.noCustomers')}
                   </TableCell>
                 </TableRow>

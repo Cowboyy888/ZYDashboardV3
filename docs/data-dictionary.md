@@ -217,8 +217,11 @@ not an inventory-affecting one (never referenced by `stock_movements`).
 - RLS matches `purchase_orders`/`suppliers` exactly (owner/system_admin/
   warehouse_admin select; owner/warehouse_admin write).
 
-### customers  *(editable master data, Third pass)*
-`id`, `name`, `name_chinese`, `name_english`, `contact_person`, `phone`,
+### customers  *(editable master data, Third pass; `customer_code` added Tenth pass)*
+`id`, `customer_code` (unique — permanent human-readable ID, format `CUS-####`,
+auto-assigned once on insert via `customer_seq` + `assign_customer_code`
+trigger, mirroring `employee_code`; never reused, even after archiving),
+`name`, `name_chinese`, `name_english`, `contact_person`, `phone`,
 `address`, `tax_id`, `payment_terms`, `default_currency` (`USD`/`KHR`/`CNY`),
 `notes`, `is_active`, `created_at`, `updated_at`. Referenced by
 `sales_orders.customer_id` `ON DELETE RESTRICT` — a customer with any sales

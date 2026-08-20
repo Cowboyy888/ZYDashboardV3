@@ -388,6 +388,7 @@ export interface PurchaseOrderManualItemRow {
 
 export interface CustomerRow {
   id: string;
+  customer_code: string;
   name: string;
   name_chinese: string | null;
   name_english: string | null;
