@@ -32,6 +32,44 @@ async function launchBrowser() {
   return puppeteer.launch({ channel: 'chrome', headless: true });
 }
 
+type Browser = Awaited<ReturnType<typeof launchBrowser>>;
+
+/**
+ * Reused across warm invocations of the same function instance — Vercel
+ * Fluid Compute keeps module scope alive between requests, so caching the
+ * browser here avoids paying Chromium's ~1-3s cold-launch cost on every
+ * single PDF. Concurrent requests hitting the same warm instance share this
+ * one browser but each get their own page/tab: renderHtmlToPdf only ever
+ * closes ITS OWN page, never the shared browser, so one request finishing
+ * can't kill a sibling request still rendering.
+ *
+ * Caches the in-flight launch PROMISE (not the resolved browser), so two
+ * concurrent cold calls that both see no cache yet await the same launch
+ * instead of racing to start two Chromiums. `launching` is captured in the
+ * closure so a stale disconnect/failure can only clear ITS OWN cache entry —
+ * not one a later, newer launch already replaced it with.
+ */
+let cachedBrowser: Promise<Browser> | null = null;
+
+function getBrowser(): Promise<Browser> {
+  if (!cachedBrowser) {
+    const launching = launchBrowser();
+    cachedBrowser = launching;
+    launching
+      .then((browser) => {
+        // Crashed or was killed — drop the cache so the next call relaunches
+        // instead of reusing a dead process.
+        browser.once('disconnected', () => {
+          if (cachedBrowser === launching) cachedBrowser = null;
+        });
+      })
+      .catch(() => {
+        if (cachedBrowser === launching) cachedBrowser = null;
+      });
+  }
+  return cachedBrowser;
+}
+
 export interface RenderPdfOptions {
   /**
    * Origin (e.g. `https://app.example.com`) to resolve the report's
@@ -53,9 +91,18 @@ export async function renderHtmlToPdf(
   const cjkFontFace = await buildCjkFontFaceCss(html);
   const withBase = html.replace('<head>', `<head>\n<base href="${baseUrl}/" />${cjkFontFace}`);
 
-  const browser = await launchBrowser();
+  let browser = await getBrowser();
+  let page;
   try {
-    const page = await browser.newPage();
+    page = await browser.newPage();
+  } catch {
+    // The cached browser was dead (crashed without a 'disconnected' event
+    // having fired yet) — force a fresh one and retry once.
+    cachedBrowser = null;
+    browser = await getBrowser();
+    page = await browser.newPage();
+  }
+  try {
     // 'load' (the default, and the only option setContent supports) fires
     // after the letterhead logo <img> finishes loading too.
     await page.setContent(withBase, { waitUntil: 'load' });
@@ -71,7 +118,9 @@ export async function renderHtmlToPdf(
     const pdf = await page.pdf({ printBackground: true, preferCSSPageSize: true });
     return Buffer.from(pdf);
   } finally {
-    await browser.close();
+    // Close only this request's page — the browser is shared across warm
+    // invocations (see getBrowser) and must stay alive for the next one.
+    await page.close();
   }
 }
 
