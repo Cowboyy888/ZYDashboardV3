@@ -3,6 +3,7 @@ import { Badge } from '@/components/ui/badge';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
+import { NativeSelect } from '@/components/ui/native-select';
 import {
   Table,
   TableBody,
@@ -17,11 +18,6 @@ import { useT } from '@/components/i18n-provider';
 import { updateUserRole, createUserByAdmin } from '@/lib/actions/settings';
 import { ROLES, ROLE_LABELS } from '@/lib/domain/rbac';
 import type { ProfileRow } from '@/lib/db/types';
-
-const selectCls =
-  'h-9 rounded-md border border-input bg-background px-2 text-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring';
-const selectClsTall =
-  'flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring';
 
 export function UsersManager({ profiles }: { profiles: ProfileRow[] }) {
   const { t, locale } = useT();
@@ -48,13 +44,13 @@ export function UsersManager({ profiles }: { profiles: ProfileRow[] }) {
               </div>
               <div className="space-y-1.5">
                 <Label htmlFor="nu-role">{t('set.role')}</Label>
-                <select id="nu-role" name="role" className={selectClsTall} defaultValue="viewer">
+                <NativeSelect id="nu-role" name="role" defaultValue="viewer">
                   {ROLES.map((r) => (
                     <option key={r} value={r}>
                       {ROLE_LABELS[r][locale]}
                     </option>
                   ))}
-                </select>
+                </NativeSelect>
               </div>
             </div>
             <p className="text-xs text-muted-foreground">{t('set.addUserNote')}</p>
@@ -91,13 +87,13 @@ export function UsersManager({ profiles }: { profiles: ProfileRow[] }) {
                       className="flex items-center gap-2 space-y-0"
                     >
                       <input type="hidden" name="userId" value={p.id} />
-                      <select name="role" defaultValue={p.role} className={selectCls}>
+                      <NativeSelect name="role" defaultValue={p.role} className="h-9 w-auto px-2">
                         {ROLES.map((r) => (
                           <option key={r} value={r}>
                             {ROLE_LABELS[r][locale]}
                           </option>
                         ))}
-                      </select>
+                      </NativeSelect>
                       <SubmitButton variant="outline" size="sm">
                         {t('common.save')}
                       </SubmitButton>

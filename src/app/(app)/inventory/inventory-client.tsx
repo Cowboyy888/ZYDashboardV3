@@ -22,6 +22,7 @@ import {
   TableRow,
 } from '@/components/ui/table';
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
+import { NativeSelect } from '@/components/ui/native-select';
 import { ActionForm } from '@/components/forms/action-form';
 import { SubmitButton } from '@/components/forms/submit-button';
 import { ConfirmActionButton } from '@/components/forms/confirm-action-button';
@@ -37,9 +38,6 @@ import type { ActionState } from '@/lib/actions/types';
 import { formatDDMMYYYY } from '@/lib/domain/datetime';
 import { totalsByFamilyUnit, type InventoryDisplayRow } from '@/lib/domain/inventory-view';
 import type { StockMovementRow, SkuRow } from '@/lib/db/types';
-
-const selectCls =
-  'flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring';
 
 interface LocationOpt {
   id: string;
@@ -209,22 +207,17 @@ export function InventoryClient({
                 <ActionForm action={postMovement}>
                   <div className="space-y-1.5">
                     <Label htmlFor="m-type">{t('inv.type')}</Label>
-                    <select
-                      id="m-type"
-                      name="type"
-                      className={selectCls}
-                      defaultValue={allowedTypes[0]}
-                    >
+                    <NativeSelect id="m-type" name="type" defaultValue={allowedTypes[0]}>
                       {allowedTypes.map((ty) => (
                         <option key={ty} value={ty}>
                           {typeLabel(ty)}
                         </option>
                       ))}
-                    </select>
+                    </NativeSelect>
                   </div>
                   <div className="space-y-1.5">
                     <Label htmlFor="m-sku">{t('inv.specification')}</Label>
-                    <select id="m-sku" name="skuId" className={selectCls} required defaultValue="">
+                    <NativeSelect id="m-sku" name="skuId" required defaultValue="">
                       <option value="" disabled>
                         {t('common.select')}
                       </option>
@@ -233,18 +226,12 @@ export function InventoryClient({
                           {r.label}
                         </option>
                       ))}
-                    </select>
+                    </NativeSelect>
                   </div>
                   <div className="grid grid-cols-2 gap-3">
                     <div className="space-y-1.5">
                       <Label htmlFor="m-loc">{t('common.location')}</Label>
-                      <select
-                        id="m-loc"
-                        name="locationId"
-                        className={selectCls}
-                        required
-                        defaultValue=""
-                      >
+                      <NativeSelect id="m-loc" name="locationId" required defaultValue="">
                         <option value="" disabled>
                           {t('common.select')}
                         </option>
@@ -253,7 +240,7 @@ export function InventoryClient({
                             {l.name}
                           </option>
                         ))}
-                      </select>
+                      </NativeSelect>
                     </div>
                     <div className="space-y-1.5">
                       <Label htmlFor="m-qty">{t('common.quantity')}</Label>
@@ -307,7 +294,7 @@ export function InventoryClient({
                 <ActionForm action={postTransfer}>
                   <div className="space-y-1.5">
                     <Label htmlFor="tr-sku">{t('inv.specification')}</Label>
-                    <select id="tr-sku" name="skuId" className={selectCls} required defaultValue="">
+                    <NativeSelect id="tr-sku" name="skuId" required defaultValue="">
                       <option value="" disabled>
                         {t('common.select')}
                       </option>
@@ -316,18 +303,12 @@ export function InventoryClient({
                           {r.label}
                         </option>
                       ))}
-                    </select>
+                    </NativeSelect>
                   </div>
                   <div className="grid grid-cols-2 gap-3">
                     <div className="space-y-1.5">
                       <Label htmlFor="tr-from">{t('inv.from')}</Label>
-                      <select
-                        id="tr-from"
-                        name="fromLocationId"
-                        className={selectCls}
-                        required
-                        defaultValue=""
-                      >
+                      <NativeSelect id="tr-from" name="fromLocationId" required defaultValue="">
                         <option value="" disabled>
                           {t('common.select')}
                         </option>
@@ -336,17 +317,11 @@ export function InventoryClient({
                             {l.name}
                           </option>
                         ))}
-                      </select>
+                      </NativeSelect>
                     </div>
                     <div className="space-y-1.5">
                       <Label htmlFor="tr-to">{t('inv.to')}</Label>
-                      <select
-                        id="tr-to"
-                        name="toLocationId"
-                        className={selectCls}
-                        required
-                        defaultValue=""
-                      >
+                      <NativeSelect id="tr-to" name="toLocationId" required defaultValue="">
                         <option value="" disabled>
                           {t('common.select')}
                         </option>
@@ -355,7 +330,7 @@ export function InventoryClient({
                             {l.name}
                           </option>
                         ))}
-                      </select>
+                      </NativeSelect>
                     </div>
                   </div>
                   <div className="grid grid-cols-2 gap-3">
@@ -729,10 +704,9 @@ function EditSkuDialog({
           <div className="grid grid-cols-2 gap-3">
             <div className="space-y-1.5">
               <Label htmlFor={`es-family-${sku.id}`}>{t('set.family')}</Label>
-              <select
+              <NativeSelect
                 id={`es-family-${sku.id}`}
                 name="familyId"
-                className={selectCls}
                 required
                 defaultValue={sku.family_id}
               >
@@ -742,14 +716,13 @@ function EditSkuDialog({
                     {f.name_english ? ` · ${f.name_english}` : ''}
                   </option>
                 ))}
-              </select>
+              </NativeSelect>
             </div>
             <div className="space-y-1.5">
               <Label htmlFor={`es-condition-${sku.id}`}>{t('common.condition')}</Label>
-              <select
+              <NativeSelect
                 id={`es-condition-${sku.id}`}
                 name="condition"
-                className={selectCls}
                 defaultValue={sku.condition}
               >
                 {CONDITIONS.map((c) => (
@@ -757,7 +730,7 @@ function EditSkuDialog({
                     {CONDITION_LABELS[c][locale]}
                   </option>
                 ))}
-              </select>
+              </NativeSelect>
             </div>
             <div className="space-y-1.5">
               <Label htmlFor={`es-dia-${sku.id}`}>{t('set.diameter')}</Label>
@@ -833,13 +806,7 @@ function CreateSkuForm({
       <div className="grid grid-cols-2 gap-3 lg:grid-cols-4">
         <div className="space-y-1.5">
           <Label htmlFor="inv-sku-family">{t('set.family')}</Label>
-          <select
-            id="inv-sku-family"
-            name="familyId"
-            className={selectCls}
-            required
-            defaultValue=""
-          >
+          <NativeSelect id="inv-sku-family" name="familyId" required defaultValue="">
             <option value="" disabled>
               {t('common.select')}
             </option>
@@ -849,22 +816,17 @@ function CreateSkuForm({
                 {f.name_english ? ` · ${f.name_english}` : ''}
               </option>
             ))}
-          </select>
+          </NativeSelect>
         </div>
         <div className="space-y-1.5">
           <Label htmlFor="inv-sku-condition">{t('common.condition')}</Label>
-          <select
-            id="inv-sku-condition"
-            name="condition"
-            className={selectCls}
-            defaultValue="normal"
-          >
+          <NativeSelect id="inv-sku-condition" name="condition" defaultValue="normal">
             {CONDITIONS.map((c) => (
               <option key={c} value={c}>
                 {CONDITION_LABELS[c][locale]}
               </option>
             ))}
-          </select>
+          </NativeSelect>
         </div>
         <div className="space-y-1.5">
           <Label htmlFor="inv-sku-dia">{t('set.diameter')}</Label>
@@ -906,19 +868,14 @@ function CreateSkuForm({
           </div>
           <div className="space-y-1.5">
             <Label htmlFor="inv-sku-opening-loc">{t('common.location')}</Label>
-            <select
-              id="inv-sku-opening-loc"
-              name="openingLocationId"
-              className={selectCls}
-              defaultValue=""
-            >
+            <NativeSelect id="inv-sku-opening-loc" name="openingLocationId" defaultValue="">
               <option value="">{t('common.select')}</option>
               {locations.map((l) => (
                 <option key={l.id} value={l.id}>
                   {l.name}
                 </option>
               ))}
-            </select>
+            </NativeSelect>
           </div>
           <p className="col-span-2 text-xs text-muted-foreground lg:col-span-3">
             {t('set.openingQtyHint')}

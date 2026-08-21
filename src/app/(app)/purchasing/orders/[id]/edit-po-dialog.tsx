@@ -4,6 +4,7 @@ import { Loader2, Pencil } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
+import { NativeSelect } from '@/components/ui/native-select';
 import {
   Dialog,
   DialogContent,
@@ -15,9 +16,6 @@ import { useT } from '@/components/i18n-provider';
 import { updatePurchaseOrderHeader } from '@/lib/actions/purchasing';
 import { CURRENCIES, type Currency } from '@/lib/domain/purchasing';
 import type { ActionState } from '@/lib/actions/types';
-
-const selectCls =
-  'flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring';
 
 interface SupplierOpt {
   id: string;
@@ -78,35 +76,24 @@ export function EditPoDialog({
           <input type="hidden" name="id" value={poId} />
           <div className="space-y-1.5">
             <Label htmlFor="ep-supplier">{t('pur.supplier')}</Label>
-            <select
-              id="ep-supplier"
-              name="supplierId"
-              className={selectCls}
-              defaultValue={supplierId}
-              required
-            >
+            <NativeSelect id="ep-supplier" name="supplierId" defaultValue={supplierId} required>
               {suppliers.map((s) => (
                 <option key={s.id} value={s.id}>
                   {s.name}
                 </option>
               ))}
-            </select>
+            </NativeSelect>
           </div>
           <div className="grid grid-cols-2 gap-3">
             <div className="space-y-1.5">
               <Label htmlFor="ep-currency">{t('pur.currency')}</Label>
-              <select
-                id="ep-currency"
-                name="currency"
-                className={selectCls}
-                defaultValue={currency}
-              >
+              <NativeSelect id="ep-currency" name="currency" defaultValue={currency}>
                 {CURRENCIES.map((c) => (
                   <option key={c} value={c}>
                     {c}
                   </option>
                 ))}
-              </select>
+              </NativeSelect>
             </div>
             <div className="space-y-1.5">
               <Label htmlFor="ep-date">{t('pur.orderDate')}</Label>

@@ -9,6 +9,7 @@ import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { Badge } from '@/components/ui/badge';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { NativeSelect } from '@/components/ui/native-select';
 import {
   Dialog,
   DialogClose,
@@ -43,9 +44,6 @@ import type { QuotationRow, QuotationItemRow } from '@/lib/db/types';
 import type { MessageKey } from '@/lib/i18n';
 
 type Opt = { id: string; name: string };
-
-const selectCls =
-  'flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring';
 
 const usd = (n: number) => `$${n.toFixed(2)}`;
 
@@ -596,10 +594,9 @@ function QuotationForm({
             </div>
             <div className="space-y-1.5">
               <Label htmlFor="q-customer-id">{t('quo.linkCustomer')}</Label>
-              <select
+              <NativeSelect
                 id="q-customer-id"
                 name="customerId"
-                className={selectCls}
                 defaultValue={quotation?.customer_id ?? ''}
               >
                 <option value="">{t('common.select')}</option>
@@ -608,7 +605,7 @@ function QuotationForm({
                     {c.name}
                   </option>
                 ))}
-              </select>
+              </NativeSelect>
             </div>
             <div className="space-y-1.5">
               <Label htmlFor="q-contact">{t('quo.contact')}</Label>

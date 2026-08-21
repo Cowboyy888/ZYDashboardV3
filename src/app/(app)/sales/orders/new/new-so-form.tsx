@@ -6,15 +6,13 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { NativeSelect } from '@/components/ui/native-select';
 import { AttachmentField } from '@/components/purchasing/attachment-field';
 import { useT } from '@/components/i18n-provider';
 import { createDraftSalesOrder } from '@/lib/actions/sales';
 import { CURRENCIES, type Currency } from '@/lib/domain/sales';
 import { computeUnitPriceFromArea, computeOrderedQtyFromArea } from '@/lib/domain/deposit-invoice';
 import type { ActionState } from '@/lib/actions/types';
-
-const selectCls =
-  'flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring';
 
 interface CustomerOpt {
   id: string;
@@ -139,10 +137,9 @@ export function NewSoForm({
         <CardContent className="grid gap-3 sm:grid-cols-2">
           <div className="space-y-1.5">
             <Label htmlFor="customerId">{t('sal.customer')}</Label>
-            <select
+            <NativeSelect
               id="customerId"
               name="customerId"
-              className={selectCls}
               required
               defaultValue=""
               onChange={(e) => {
@@ -158,14 +155,13 @@ export function NewSoForm({
                   {c.name}
                 </option>
               ))}
-            </select>
+            </NativeSelect>
           </div>
           <div className="space-y-1.5">
             <Label htmlFor="currency">{t('sal.currency')}</Label>
-            <select
+            <NativeSelect
               id="currency"
               name="currency"
-              className={selectCls}
               value={currency}
               onChange={(e) => setCurrency(e.target.value as Currency)}
             >
@@ -174,7 +170,7 @@ export function NewSoForm({
                   {c}
                 </option>
               ))}
-            </select>
+            </NativeSelect>
           </div>
           <div className="space-y-1.5">
             <Label htmlFor="orderDate">{t('sal.orderDate')}</Label>
@@ -204,8 +200,7 @@ export function NewSoForm({
             <div key={row.key} className="grid grid-cols-12 items-end gap-2 rounded-md border p-3">
               <div className="col-span-12 space-y-1.5 sm:col-span-4">
                 <Label>{t('inv.specification')}</Label>
-                <select
-                  className={selectCls}
+                <NativeSelect
                   data-testid="so-item-sku"
                   value={row.skuId}
                   onChange={(e) => updateItem(row.key, { skuId: e.target.value })}
@@ -219,12 +214,11 @@ export function NewSoForm({
                       {s.label}
                     </option>
                   ))}
-                </select>
+                </NativeSelect>
               </div>
               <div className="col-span-6 space-y-1.5 sm:col-span-3">
                 <Label>{t('common.location')}</Label>
-                <select
-                  className={selectCls}
+                <NativeSelect
                   data-testid="so-item-location"
                   value={row.locationId}
                   onChange={(e) => updateItem(row.key, { locationId: e.target.value })}
@@ -238,7 +232,7 @@ export function NewSoForm({
                       {l.name}
                     </option>
                   ))}
-                </select>
+                </NativeSelect>
               </div>
               <div className="col-span-6 space-y-1.5 sm:col-span-2">
                 <Label>

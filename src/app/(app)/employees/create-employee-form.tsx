@@ -4,13 +4,11 @@ import { Loader2, Upload, User, X } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
+import { NativeSelect } from '@/components/ui/native-select';
 import { useT } from '@/components/i18n-provider';
 import { createEmployee, setEmployeePhoto } from '@/lib/actions/employees';
 import type { ActionState } from '@/lib/actions/types';
 import type { AttendanceGroupRow } from '@/lib/db/types';
-
-const selectCls =
-  'flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring';
 
 const BLANK = {
   displayName: '',
@@ -154,12 +152,12 @@ export function CreateEmployeeForm({ groups }: { groups: AttendanceGroupRow[] })
           <Label htmlFor="ce-group">
             {t('emp.group')} <span className="text-destructive">*</span>
           </Label>
-          <select
+          <NativeSelect
             id="ce-group"
             name="attendanceGroupId"
             value={v.attendanceGroupId}
             onChange={set('attendanceGroupId')}
-            className={`${selectCls} ${invalid('attendanceGroupId')}`}
+            className={invalid('attendanceGroupId')}
           >
             <option value="">{t('common.select')}</option>
             {groups.map((g) => (
@@ -167,7 +165,7 @@ export function CreateEmployeeForm({ groups }: { groups: AttendanceGroupRow[] })
                 {g.name}
               </option>
             ))}
-          </select>
+          </NativeSelect>
           {fieldError('attendanceGroupId')}
         </div>
         <div className="space-y-1.5">

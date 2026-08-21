@@ -4,15 +4,13 @@ import { Loader2, Trash2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
+import { NativeSelect } from '@/components/ui/native-select';
 import { SubmitButton } from '@/components/forms/submit-button';
 import { useT } from '@/components/i18n-provider';
 import { addPayrollLine, removePayrollLine } from '@/lib/actions/payroll';
 import { DEDUCTION_KINDS } from '@/lib/domain/payroll';
 import type { ActionState } from '@/lib/actions/types';
 import type { PayrollItemRow } from '@/lib/domain/payroll-view';
-
-const selectCls =
-  'flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring';
 
 function RemoveLineButton({
   lineId,
@@ -86,13 +84,13 @@ export function ItemLines({
         <input type="hidden" name="itemId" value={itemId} />
         <div className="space-y-1.5">
           <Label htmlFor={`kind-${itemId}`}>{t('pay.lineKind')}</Label>
-          <select id={`kind-${itemId}`} name="kind" className={selectCls} defaultValue="deduction">
+          <NativeSelect id={`kind-${itemId}`} name="kind" defaultValue="deduction">
             {DEDUCTION_KINDS.map((k) => (
               <option key={k} value={k}>
                 {k === 'deduction' ? t('pay.deduction') : t('pay.advance')}
               </option>
             ))}
-          </select>
+          </NativeSelect>
         </div>
         <div className="space-y-1.5">
           <Label htmlFor={`label-${itemId}`}>{t('pay.lineLabel')}</Label>

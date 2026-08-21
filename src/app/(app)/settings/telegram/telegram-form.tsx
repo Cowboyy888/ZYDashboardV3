@@ -6,6 +6,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Badge } from '@/components/ui/badge';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { NativeSelect } from '@/components/ui/native-select';
 import {
   Dialog,
   DialogContent,
@@ -27,9 +28,6 @@ import {
 import { formatDateTime } from '@/lib/domain/datetime';
 import { isBeforeManualEntry } from '@/lib/domain/report-schedule';
 import type { ActionState } from '@/lib/actions/types';
-
-const selectCls =
-  'flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring';
 
 /** Browser-safe view of one destination — the real chat id never reaches here. */
 export interface TelegramDestinationView {
@@ -322,15 +320,14 @@ export function TelegramForm({
         <CardContent className="space-y-4">
           <div className="space-y-1.5">
             <Label htmlFor="reportLanguage">{t('tg.reportLang')}</Label>
-            <select
+            <NativeSelect
               id="reportLanguage"
               name="reportLanguage"
-              className={selectCls}
               defaultValue={settings.reportLanguage}
             >
               <option value="zh">中文 (Chinese)</option>
               <option value="en">English</option>
-            </select>
+            </NativeSelect>
             <p className="text-xs text-muted-foreground">{t('tg.reportLangNote')}</p>
           </div>
 

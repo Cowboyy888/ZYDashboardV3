@@ -8,6 +8,7 @@ import { Textarea } from '@/components/ui/textarea';
 import { Badge } from '@/components/ui/badge';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { NativeSelect } from '@/components/ui/native-select';
 import {
   Dialog,
   DialogClose,
@@ -52,9 +53,6 @@ import type {
 } from '@/lib/db/types';
 
 type Opt = { id: string; name: string };
-
-const selectCls =
-  'flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring';
 
 const num = (s: string): number | null => {
   const v = parseFloat(s);
@@ -262,13 +260,7 @@ export function InquiriesClient({
                 <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
                   <div className="space-y-1.5">
                     <Label htmlFor="fu-inquiry">{t('inq.no')}</Label>
-                    <select
-                      id="fu-inquiry"
-                      name="inquiryId"
-                      className={selectCls}
-                      required
-                      defaultValue=""
-                    >
+                    <NativeSelect id="fu-inquiry" name="inquiryId" required defaultValue="">
                       <option value="" disabled>
                         {t('common.select')}
                       </option>
@@ -277,7 +269,7 @@ export function InquiriesClient({
                           {i.inquiry_no} · {i.customer_name}
                         </option>
                       ))}
-                    </select>
+                    </NativeSelect>
                   </div>
                   <div className="space-y-1.5">
                     <Label htmlFor="fu-date">{t('inq.date')}</Label>
@@ -289,25 +281,25 @@ export function InquiriesClient({
                   </div>
                   <div className="space-y-1.5">
                     <Label htmlFor="fu-resp">{t('inq.responsible')}</Label>
-                    <select id="fu-resp" name="responsibleId" className={selectCls} defaultValue="">
+                    <NativeSelect id="fu-resp" name="responsibleId" defaultValue="">
                       <option value="">{t('common.select')}</option>
                       {employees.map((e) => (
                         <option key={e.id} value={e.id}>
                           {e.name}
                         </option>
                       ))}
-                    </select>
+                    </NativeSelect>
                   </div>
                   <div className="space-y-1.5">
                     <Label htmlFor="fu-status">{t('common.status')}</Label>
-                    <select id="fu-status" name="statusId" className={selectCls} defaultValue="">
+                    <NativeSelect id="fu-status" name="statusId" defaultValue="">
                       <option value="">{t('common.select')}</option>
                       {activeStatuses.map((s) => (
                         <option key={s.id} value={s.id}>
                           {s.name}
                         </option>
                       ))}
-                    </select>
+                    </NativeSelect>
                   </div>
                 </div>
                 <div className="grid gap-3 sm:grid-cols-2">
@@ -503,11 +495,11 @@ export function InquiriesClient({
             </div>
             <div className="space-y-1.5">
               <Label htmlFor="add-status-cat">{t('inq.category')}</Label>
-              <select id="add-status-cat" name="category" className={selectCls} defaultValue="open">
+              <NativeSelect id="add-status-cat" name="category" defaultValue="open">
                 <option value="open">{t('inq.catOpen')}</option>
                 <option value="won">{t('inq.catWon')}</option>
                 <option value="lost">{t('inq.catLost')}</option>
-              </select>
+              </NativeSelect>
             </div>
             <SubmitButton>{t('common.add')}</SubmitButton>
           </ActionForm>
@@ -670,10 +662,9 @@ function InquiryForm({
         {field(t('inq.date'), 'inquiryDate', row?.inquiry_date ?? '', 'date')}
         <div className="space-y-1.5">
           <Label htmlFor="if-salesperson">{t('inq.salesperson')}</Label>
-          <select
+          <NativeSelect
             id="if-salesperson"
             name="salespersonId"
-            className={selectCls}
             defaultValue={row?.salesperson_id ?? ''}
           >
             <option value="">{t('common.select')}</option>
@@ -682,14 +673,13 @@ function InquiryForm({
                 {e.name}
               </option>
             ))}
-          </select>
+          </NativeSelect>
         </div>
         <div className="space-y-1.5">
           <Label htmlFor="if-type">{t('inq.customerType')}</Label>
-          <select
+          <NativeSelect
             id="if-type"
             name="customerTypeId"
-            className={selectCls}
             defaultValue={row?.customer_type_id ?? ''}
           >
             <option value="">{t('common.select')}</option>
@@ -698,7 +688,7 @@ function InquiryForm({
                 {c.name}
               </option>
             ))}
-          </select>
+          </NativeSelect>
         </div>
       </div>
 
@@ -706,19 +696,14 @@ function InquiryForm({
       <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
         <div className="space-y-1.5">
           <Label htmlFor="if-family">{t('inq.product')}</Label>
-          <select
-            id="if-family"
-            name="familyId"
-            className={selectCls}
-            defaultValue={row?.family_id ?? ''}
-          >
+          <NativeSelect id="if-family" name="familyId" defaultValue={row?.family_id ?? ''}>
             <option value="">{t('common.select')}</option>
             {families.map((f) => (
               <option key={f.id} value={f.id}>
                 {f.name}
               </option>
             ))}
-          </select>
+          </NativeSelect>
         </div>
         {field(t('inq.specification'), 'specification', row?.specification)}
         {field(t('inq.diameter'), 'diameter', row?.diameter)}
@@ -812,19 +797,14 @@ function InquiryForm({
       <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
         <div className="space-y-1.5">
           <Label htmlFor="if-status">{t('common.status')}</Label>
-          <select
-            id="if-status"
-            name="statusId"
-            className={selectCls}
-            defaultValue={row?.status_id ?? ''}
-          >
+          <NativeSelect id="if-status" name="statusId" defaultValue={row?.status_id ?? ''}>
             <option value="">{t('common.select')}</option>
             {statuses.map((s) => (
               <option key={s.id} value={s.id}>
                 {s.name}
               </option>
             ))}
-          </select>
+          </NativeSelect>
         </div>
         {field(t('inq.followupDate'), 'followUpDate', row?.follow_up_date ?? '', 'date')}
         {field(t('inq.nextAction'), 'nextAction', row?.next_action)}

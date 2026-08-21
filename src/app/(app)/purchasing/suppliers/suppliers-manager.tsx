@@ -5,6 +5,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Badge } from '@/components/ui/badge';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { NativeSelect } from '@/components/ui/native-select';
 import {
   Table,
   TableBody,
@@ -27,9 +28,6 @@ import { CURRENCIES } from '@/lib/domain/purchasing';
 import type { ActionState } from '@/lib/actions/types';
 import type { SupplierRow } from '@/lib/db/types';
 
-const selectCls =
-  'flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring';
-
 function SupplierFields({ defaults }: { defaults?: SupplierRow }) {
   const { t } = useT();
   return (
@@ -41,10 +39,9 @@ function SupplierFields({ defaults }: { defaults?: SupplierRow }) {
         </div>
         <div className="space-y-1.5">
           <Label htmlFor="defaultCurrency">{t('pur.defaultCurrency')}</Label>
-          <select
+          <NativeSelect
             id="defaultCurrency"
             name="defaultCurrency"
-            className={selectCls}
             defaultValue={defaults?.default_currency ?? 'USD'}
           >
             {CURRENCIES.map((c) => (
@@ -52,7 +49,7 @@ function SupplierFields({ defaults }: { defaults?: SupplierRow }) {
                 {c}
               </option>
             ))}
-          </select>
+          </NativeSelect>
         </div>
         <div className="space-y-1.5">
           <Label htmlFor="nameChinese">{t('pur.nameChinese')}</Label>

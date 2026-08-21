@@ -4,6 +4,7 @@ import { Loader2, Plus } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
+import { NativeSelect } from '@/components/ui/native-select';
 import {
   Dialog,
   DialogContent,
@@ -14,9 +15,6 @@ import {
 import { useT } from '@/components/i18n-provider';
 import { addSalesOrderItem } from '@/lib/actions/sales';
 import type { ActionState } from '@/lib/actions/types';
-
-const selectCls =
-  'flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring';
 
 interface LocationOpt {
   id: string;
@@ -80,10 +78,9 @@ export function AddSoItemDialog({
           <input type="hidden" name="salesOrderId" value={salesOrderId} />
           <div className="space-y-1.5">
             <Label htmlFor="asi-sku">{t('inv.specification')}</Label>
-            <select
+            <NativeSelect
               id="asi-sku"
               name="skuId"
-              className={selectCls}
               value={skuId}
               onChange={(e) => setSkuId(e.target.value)}
               required
@@ -96,17 +93,11 @@ export function AddSoItemDialog({
                   {s.label}
                 </option>
               ))}
-            </select>
+            </NativeSelect>
           </div>
           <div className="space-y-1.5">
             <Label htmlFor="asi-location">{t('common.location')}</Label>
-            <select
-              id="asi-location"
-              name="locationId"
-              className={selectCls}
-              required
-              defaultValue=""
-            >
+            <NativeSelect id="asi-location" name="locationId" required defaultValue="">
               <option value="" disabled>
                 {t('common.select')}
               </option>
@@ -115,7 +106,7 @@ export function AddSoItemDialog({
                   {l.name}
                 </option>
               ))}
-            </select>
+            </NativeSelect>
           </div>
           <div className="grid grid-cols-2 gap-3">
             <div className="space-y-1.5">

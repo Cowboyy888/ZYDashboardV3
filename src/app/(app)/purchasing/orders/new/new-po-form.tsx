@@ -6,14 +6,12 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { NativeSelect } from '@/components/ui/native-select';
 import { AttachmentField } from '@/components/purchasing/attachment-field';
 import { useT } from '@/components/i18n-provider';
 import { createDraftPurchaseOrder } from '@/lib/actions/purchasing';
 import { CURRENCIES, type Currency } from '@/lib/domain/purchasing';
 import type { ActionState } from '@/lib/actions/types';
-
-const selectCls =
-  'flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring';
 
 interface SupplierOpt {
   id: string;
@@ -44,13 +42,7 @@ export function NewPoForm({ suppliers, today }: { suppliers: SupplierOpt[]; toda
         <CardContent className="grid gap-3 sm:grid-cols-2">
           <div className="space-y-1.5">
             <Label htmlFor="supplierId">{t('pur.supplier')}</Label>
-            <select
-              id="supplierId"
-              name="supplierId"
-              className={selectCls}
-              required
-              defaultValue=""
-            >
+            <NativeSelect id="supplierId" name="supplierId" required defaultValue="">
               <option value="" disabled>
                 {t('common.select')}
               </option>
@@ -59,14 +51,13 @@ export function NewPoForm({ suppliers, today }: { suppliers: SupplierOpt[]; toda
                   {s.name}
                 </option>
               ))}
-            </select>
+            </NativeSelect>
           </div>
           <div className="space-y-1.5">
             <Label htmlFor="currency">{t('pur.currency')}</Label>
-            <select
+            <NativeSelect
               id="currency"
               name="currency"
-              className={selectCls}
               defaultValue={suppliers[0]?.defaultCurrency ?? 'USD'}
             >
               {CURRENCIES.map((c) => (
@@ -74,7 +65,7 @@ export function NewPoForm({ suppliers, today }: { suppliers: SupplierOpt[]; toda
                   {c}
                 </option>
               ))}
-            </select>
+            </NativeSelect>
           </div>
           <div className="space-y-1.5">
             <Label htmlFor="orderDate">{t('pur.orderDate')}</Label>

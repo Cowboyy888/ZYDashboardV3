@@ -3,13 +3,11 @@ import { PackagePlus } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
+import { NativeSelect } from '@/components/ui/native-select';
 import { ActionForm } from '@/components/forms/action-form';
 import { SubmitButton } from '@/components/forms/submit-button';
 import { useT } from '@/components/i18n-provider';
 import { postMovement } from '@/lib/actions/inventory';
-
-const selectCls =
-  'flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring';
 
 export function ProductionQuickEntry({
   skus,
@@ -35,7 +33,7 @@ export function ProductionQuickEntry({
           <input type="hidden" name="locationId" value={locationId} />
           <div className="space-y-1.5 sm:col-span-2">
             <Label htmlFor="pq-sku">{t('inv.specification')}</Label>
-            <select id="pq-sku" name="skuId" className={selectCls} required defaultValue="">
+            <NativeSelect id="pq-sku" name="skuId" required defaultValue="">
               <option value="" disabled>
                 {t('common.select')}
               </option>
@@ -44,7 +42,7 @@ export function ProductionQuickEntry({
                   {s.label}
                 </option>
               ))}
-            </select>
+            </NativeSelect>
           </div>
           <div className="space-y-1.5">
             <Label htmlFor="pq-qty">{t('common.quantity')}</Label>

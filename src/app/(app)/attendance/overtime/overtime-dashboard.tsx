@@ -7,6 +7,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Badge } from '@/components/ui/badge';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { NativeSelect } from '@/components/ui/native-select';
 import {
   Table,
   TableBody,
@@ -40,9 +41,6 @@ import type { ActionState } from '@/lib/actions/types';
 import type { OvertimeEntryRow, OvertimeSettingsRow } from '@/lib/db/types';
 
 type Opt = { id: string; name: string };
-
-const selectCls =
-  'flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring';
 
 const usd = (n: number) => `$${n.toFixed(2)}`;
 const hrs = (n: number) => `${Number(n).toLocaleString(undefined, { maximumFractionDigits: 2 })}h`;
@@ -506,14 +504,14 @@ function AddOvertimeForm({
             </div>
             <div className="space-y-1.5">
               <Label htmlFor="ot-emp">{t('ot.employee')}</Label>
-              <select id="ot-emp" name="employeeId" className={selectCls} defaultValue="">
+              <NativeSelect id="ot-emp" name="employeeId" defaultValue="">
                 <option value="">{t('common.select')}</option>
                 {employees.map((e) => (
                   <option key={e.id} value={e.id}>
                     {e.name}
                   </option>
                 ))}
-              </select>
+              </NativeSelect>
               {err('employeeId')}
             </div>
             <div className="space-y-1.5">

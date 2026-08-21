@@ -7,6 +7,7 @@ import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { Badge } from '@/components/ui/badge';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { NativeSelect } from '@/components/ui/native-select';
 import {
   Dialog,
   DialogClose,
@@ -42,9 +43,6 @@ import {
 } from '@/lib/domain/products';
 import type { ActionState } from '@/lib/actions/types';
 import type { ProductFamilyRow, SkuRow } from '@/lib/db/types';
-
-const selectCls =
-  'flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring';
 
 type FamilyFilter = 'active' | 'archived' | 'all';
 
@@ -174,13 +172,7 @@ export function ProductsManager({
             <div className="grid grid-cols-2 gap-3 lg:grid-cols-4">
               <div className="space-y-1.5">
                 <Label htmlFor="sku-family">{t('set.family')}</Label>
-                <select
-                  id="sku-family"
-                  name="familyId"
-                  className={selectCls}
-                  required
-                  defaultValue=""
-                >
+                <NativeSelect id="sku-family" name="familyId" required defaultValue="">
                   <option value="" disabled>
                     {t('common.select')}
                   </option>
@@ -190,22 +182,17 @@ export function ProductsManager({
                       {f.name_english ? ` · ${f.name_english}` : ''}
                     </option>
                   ))}
-                </select>
+                </NativeSelect>
               </div>
               <div className="space-y-1.5">
                 <Label htmlFor="sku-condition">{t('common.condition')}</Label>
-                <select
-                  id="sku-condition"
-                  name="condition"
-                  className={selectCls}
-                  defaultValue="normal"
-                >
+                <NativeSelect id="sku-condition" name="condition" defaultValue="normal">
                   {CONDITIONS.map((c) => (
                     <option key={c} value={c}>
                       {CONDITION_LABELS[c][locale]}
                     </option>
                   ))}
-                </select>
+                </NativeSelect>
               </div>
               <div className="space-y-1.5">
                 <Label htmlFor="sku-dia">{t('set.diameter')}</Label>
