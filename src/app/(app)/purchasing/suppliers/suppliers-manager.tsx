@@ -1,6 +1,8 @@
 'use client';
 import { useRouter } from 'next/navigation';
 import { useActionState, useEffect, useState } from 'react';
+import { Plus, X } from 'lucide-react';
+import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Badge } from '@/components/ui/badge';
@@ -197,9 +199,22 @@ export function SuppliersManager({
   canManage: boolean;
 }) {
   const { t } = useT();
+  const [showCreate, setShowCreate] = useState(false);
   return (
     <div className="space-y-4">
       {canManage && (
+        <div className="flex justify-end">
+          <Button
+            variant={showCreate ? 'secondary' : 'default'}
+            onClick={() => setShowCreate((s) => !s)}
+          >
+            {showCreate ? <X className="h-4 w-4" /> : <Plus className="h-4 w-4" />}
+            {showCreate ? t('common.close') : t('pur.addSupplier')}
+          </Button>
+        </div>
+      )}
+
+      {canManage && showCreate && (
         <Card>
           <CardHeader>
             <CardTitle className="text-base">{t('pur.addSupplier')}</CardTitle>
