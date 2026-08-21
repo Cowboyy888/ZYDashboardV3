@@ -760,6 +760,36 @@ export async function getPayrollRuns(): Promise<PayrollRunRow[]> {
   }
 }
 
+/**
+ * Paginated payroll_runs — the list page's real query. getPayrollRuns()
+ * (above) stays for callers that need every run. Scoping items/deductions to
+ * just this page's run ids (done by the caller) is what actually fixes the
+ * unbounded payroll_item_deductions scan the perf audit flagged — this
+ * function only supplies the run ids to scope to.
+ */
+export async function getPayrollRunsPage({
+  page,
+  pageSize = DEFAULT_PAGE_SIZE,
+}: {
+  page: number;
+  pageSize?: number;
+}): Promise<PageResult<PayrollRunRow>> {
+  try {
+    const supabase = await client();
+    const from = (page - 1) * pageSize;
+    const to = from + pageSize - 1;
+    const { data, count } = await supabase
+      .from('payroll_runs')
+      .select('*', { count: 'exact' })
+      .order('created_at', { ascending: false })
+      .range(from, to);
+    return { rows: (data as PayrollRunRow[]) ?? [], total: count ?? 0 };
+  } catch (e) {
+    console.error('[queries] getPayrollRunsPage', e);
+    return { rows: [], total: 0 };
+  }
+}
+
 export async function getPayrollRun(id: string): Promise<PayrollRunRow | null> {
   try {
     const supabase = await client();
@@ -771,11 +801,13 @@ export async function getPayrollRun(id: string): Promise<PayrollRunRow | null> {
   }
 }
 
-export async function getPayrollItems(payrollRunId?: string): Promise<PayrollItemRow[]> {
+export async function getPayrollItems(payrollRunId?: string | string[]): Promise<PayrollItemRow[]> {
+  if (Array.isArray(payrollRunId) && payrollRunId.length === 0) return [];
   try {
     const supabase = await client();
     let q = supabase.from('payroll_items').select('*').order('created_at');
-    if (payrollRunId) q = q.eq('payroll_run_id', payrollRunId);
+    if (Array.isArray(payrollRunId)) q = q.in('payroll_run_id', payrollRunId);
+    else if (payrollRunId) q = q.eq('payroll_run_id', payrollRunId);
     const { data } = await q;
     return (data as PayrollItemRow[]) ?? [];
   } catch (e) {
