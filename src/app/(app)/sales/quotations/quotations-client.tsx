@@ -28,6 +28,7 @@ import {
 } from '@/components/ui/table';
 import { ActionForm } from '@/components/forms/action-form';
 import { SubmitButton } from '@/components/forms/submit-button';
+import { FormError } from '@/components/forms/form-error';
 import { useT } from '@/components/i18n-provider';
 import {
   createQuotation,
@@ -80,7 +81,7 @@ export function QuotationsClient({
   canManage: boolean;
   linkedOrders: { quotationId: string; soId: string; soNumber: string | null }[];
 }) {
-  const { t, m } = useT();
+  const { t } = useT();
   const [editing, setEditing] = useState<QuotationRow | null>(null);
   const [showCreate, setShowCreate] = useState(false);
   const [deleting, setDeleting] = useState<QuotationRow | null>(null);
@@ -292,7 +293,7 @@ export function QuotationsClient({
         </CardContent>
       </Card>
 
-      <DeleteDialog row={deleting} onDone={() => setDeleting(null)} m={m} t={t} />
+      <DeleteDialog row={deleting} onDone={() => setDeleting(null)} t={t} />
       <EditDepositPctDialog
         row={editingDepositPct}
         open={!!editingDepositPct}
@@ -323,7 +324,7 @@ function EditDepositPctDialog({
   open: boolean;
   onOpenChange: (v: boolean) => void;
 }) {
-  const { t, m } = useT();
+  const { t } = useT();
   const [value, setValue] = useState('30');
   const [pending, start] = useTransition();
   const [error, setError] = useState<string | null>(null);
@@ -373,11 +374,7 @@ function EditDepositPctDialog({
               autoFocus
             />
           </div>
-          {error && (
-            <p className="rounded-md bg-destructive/10 px-3 py-1.5 text-sm text-destructive">
-              {m(error)}
-            </p>
-          )}
+          <FormError error={error} />
           <div className="flex justify-end gap-2">
             <DialogClose asChild>
               <Button type="button" variant="ghost">
@@ -478,12 +475,10 @@ function DocButton({
 function DeleteDialog({
   row,
   onDone,
-  m,
   t,
 }: {
   row: QuotationRow | null;
   onDone: () => void;
-  m: (s: string | undefined | null) => string;
   t: (k: MessageKey) => string;
 }) {
   const [state, formAction, pending] = useActionState<ActionState, FormData>(deleteQuotation, null);
@@ -500,11 +495,7 @@ function DeleteDialog({
             {t('quo.deleteBody')} {row?.customer_name}
           </DialogDescription>
         </DialogHeader>
-        {state?.error && (
-          <p className="rounded-md bg-destructive/10 px-3 py-2 text-sm text-destructive">
-            {m(state.error)}
-          </p>
-        )}
+        <FormError error={state?.error} />
         <div className="flex justify-end gap-2">
           <Button type="button" variant="ghost" onClick={onDone}>
             {t('common.cancel')}
@@ -774,11 +765,7 @@ function QuotationForm({
             <Textarea id="q-notes" name="notes" rows={2} defaultValue={quotation?.notes ?? ''} />
           </div>
 
-          {state?.error && (
-            <p className="rounded-md bg-destructive/10 px-3 py-1.5 text-sm text-destructive">
-              {m(state.error)}
-            </p>
-          )}
+          <FormError error={state?.error} />
 
           <div className="flex gap-2">
             <Button type="submit" disabled={pending}>

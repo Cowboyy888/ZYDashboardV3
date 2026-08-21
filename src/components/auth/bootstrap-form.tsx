@@ -3,6 +3,7 @@ import { useState } from 'react';
 import { Loader2 } from 'lucide-react';
 import { bootstrapOwner, recordLoginEvent } from '@/lib/actions/auth';
 import { useT } from '@/components/i18n-provider';
+import { FormError } from '@/components/forms/form-error';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -88,9 +89,7 @@ export function BootstrapForm() {
           required
         />
       </div>
-      {error && (
-        <p className="rounded-md bg-destructive/10 px-3 py-2 text-sm text-destructive">{error}</p>
-      )}
+      <FormError error={error} />
       <Button type="submit" className="w-full" disabled={pending}>
         {pending && <Loader2 className="h-4 w-4 animate-spin" />}
         {t('auth.createOwner')}

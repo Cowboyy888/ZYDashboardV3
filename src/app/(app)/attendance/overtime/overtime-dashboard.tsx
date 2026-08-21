@@ -18,6 +18,7 @@ import {
 } from '@/components/ui/table';
 import { ActionForm } from '@/components/forms/action-form';
 import { SubmitButton } from '@/components/forms/submit-button';
+import { FormError } from '@/components/forms/form-error';
 import { useT } from '@/components/i18n-provider';
 import {
   createOvertimeEntry,
@@ -589,11 +590,7 @@ function AddOvertimeForm({
             </span>
           </div>
 
-          {state?.error && (
-            <p className="rounded-md bg-destructive/10 px-3 py-1.5 text-sm text-destructive">
-              {m(state.error)}
-            </p>
-          )}
+          <FormError error={state?.error} />
 
           <div className="flex gap-2">
             <Button type="submit" disabled={pending}>

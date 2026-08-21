@@ -3,6 +3,7 @@ import { useActionState, useEffect } from 'react';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { SubmitButton } from '@/components/forms/submit-button';
+import { FormError } from '@/components/forms/form-error';
 import { AttachmentField } from '@/components/purchasing/attachment-field';
 import { useT } from '@/components/i18n-provider';
 import { deliverGoods } from '@/lib/actions/sales';
@@ -23,7 +24,7 @@ export function DeliverForm({
   canOverride: boolean;
   onDone: () => void;
 }) {
-  const { t, m } = useT();
+  const { t } = useT();
   const [state, formAction] = useActionState<ActionState, FormData>(deliverGoods, null);
 
   // The server action revalidates this SO's path on success, which makes
@@ -84,11 +85,7 @@ export function DeliverForm({
           />
         </div>
       )}
-      {state?.error && (
-        <p className="rounded-md bg-destructive/10 px-3 py-1.5 text-sm text-destructive sm:col-span-2 lg:col-span-4">
-          {m(state.error)}
-        </p>
-      )}
+      <FormError error={state?.error} className="sm:col-span-2 lg:col-span-4" />
       <div className="flex items-end gap-2">
         <SubmitButton>{t('sal.deliverGoods')}</SubmitButton>
         <button type="button" className="text-sm text-muted-foreground underline" onClick={onDone}>

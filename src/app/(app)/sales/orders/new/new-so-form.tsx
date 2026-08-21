@@ -9,6 +9,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { NativeSelect } from '@/components/ui/native-select';
 import { AttachmentField } from '@/components/purchasing/attachment-field';
 import { useT } from '@/components/i18n-provider';
+import { FormError } from '@/components/forms/form-error';
 import { createDraftSalesOrder } from '@/lib/actions/sales';
 import { CURRENCIES, type Currency } from '@/lib/domain/sales';
 import { computeUnitPriceFromArea, computeOrderedQtyFromArea } from '@/lib/domain/deposit-invoice';
@@ -69,7 +70,7 @@ export function NewSoForm({
   skuOptions: SkuOpt[];
   today: string;
 }) {
-  const { t, m } = useT();
+  const { t } = useT();
   const router = useRouter();
   const [state, formAction, isPending] = useActionState<ActionState, FormData>(
     createDraftSalesOrder,
@@ -336,11 +337,7 @@ export function NewSoForm({
             {t('sal.addItem')}
           </Button>
 
-          {state?.error && (
-            <p className="rounded-md bg-destructive/10 px-3 py-1.5 text-sm text-destructive">
-              {m(state.error)}
-            </p>
-          )}
+          <FormError error={state?.error} />
           <Button type="submit" disabled={isPending}>
             {isPending && <Loader2 className="h-4 w-4 animate-spin" />}
             {t('sal.createDraft')}

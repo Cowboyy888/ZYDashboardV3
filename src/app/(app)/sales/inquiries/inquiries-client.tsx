@@ -27,6 +27,7 @@ import {
 } from '@/components/ui/table';
 import { ActionForm } from '@/components/forms/action-form';
 import { SubmitButton } from '@/components/forms/submit-button';
+import { FormError } from '@/components/forms/form-error';
 import { useT } from '@/components/i18n-provider';
 import {
   createInquiry,
@@ -80,7 +81,7 @@ export function InquiriesClient({
   families: Opt[];
   canManage: boolean;
 }) {
-  const { t, m } = useT();
+  const { t } = useT();
 
   const empName = useMemo(() => new Map(employees.map((e) => [e.id, e.name])), [employees]);
   const familyName = useMemo(() => new Map(families.map((f) => [f.id, f.name])), [families]);
@@ -559,11 +560,7 @@ export function InquiriesClient({
               {t('inq.deleteBody')} {row?.inquiry_no ?? ''}
             </DialogDescription>
           </DialogHeader>
-          {state?.error && (
-            <p className="rounded-md bg-destructive/10 px-3 py-2 text-sm text-destructive">
-              {m(state.error)}
-            </p>
-          )}
+          <FormError error={state?.error} />
           <div className="flex justify-end gap-2">
             <Button type="button" variant="ghost" onClick={onDone}>
               {t('common.cancel')}
@@ -825,11 +822,7 @@ function InquiryForm({
         </div>
       </div>
 
-      {state?.error && (
-        <p className="rounded-md bg-destructive/10 px-3 py-1.5 text-sm text-destructive">
-          {m(state.error)}
-        </p>
-      )}
+      <FormError error={state?.error} />
 
       <div className="flex justify-end gap-2">
         <DialogClose asChild>

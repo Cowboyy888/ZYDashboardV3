@@ -12,6 +12,7 @@ import {
   DialogTrigger,
 } from '@/components/ui/dialog';
 import { useT } from '@/components/i18n-provider';
+import { FormError } from '@/components/forms/form-error';
 import { generateDepositInvoice } from '@/lib/actions/deposit-invoices';
 import {
   DEPOSIT_PERCENTAGE_PRESETS,
@@ -32,7 +33,7 @@ export function GenerateDepositInvoiceDialog({
   currency: string;
   onGenerated: () => void;
 }) {
-  const { t, m } = useT();
+  const { t } = useT();
   const [open, setOpen] = useState(false);
   const [percentage, setPercentage] = useState<number>(DEPOSIT_PERCENTAGE_PRESETS[0]);
   const [state, formAction, isPending] = useActionState<ActionState, FormData>(
@@ -106,7 +107,7 @@ export function GenerateDepositInvoiceDialog({
               <span className="tabular-nums">{money(remainingBalance)}</span>
             </div>
           </div>
-          {state?.error && <p className="text-sm text-destructive">{m(state.error)}</p>}
+          <FormError error={state?.error} />
           <Button type="submit" disabled={isPending}>
             {isPending && <Loader2 className="h-4 w-4 animate-spin" />}
             {t('sal.generateDepositInvoice')}

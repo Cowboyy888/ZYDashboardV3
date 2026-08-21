@@ -17,6 +17,7 @@ import {
 import { ActionForm } from '@/components/forms/action-form';
 import { SubmitButton } from '@/components/forms/submit-button';
 import { ConfirmActionButton } from '@/components/forms/confirm-action-button';
+import { FormError } from '@/components/forms/form-error';
 import { useT } from '@/components/i18n-provider';
 import {
   createCustomer,
@@ -97,7 +98,7 @@ function CustomerFields({ defaults }: { defaults?: CustomerRow }) {
 }
 
 function EditCustomerRow({ customer, onDone }: { customer: CustomerRow; onDone: () => void }) {
-  const { t, m } = useT();
+  const { t } = useT();
   const [state, formAction, pending] = useActionState<ActionState, FormData>(updateCustomer, null);
 
   useEffect(() => {
@@ -110,11 +111,7 @@ function EditCustomerRow({ customer, onDone }: { customer: CustomerRow; onDone: 
         <form action={formAction} className="space-y-3 py-2">
           <input type="hidden" name="id" value={customer.id} />
           <CustomerFields defaults={customer} />
-          {state?.error && (
-            <p className="rounded-md bg-destructive/10 px-3 py-1.5 text-sm text-destructive">
-              {m(state.error)}
-            </p>
-          )}
+          <FormError error={state?.error} />
           <div className="flex gap-2">
             <SubmitButton>{t('common.save')}</SubmitButton>
             <button

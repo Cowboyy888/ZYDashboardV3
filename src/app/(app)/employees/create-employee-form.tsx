@@ -6,6 +6,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { NativeSelect } from '@/components/ui/native-select';
 import { useT } from '@/components/i18n-provider';
+import { FormError } from '@/components/forms/form-error';
 import { createEmployee, setEmployeePhoto } from '@/lib/actions/employees';
 import type { ActionState } from '@/lib/actions/types';
 import type { AttendanceGroupRow } from '@/lib/db/types';
@@ -235,11 +236,7 @@ export function CreateEmployeeForm({ groups }: { groups: AttendanceGroupRow[] })
         </div>
       </div>
 
-      {state?.error && (
-        <p className="rounded-md bg-destructive/10 px-3 py-1.5 text-sm text-destructive">
-          {m(state.error)}
-        </p>
-      )}
+      <FormError error={state?.error} />
       {state?.ok && state.message && (
         <p className="rounded-md bg-success/10 px-3 py-1.5 text-sm text-success">
           {m(state.message)}

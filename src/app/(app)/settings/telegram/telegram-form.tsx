@@ -15,6 +15,7 @@ import {
   DialogTitle,
 } from '@/components/ui/dialog';
 import { SubmitButton } from '@/components/forms/submit-button';
+import { FormError } from '@/components/forms/form-error';
 import { SendNowButton } from '@/components/telegram/send-now-button';
 import { useT } from '@/components/i18n-provider';
 import {
@@ -333,11 +334,7 @@ export function TelegramForm({
 
           <p className="text-xs text-muted-foreground">{t('tg.scheduleNote')}</p>
 
-          {state?.error && (
-            <p className="rounded-md bg-destructive/10 px-3 py-1.5 text-sm text-destructive">
-              {m(state.error)}
-            </p>
-          )}
+          <FormError error={state?.error} />
           {state?.ok && state.message && (
             <p className="rounded-md bg-success/10 px-3 py-1.5 text-sm text-success">
               {m(state.message)}

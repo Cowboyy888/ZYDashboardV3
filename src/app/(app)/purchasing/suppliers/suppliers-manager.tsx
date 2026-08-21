@@ -17,6 +17,7 @@ import {
 import { ActionForm } from '@/components/forms/action-form';
 import { SubmitButton } from '@/components/forms/submit-button';
 import { ConfirmActionButton } from '@/components/forms/confirm-action-button';
+import { FormError } from '@/components/forms/form-error';
 import { useT } from '@/components/i18n-provider';
 import {
   createSupplier,
@@ -97,7 +98,7 @@ function SupplierFields({ defaults }: { defaults?: SupplierRow }) {
 }
 
 function EditSupplierRow({ supplier, onDone }: { supplier: SupplierRow; onDone: () => void }) {
-  const { t, m } = useT();
+  const { t } = useT();
   const [state, formAction, pending] = useActionState<ActionState, FormData>(updateSupplier, null);
 
   useEffect(() => {
@@ -110,11 +111,7 @@ function EditSupplierRow({ supplier, onDone }: { supplier: SupplierRow; onDone: 
         <form action={formAction} className="space-y-3 py-2">
           <input type="hidden" name="id" value={supplier.id} />
           <SupplierFields defaults={supplier} />
-          {state?.error && (
-            <p className="rounded-md bg-destructive/10 px-3 py-1.5 text-sm text-destructive">
-              {m(state.error)}
-            </p>
-          )}
+          <FormError error={state?.error} />
           <div className="flex gap-2">
             <SubmitButton>{t('common.save')}</SubmitButton>
             <button

@@ -26,6 +26,7 @@ import { NativeSelect } from '@/components/ui/native-select';
 import { ActionForm } from '@/components/forms/action-form';
 import { SubmitButton } from '@/components/forms/submit-button';
 import { ConfirmActionButton } from '@/components/forms/confirm-action-button';
+import { FormError } from '@/components/forms/form-error';
 import { SendNowButton } from '@/components/telegram/send-now-button';
 import { useT } from '@/components/i18n-provider';
 import { postMovement, postTransfer, setStockTotal } from '@/lib/actions/inventory';
@@ -549,7 +550,7 @@ function EditQuantityDialog({
   open: boolean;
   onOpenChange: (v: boolean) => void;
 }) {
-  const { t, m } = useT();
+  const { t } = useT();
   const [storageRoom, setStorageRoom] = useState(String(row.storageRoom));
   const [warehouse, setWarehouse] = useState(String(row.warehouse));
   const [notes, setNotes] = useState('');
@@ -653,11 +654,7 @@ function EditQuantityDialog({
               />
             </div>
           )}
-          {error && (
-            <p className="rounded-md bg-destructive/10 px-3 py-1.5 text-sm text-destructive">
-              {m(error)}
-            </p>
-          )}
+          <FormError error={error} />
           <div className="flex justify-end gap-2">
             <DialogClose asChild>
               <Button type="button" variant="ghost">
@@ -686,7 +683,7 @@ function EditSkuDialog({
   open: boolean;
   onOpenChange: (v: boolean) => void;
 }) {
-  const { t, m, locale } = useT();
+  const { t, locale } = useT();
   const [state, formAction, pending] = useActionState<ActionState, FormData>(updateSku, null);
 
   useEffect(() => {
@@ -757,11 +754,7 @@ function EditSkuDialog({
             <Label htmlFor={`es-extra-${sku.id}`}>{t('set.extra')}</Label>
             <Input id={`es-extra-${sku.id}`} name="extra" defaultValue={sku.extra ?? ''} />
           </div>
-          {state?.error && (
-            <p className="rounded-md bg-destructive/10 px-3 py-1.5 text-sm text-destructive">
-              {m(state.error)}
-            </p>
-          )}
+          <FormError error={state?.error} />
           <div className="flex justify-end gap-2">
             <DialogClose asChild>
               <Button type="button" variant="ghost">
@@ -790,7 +783,7 @@ function CreateSkuForm({
   locations: LocationOpt[];
   onDone: () => void;
 }) {
-  const { t, m, locale } = useT();
+  const { t, locale } = useT();
   const [state, formAction] = useActionState<ActionState, FormData>(createSku, null);
   const formRef = useRef<HTMLFormElement>(null);
 
@@ -882,11 +875,7 @@ function CreateSkuForm({
           </p>
         </div>
       )}
-      {state?.error && (
-        <p className="rounded-md bg-destructive/10 px-3 py-1.5 text-sm text-destructive">
-          {m(state.error)}
-        </p>
-      )}
+      <FormError error={state?.error} />
       <SubmitButton>{t('common.save')}</SubmitButton>
     </form>
   );

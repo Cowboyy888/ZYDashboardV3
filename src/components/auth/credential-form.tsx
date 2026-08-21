@@ -4,6 +4,7 @@ import { Loader2 } from 'lucide-react';
 import { env } from '@/lib/env';
 import { recordLoginEvent } from '@/lib/actions/auth';
 import { useT } from '@/components/i18n-provider';
+import { FormError } from '@/components/forms/form-error';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -100,14 +101,7 @@ export function CredentialForm({ mode }: { mode: 'signin' | 'signup' }) {
           required
         />
       </div>
-      {error && (
-        <p
-          key={errorNonce}
-          className="rounded-md bg-destructive/10 px-3 py-2 text-sm text-destructive motion-safe:animate-zy-shake"
-        >
-          {error}
-        </p>
-      )}
+      <FormError key={errorNonce} error={error} className="motion-safe:animate-zy-shake" />
       <Button
         type="submit"
         className="w-full transition-all active:scale-[0.98]"

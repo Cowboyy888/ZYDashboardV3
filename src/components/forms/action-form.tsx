@@ -2,6 +2,7 @@
 import { useActionState } from 'react';
 import { cn } from '@/lib/utils';
 import { useT } from '@/components/i18n-provider';
+import { FormError } from '@/components/forms/form-error';
 import type { ActionState } from '@/lib/actions/types';
 
 type ServerAction = (state: ActionState, formData: FormData) => Promise<ActionState>;
@@ -25,11 +26,7 @@ export function ActionForm({
   return (
     <form action={formAction} className={cn('space-y-3', className)}>
       {typeof children === 'function' ? children(state) : children}
-      {state?.error && (
-        <p className="rounded-md bg-destructive/10 px-3 py-1.5 text-sm text-destructive">
-          {m(state.error)}
-        </p>
-      )}
+      <FormError error={state?.error} />
       {state?.ok && state.message && (
         <p className="rounded-md bg-success/10 px-3 py-1.5 text-sm text-success">
           {m(state.message)}

@@ -26,6 +26,7 @@ import {
 } from '@/components/ui/table';
 import { ActionForm } from '@/components/forms/action-form';
 import { SubmitButton } from '@/components/forms/submit-button';
+import { FormError } from '@/components/forms/form-error';
 import { useT } from '@/components/i18n-provider';
 import {
   createFamily,
@@ -348,11 +349,7 @@ function CreateFamilyForm({ onDone }: { onDone: () => void }) {
           <Textarea id="fam-desc" name="description" rows={2} />
         </div>
       </div>
-      {state?.error && (
-        <p className="rounded-md bg-destructive/10 px-3 py-1.5 text-sm text-destructive">
-          {m(state.error)}
-        </p>
-      )}
+      <FormError error={state?.error} />
       <p className="text-xs text-muted-foreground">{t('set.familyAfterCreateHint')}</p>
       <div className="flex gap-2">
         <Button type="submit" disabled={pending}>
@@ -493,11 +490,7 @@ function EditFamilyDialog({
               defaultValue={family.description ?? ''}
             />
           </div>
-          {state?.error && (
-            <p className="rounded-md bg-destructive/10 px-3 py-1.5 text-sm text-destructive">
-              {m(state.error)}
-            </p>
-          )}
+          <FormError error={state?.error} />
           <div className="flex justify-end gap-2">
             <DialogClose asChild>
               <Button type="button" variant="ghost">
@@ -570,7 +563,7 @@ function DeleteFamilyDialog({
   open: boolean;
   onOpenChange: (v: boolean) => void;
 }) {
-  const { t, m } = useT();
+  const { t } = useT();
   const [state, formAction, pending] = useActionState<ActionState, FormData>(deleteFamily, null);
   const [toggleState, toggleActionFn, togglePending] = useActionState<ActionState, FormData>(
     toggleFamily,
@@ -592,11 +585,7 @@ function DeleteFamilyDialog({
           <DialogDescription>{t('set.confirmDeleteFamilyBody')}</DialogDescription>
         </DialogHeader>
 
-        {blocked && (
-          <p className="rounded-md bg-destructive/10 px-3 py-2 text-sm text-destructive">
-            {m(state!.error)}
-          </p>
-        )}
+        <FormError error={state?.error} />
 
         <div className="flex justify-end gap-2">
           <DialogClose asChild>

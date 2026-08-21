@@ -6,6 +6,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { FormError } from '@/components/forms/form-error';
 import { useT } from '@/components/i18n-provider';
 import { createDraftPayrollRun } from '@/lib/actions/payroll';
 import type { ActionState } from '@/lib/actions/types';
@@ -15,7 +16,7 @@ export function NewRunForm({
 }: {
   defaults: { periodStart: string; periodEnd: string; payDate: string };
 }) {
-  const { t, m } = useT();
+  const { t } = useT();
   const router = useRouter();
   const [state, formAction, isPending] = useActionState<ActionState, FormData>(
     createDraftPayrollRun,
@@ -70,11 +71,7 @@ export function NewRunForm({
             <Input id="notes" name="notes" />
           </div>
           <p className="text-xs text-muted-foreground sm:col-span-2">{t('pay.newRunHint')}</p>
-          {state?.error && (
-            <p className="rounded-md bg-destructive/10 px-3 py-1.5 text-sm text-destructive sm:col-span-2">
-              {m(state.error)}
-            </p>
-          )}
+          <FormError error={state?.error} className="sm:col-span-2" />
           <Button type="submit" disabled={isPending} className="sm:col-span-2 sm:w-fit">
             {isPending && <Loader2 className="h-4 w-4 animate-spin" />}
             {t('pay.generateDraft')}

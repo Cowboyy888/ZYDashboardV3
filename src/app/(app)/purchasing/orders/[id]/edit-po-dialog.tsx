@@ -13,6 +13,7 @@ import {
   DialogTrigger,
 } from '@/components/ui/dialog';
 import { useT } from '@/components/i18n-provider';
+import { FormError } from '@/components/forms/form-error';
 import { updatePurchaseOrderHeader } from '@/lib/actions/purchasing';
 import { CURRENCIES, type Currency } from '@/lib/domain/purchasing';
 import type { ActionState } from '@/lib/actions/types';
@@ -46,7 +47,7 @@ export function EditPoDialog({
   suppliers: SupplierOpt[];
   onSaved: () => void;
 }) {
-  const { t, m } = useT();
+  const { t } = useT();
   const [open, setOpen] = useState(false);
   const [state, formAction, isPending] = useActionState<ActionState, FormData>(
     updatePurchaseOrderHeader,
@@ -104,7 +105,7 @@ export function EditPoDialog({
             <Label htmlFor="ep-notes">{t('common.notes')}</Label>
             <Input id="ep-notes" name="notes" defaultValue={notes ?? ''} />
           </div>
-          {state?.error && <p className="text-sm text-destructive">{m(state.error)}</p>}
+          <FormError error={state?.error} />
           <Button type="submit" disabled={isPending}>
             {isPending && <Loader2 className="h-4 w-4 animate-spin" />}
             {t('common.save')}

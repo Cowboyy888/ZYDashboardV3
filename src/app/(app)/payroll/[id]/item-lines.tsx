@@ -6,6 +6,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { NativeSelect } from '@/components/ui/native-select';
 import { SubmitButton } from '@/components/forms/submit-button';
+import { FormError } from '@/components/forms/form-error';
 import { useT } from '@/components/i18n-provider';
 import { addPayrollLine, removePayrollLine } from '@/lib/actions/payroll';
 import { DEDUCTION_KINDS } from '@/lib/domain/payroll';
@@ -53,7 +54,7 @@ export function ItemLines({
   lines: PayrollItemRow['lines'];
   onDone: () => void;
 }) {
-  const { t, m } = useT();
+  const { t } = useT();
   const [state, formAction, pending] = useActionState<ActionState, FormData>(addPayrollLine, null);
 
   useEffect(() => {
@@ -115,11 +116,7 @@ export function ItemLines({
         <div className="flex items-end">
           <SubmitButton>{t('pay.addLine')}</SubmitButton>
         </div>
-        {state?.error && (
-          <p className="rounded-md bg-destructive/10 px-3 py-1.5 text-sm text-destructive sm:col-span-4">
-            {m(state.error)}
-          </p>
-        )}
+        <FormError error={state?.error} className="sm:col-span-4" />
       </form>
       {pending && <span className="sr-only">{t('pay.addLine')}</span>}
     </div>

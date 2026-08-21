@@ -9,6 +9,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { NativeSelect } from '@/components/ui/native-select';
 import { AttachmentField } from '@/components/purchasing/attachment-field';
 import { useT } from '@/components/i18n-provider';
+import { FormError } from '@/components/forms/form-error';
 import { createDraftPurchaseOrder } from '@/lib/actions/purchasing';
 import { CURRENCIES, type Currency } from '@/lib/domain/purchasing';
 import type { ActionState } from '@/lib/actions/types';
@@ -20,7 +21,7 @@ interface SupplierOpt {
 }
 
 export function NewPoForm({ suppliers, today }: { suppliers: SupplierOpt[]; today: string }) {
-  const { t, m } = useT();
+  const { t } = useT();
   const router = useRouter();
   const [state, formAction, isPending] = useActionState<ActionState, FormData>(
     createDraftPurchaseOrder,
@@ -82,11 +83,7 @@ export function NewPoForm({ suppliers, today }: { suppliers: SupplierOpt[]; toda
         </CardContent>
       </Card>
 
-      {state?.error && (
-        <p className="rounded-md bg-destructive/10 px-3 py-1.5 text-sm text-destructive">
-          {m(state.error)}
-        </p>
-      )}
+      <FormError error={state?.error} />
       <Button type="submit" disabled={isPending}>
         {isPending && <Loader2 className="h-4 w-4 animate-spin" />}
         {t('pur.createDraft')}
