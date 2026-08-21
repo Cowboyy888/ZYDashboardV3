@@ -15,6 +15,7 @@ import {
   getQuotation,
   getQuotationItems,
 } from '@/lib/db/queries';
+import type { QuotationRow, QuotationItemRow } from '@/lib/db/types';
 import { buildSalesOrderRows } from '@/lib/domain/sales-view';
 import { buildSkuLabel } from '@/lib/domain/products';
 import { businessDate } from '@/lib/domain/datetime';
@@ -36,23 +37,30 @@ export default async function SalesOrderDetailPage({
   const so = await getSalesOrder(id);
   if (!so) notFound();
 
-  const [items, customer, skus, families, locations, profiles, depositInvoice] = await Promise.all([
-    getSalesOrderItems(id),
-    getCustomer(so.customer_id),
-    getSkus(true),
-    getFamilies(true),
-    getLocations(true),
-    getProfiles(),
-    getDepositInvoiceForSo(id),
+  // sourceQuotation only needs so.quotation_id (known above), so it runs
+  // alongside the main batch instead of waiting on it.
+  const [
+    [items, customer, skus, families, locations, profiles, depositInvoice],
+    [sourceQuotation, sourceQuotationItems],
+  ] = await Promise.all([
+    Promise.all([
+      getSalesOrderItems(id),
+      getCustomer(so.customer_id),
+      getSkus(true),
+      getFamilies(true),
+      getLocations(true),
+      getProfiles(),
+      getDepositInvoiceForSo(id),
+    ]),
+    so.quotation_id
+      ? Promise.all([getQuotation(so.quotation_id), getQuotationItems(so.quotation_id)])
+      : Promise.resolve([null, []] as [QuotationRow | null, QuotationItemRow[]]),
   ]);
   const itemIds = items.map((i) => i.id);
   const [delivered, deliveries] = await Promise.all([
     getSalesOrderItemsDelivered(itemIds),
     getSalesOrderDeliveries(itemIds),
   ]);
-  const [sourceQuotation, sourceQuotationItems] = so.quotation_id
-    ? await Promise.all([getQuotation(so.quotation_id), getQuotationItems(so.quotation_id)])
-    : [null, []];
 
   const rows = buildSalesOrderRows(
     [so],

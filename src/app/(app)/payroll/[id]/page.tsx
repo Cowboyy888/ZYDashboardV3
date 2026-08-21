@@ -29,10 +29,15 @@ export default async function PayrollRunDetailPage({
   const user = await requirePermission('payroll:view');
   const t = translator(await getLocale());
 
-  const run = await getPayrollRun(id);
+  // getPayrollItems only needs the route id (not the run row), so it runs
+  // alongside getPayrollRun instead of waiting on it.
+  const [run, items, employees] = await Promise.all([
+    getPayrollRun(id),
+    getPayrollItems(id),
+    getEmployees(true),
+  ]);
   if (!run) notFound();
 
-  const [items, employees] = await Promise.all([getPayrollItems(id), getEmployees(true)]);
   const itemIds = items.map((i) => i.id);
   const [deductions, lines, liveItems] = await Promise.all([
     getPayrollItemDeductions(itemIds),

@@ -60,11 +60,22 @@ export async function getLocations(includeArchived = false): Promise<LocationRow
   }
 }
 
-export async function getFamilies(includeArchived = false): Promise<ProductFamilyRow[]> {
+/**
+ * `ids` narrows to just those families (e.g. a PDF export rendering one
+ * order's line items) so the query filters at the DB instead of fetching the
+ * whole catalog and discarding most of it in application code. Omit it for
+ * pickers/lists that genuinely need every family.
+ */
+export async function getFamilies(
+  includeArchived = false,
+  ids?: string[],
+): Promise<ProductFamilyRow[]> {
+  if (ids && ids.length === 0) return [];
   try {
     const supabase = await client();
     let q = supabase.from('product_families').select('*').order('name');
     if (!includeArchived) q = q.eq('is_active', true);
+    if (ids) q = q.in('id', ids);
     const { data } = await q;
     return (data as ProductFamilyRow[]) ?? [];
   } catch (e) {
@@ -73,11 +84,14 @@ export async function getFamilies(includeArchived = false): Promise<ProductFamil
   }
 }
 
-export async function getSkus(includeArchived = false): Promise<SkuRow[]> {
+/** `ids` narrows the fetch the same way as getFamilies' `ids` — see its comment. */
+export async function getSkus(includeArchived = false, ids?: string[]): Promise<SkuRow[]> {
+  if (ids && ids.length === 0) return [];
   try {
     const supabase = await client();
     let q = supabase.from('skus').select('*').order('created_at');
     if (!includeArchived) q = q.eq('is_active', true);
+    if (ids) q = q.in('id', ids);
     const { data } = await q;
     return (data as SkuRow[]) ?? [];
   } catch (e) {

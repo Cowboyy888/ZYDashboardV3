@@ -27,16 +27,23 @@ export async function GET(request: Request, { params }: { params: Promise<{ id: 
   const invoice = await getDepositInvoice(id);
   if (!invoice) notFound();
 
-  const so = await getSalesOrder(invoice.sales_order_id);
+  // so/items only need invoice.sales_order_id, so they run together instead
+  // of items waiting on so to resolve first.
+  const [so, items] = await Promise.all([
+    getSalesOrder(invoice.sales_order_id),
+    getSalesOrderItems(invoice.sales_order_id),
+  ]);
   if (!so) notFound();
 
-  const [items, customer, skus, families] = await Promise.all([
-    getSalesOrderItems(invoice.sales_order_id),
+  // One order's worth of SKUs, not the whole catalog — see getSkus' JSDoc.
+  const [customer, skus] = await Promise.all([
     getCustomer(so.customer_id),
-    getSkus(true),
-    getFamilies(true),
+    getSkus(true, Array.from(new Set(items.map((i) => i.sku_id)))),
   ]);
-  const delivered = await getSalesOrderItemsDelivered(items.map((i) => i.id));
+  const [families, delivered] = await Promise.all([
+    getFamilies(true, Array.from(new Set(skus.map((s) => s.family_id)))),
+    getSalesOrderItemsDelivered(items.map((i) => i.id)),
+  ]);
 
   const rows = buildSalesOrderRows(
     [so],

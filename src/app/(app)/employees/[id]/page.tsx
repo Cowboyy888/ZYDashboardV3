@@ -32,8 +32,9 @@ export default async function EmployeeDetailPage({ params }: { params: Promise<{
 
   const canSensitive = canViewSensitiveEmployeeData(user.role);
   const canManage = hasPermission(user.role, 'employees:manage');
-  const priv = canSensitive ? await getEmployeePrivate(id) : null;
-  const photoUrl = canSensitive ? await getSignedPhotoUrl(employee.photo_path) : null;
+  const [priv, photoUrl] = canSensitive
+    ? await Promise.all([getEmployeePrivate(id), getSignedPhotoUrl(employee.photo_path)])
+    : [null, null];
   const groupName = groups.find((g) => g.id === employee.attendance_group_id)?.name ?? '—';
   const displayName =
     employee.display_name ||

@@ -24,13 +24,17 @@ export async function GET(request: Request, { params }: { params: Promise<{ id: 
   const so = await getSalesOrder(id);
   if (!so) notFound();
 
-  const [items, customer, skus, families] = await Promise.all([
+  const [items, customer] = await Promise.all([
     getSalesOrderItems(id),
     getCustomer(so.customer_id),
-    getSkus(true),
-    getFamilies(true),
   ]);
-  const delivered = await getSalesOrderItemsDelivered(items.map((i) => i.id));
+  // One order's worth of SKUs/families, not the whole catalog — see getSkus'
+  // JSDoc.
+  const skus = await getSkus(true, Array.from(new Set(items.map((i) => i.sku_id))));
+  const [families, delivered] = await Promise.all([
+    getFamilies(true, Array.from(new Set(skus.map((s) => s.family_id)))),
+    getSalesOrderItemsDelivered(items.map((i) => i.id)),
+  ]);
 
   const rows = buildSalesOrderRows(
     [so],
