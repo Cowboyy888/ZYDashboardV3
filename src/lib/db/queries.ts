@@ -47,6 +47,25 @@ async function client() {
   return createSupabaseServerClient();
 }
 
+export interface PageResult<T> {
+  rows: T[];
+  total: number;
+}
+
+export const DEFAULT_PAGE_SIZE = 20;
+
+/**
+ * Strips characters with special meaning in PostgREST's .or()/.in() filter
+ * syntax (`,`, `(`, `)`) plus ilike wildcards (`%`, `*`) and quotes, since
+ * search terms here are free text typed into a search box, not a value this
+ * app controls — used before interpolating a term into a hand-built .or()
+ * filter string, where those characters could otherwise reshape the filter
+ * itself rather than just match text.
+ */
+function sanitizeSearchTerm(term: string): string {
+  return term.replace(/[,()%*"]/g, '').trim();
+}
+
 export async function getLocations(includeArchived = false): Promise<LocationRow[]> {
   try {
     const supabase = await client();
@@ -427,11 +446,17 @@ export async function getPurchaseOrderManualItems(
 
 // --- Sales (Third pass) --------------------------------------------------------
 
-export async function getCustomers(includeArchived = false): Promise<CustomerRow[]> {
+/** `ids` narrows the fetch the same way as getSkus' `ids` — see its comment. */
+export async function getCustomers(
+  includeArchived = false,
+  ids?: string[],
+): Promise<CustomerRow[]> {
+  if (ids && ids.length === 0) return [];
   try {
     const supabase = await client();
     let q = supabase.from('customers').select('*').order('name');
     if (!includeArchived) q = q.eq('is_active', true);
+    if (ids) q = q.in('id', ids);
     const { data } = await q;
     return (data as CustomerRow[]) ?? [];
   } catch (e) {
@@ -496,6 +521,49 @@ export async function getSalesOrders(): Promise<SalesOrderRow[]> {
   }
 }
 
+/**
+ * Paginated + searchable sales_orders — the list page's real query.
+ * getSalesOrders() (unfiltered, above) stays for callers that genuinely need
+ * every order (exports). search matches so_number directly, plus customer
+ * name via a resolve-then-filter step (customer_id isn't itself searchable
+ * text) — both folded into one .or() so pagination's count/range stays over
+ * a single query rather than merging two separately-paginated result sets.
+ */
+export async function getSalesOrdersPage({
+  page,
+  pageSize = DEFAULT_PAGE_SIZE,
+  search,
+}: {
+  page: number;
+  pageSize?: number;
+  search?: string;
+}): Promise<PageResult<SalesOrderRow>> {
+  try {
+    const supabase = await client();
+    const from = (page - 1) * pageSize;
+    const to = from + pageSize - 1;
+    let q = supabase.from('sales_orders').select('*', { count: 'exact' });
+
+    const term = search ? sanitizeSearchTerm(search) : '';
+    if (term) {
+      const { data: matches } = await supabase
+        .from('customers')
+        .select('id')
+        .ilike('name', `%${term}%`);
+      const customerIds = (matches ?? []).map((c) => c.id);
+      const orParts = [`so_number.ilike.%${term}%`];
+      if (customerIds.length > 0) orParts.push(`customer_id.in.(${customerIds.join(',')})`);
+      q = q.or(orParts.join(','));
+    }
+
+    const { data, count } = await q.order('created_at', { ascending: false }).range(from, to);
+    return { rows: (data as SalesOrderRow[]) ?? [], total: count ?? 0 };
+  } catch (e) {
+    console.error('[queries] getSalesOrdersPage', e);
+    return { rows: [], total: 0 };
+  }
+}
+
 export async function getSalesOrder(id: string): Promise<SalesOrderRow | null> {
   try {
     const supabase = await client();
@@ -507,11 +575,15 @@ export async function getSalesOrder(id: string): Promise<SalesOrderRow | null> {
   }
 }
 
-export async function getSalesOrderItems(salesOrderId?: string): Promise<SalesOrderItemRow[]> {
+export async function getSalesOrderItems(
+  salesOrderId?: string | string[],
+): Promise<SalesOrderItemRow[]> {
+  if (Array.isArray(salesOrderId) && salesOrderId.length === 0) return [];
   try {
     const supabase = await client();
     let q = supabase.from('sales_order_items').select('*').order('created_at');
-    if (salesOrderId) q = q.eq('sales_order_id', salesOrderId);
+    if (Array.isArray(salesOrderId)) q = q.in('sales_order_id', salesOrderId);
+    else if (salesOrderId) q = q.eq('sales_order_id', salesOrderId);
     const { data } = await q;
     return (data as SalesOrderItemRow[]) ?? [];
   } catch (e) {

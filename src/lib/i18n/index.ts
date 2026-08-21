@@ -53,6 +53,8 @@ export const dictionary = {
   'common.archived': { en: 'Archived', zh: '已归档' },
   'common.inactive': { en: 'Inactive', zh: '停用' },
   'common.notes': { en: 'Notes', zh: '备注' },
+  'common.previous': { en: 'Previous', zh: '上一页' },
+  'common.next': { en: 'Next', zh: '下一页' },
   'common.date': { en: 'Date', zh: '日期' },
   'common.quantity': { en: 'Quantity', zh: '数量' },
   'common.unit': { en: 'Unit', zh: '单位' },

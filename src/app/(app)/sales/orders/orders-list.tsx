@@ -1,10 +1,7 @@
 'use client';
-import { useMemo, useState } from 'react';
 import Link from 'next/link';
-import { Search } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 import { Card, CardContent } from '@/components/ui/card';
-import { Input } from '@/components/ui/input';
 import {
   Table,
   TableBody,
@@ -29,31 +26,18 @@ const STATUS_VARIANT: Record<
   cancelled: 'destructive',
 };
 
-export function OrdersList({ rows }: { rows: SalesOrderRow[] }) {
+export function OrdersList({
+  rows,
+  isSearching = false,
+}: {
+  rows: SalesOrderRow[];
+  /** Whether these rows are the result of a search — for the right empty-state message. */
+  isSearching?: boolean;
+}) {
   const { t, locale } = useT();
-  const [query, setQuery] = useState('');
-
-  const visibleRows = useMemo(() => {
-    const q = query.trim().toLowerCase();
-    if (!q) return rows;
-    return rows.filter((r) =>
-      [r.soNumber, r.customerName, formatDDMMYYYY(r.orderDate)]
-        .filter(Boolean)
-        .some((v) => String(v).toLowerCase().includes(q)),
-    );
-  }, [rows, query]);
 
   return (
     <div className="space-y-4">
-      <div className="relative w-full sm:w-80">
-        <Search className="pointer-events-none absolute left-2.5 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
-        <Input
-          value={query}
-          onChange={(e) => setQuery(e.target.value)}
-          placeholder={t('sal.searchOrders')}
-          className="h-9 pl-8"
-        />
-      </div>
       <Card>
         <CardContent className="p-0">
           <Table>
@@ -68,7 +52,7 @@ export function OrdersList({ rows }: { rows: SalesOrderRow[] }) {
               </TableRow>
             </TableHeader>
             <TableBody>
-              {visibleRows.map((r) => (
+              {rows.map((r) => (
                 <TableRow key={r.soId}>
                   <TableCell>
                     <Link
@@ -103,10 +87,10 @@ export function OrdersList({ rows }: { rows: SalesOrderRow[] }) {
                   </TableCell>
                 </TableRow>
               ))}
-              {visibleRows.length === 0 && (
+              {rows.length === 0 && (
                 <TableRow>
                   <TableCell colSpan={6} className="text-center text-muted-foreground">
-                    {rows.length === 0 ? t('sal.noOrders') : t('sal.noOrdersMatch')}
+                    {isSearching ? t('sal.noOrdersMatch') : t('sal.noOrders')}
                   </TableCell>
                 </TableRow>
               )}
