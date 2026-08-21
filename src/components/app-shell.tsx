@@ -140,7 +140,13 @@ export function AppShell({
               <div className="text-xs text-muted-foreground">{ROLE_LABELS[user.role][locale]}</div>
             </div>
             <form action={signOutAction}>
-              <Button variant="ghost" size="icon" type="submit" title={t('nav.signOut')}>
+              <Button
+                variant="ghost"
+                size="icon"
+                type="submit"
+                title={t('nav.signOut')}
+                aria-label={t('nav.signOut')}
+              >
                 <LogOut className="h-4 w-4" />
               </Button>
             </form>

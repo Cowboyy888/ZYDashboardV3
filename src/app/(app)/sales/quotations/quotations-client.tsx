@@ -723,6 +723,7 @@ function QuotationForm({
                         type="button"
                         variant="ghost"
                         size="icon"
+                        aria-label={t('common.removeLine')}
                         onClick={() => setLines((ls) => ls.filter((_, n) => n !== i))}
                       >
                         <X className="h-4 w-4" />

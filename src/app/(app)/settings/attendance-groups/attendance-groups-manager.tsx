@@ -64,7 +64,12 @@ export function AttendanceGroupsManager({ groups }: { groups: AttendanceGroupRow
                       <ActionForm action={reorderAttendanceGroup} className="space-y-0">
                         <input type="hidden" name="id" value={g.id} />
                         <input type="hidden" name="direction" value="up" />
-                        <SubmitButton variant="ghost" size="icon" disabled={i === 0}>
+                        <SubmitButton
+                          variant="ghost"
+                          size="icon"
+                          disabled={i === 0}
+                          aria-label={t('common.moveUp')}
+                        >
                           <ArrowUp className="h-4 w-4" />
                         </SubmitButton>
                       </ActionForm>
@@ -75,6 +80,7 @@ export function AttendanceGroupsManager({ groups }: { groups: AttendanceGroupRow
                           variant="ghost"
                           size="icon"
                           disabled={i === groups.length - 1}
+                          aria-label={t('common.moveDown')}
                         >
                           <ArrowDown className="h-4 w-4" />
                         </SubmitButton>
