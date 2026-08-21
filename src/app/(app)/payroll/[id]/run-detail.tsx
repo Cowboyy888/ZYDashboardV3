@@ -52,8 +52,8 @@ export function RunDetail({
   return (
     <div className="space-y-4">
       <Card>
-        <CardHeader className="flex flex-row items-start justify-between">
-          <CardTitle className="flex items-center gap-2 text-base">
+        <CardHeader className="flex flex-row flex-wrap items-start justify-between gap-2">
+          <CardTitle className="flex flex-wrap items-center gap-2 text-base">
             <Badge variant={STATUS_VARIANT[row.status]}>
               {PAYROLL_STATUS_LABELS[row.status][locale]}
             </Badge>
@@ -64,7 +64,7 @@ export function RunDetail({
               </span>
             )}
           </CardTitle>
-          <div className="flex gap-2 print:hidden">
+          <div className="flex flex-wrap gap-2 print:hidden">
             {canManage && canEditRun(row.status) && (
               <EditRunDialog
                 runId={row.runId}

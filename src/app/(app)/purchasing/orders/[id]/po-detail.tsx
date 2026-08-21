@@ -56,16 +56,16 @@ export function PoDetail({
   return (
     <div className="space-y-4">
       <Card>
-        <CardHeader className="flex flex-row items-start justify-between">
+        <CardHeader className="flex flex-row flex-wrap items-start justify-between gap-2">
           <div>
-            <CardTitle className="flex items-center gap-2 text-base">
+            <CardTitle className="flex flex-wrap items-center gap-2 text-base">
               {row.poNumber}
               <Badge variant={STATUS_VARIANT[row.status] ?? 'outline'}>
                 {PO_STATUS_LABELS[row.status]?.[locale] ?? row.status}
               </Badge>
             </CardTitle>
           </div>
-          <div className="flex gap-2">
+          <div className="flex flex-wrap gap-2">
             <Button asChild variant="outline" size="sm">
               <a
                 href={`/api/purchasing/orders/${po.id}/pdf`}

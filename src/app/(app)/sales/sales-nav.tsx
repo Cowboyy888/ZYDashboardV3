@@ -18,13 +18,13 @@ export function SalesNav({
     { key: 'customers' as const, href: '/sales/customers', label: t('sal.customers') },
   ];
   return (
-    <div className="mb-4 flex gap-1 border-b">
+    <div className="mb-4 flex gap-1 overflow-x-auto border-b">
       {items.map((item) => (
         <Link
           key={item.key}
           href={item.href}
           className={cn(
-            'border-b-2 px-3 py-2 text-sm font-medium transition-colors',
+            'shrink-0 whitespace-nowrap border-b-2 px-3 py-2 text-sm font-medium transition-colors',
             active === item.key
               ? 'border-primary text-primary'
               : 'border-transparent text-muted-foreground hover:text-foreground',

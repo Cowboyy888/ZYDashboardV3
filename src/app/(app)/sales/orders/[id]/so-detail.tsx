@@ -1,7 +1,6 @@
 'use client';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
-import { Fragment, useState } from 'react';
 import { FileText } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -40,7 +39,7 @@ import type {
   QuotationRow,
   QuotationItemRow,
 } from '@/lib/db/types';
-import { DeliverForm } from './deliver-form';
+import { DeliverGoodsDialog } from './deliver-goods-dialog';
 import { GenerateDepositInvoiceDialog } from './generate-deposit-invoice-dialog';
 import { PrintDepositInvoiceButton } from './print-deposit-invoice-button';
 import { AddSoItemDialog } from './add-so-item-dialog';
@@ -90,7 +89,6 @@ export function SoDetail({
 }) {
   const { t, locale } = useT();
   const router = useRouter();
-  const [deliveringItem, setDeliveringItem] = useState<string | null>(null);
   const locations = Object.entries(locationName).map(([id, name]) => ({ id, name }));
 
   const soPaymentStatus = computeSoPaymentStatus(
@@ -102,9 +100,9 @@ export function SoDetail({
   return (
     <div className="space-y-4">
       <Card>
-        <CardHeader className="flex flex-row items-start justify-between">
+        <CardHeader className="flex flex-row flex-wrap items-start justify-between gap-2">
           <div>
-            <CardTitle className="flex items-center gap-2 text-base">
+            <CardTitle className="flex flex-wrap items-center gap-2 text-base">
               {row.soNumber}
               <Badge variant={STATUS_VARIANT[row.status]}>
                 {SO_STATUS_LABELS[row.status][locale]}
@@ -128,7 +126,7 @@ export function SoDetail({
               </div>
             )}
           </div>
-          <div className="flex gap-2">
+          <div className="flex flex-wrap gap-2">
             <Button asChild variant="outline" size="sm">
               <a href={`/api/sales/orders/${so.id}/pdf`} target="_blank" rel="noopener noreferrer">
                 <FileText className="h-4 w-4" /> {t('sal.print')}
@@ -214,8 +212,8 @@ export function SoDetail({
 
       {depositInvoice && (
         <Card>
-          <CardHeader className="flex flex-row items-start justify-between">
-            <CardTitle className="flex items-center gap-2 text-base">
+          <CardHeader className="flex flex-row flex-wrap items-start justify-between gap-2">
+            <CardTitle className="flex flex-wrap items-center gap-2 text-base">
               {depositInvoice.invoice_number}
               {soPaymentStatus !== 'none' && (
                 <Badge variant={DEPOSIT_STATUS_VARIANT[soPaymentStatus]}>
@@ -223,7 +221,7 @@ export function SoDetail({
                 </Badge>
               )}
             </CardTitle>
-            <div className="flex gap-2">
+            <div className="flex flex-wrap gap-2">
               <PrintDepositInvoiceButton invoice={depositInvoice} kind="deposit" />
               <PrintDepositInvoiceButton invoice={depositInvoice} kind="balance" />
             </div>
@@ -355,72 +353,50 @@ export function SoDetail({
             </TableHeader>
             <TableBody>
               {row.items.map((item) => (
-                <Fragment key={item.itemId}>
-                  <TableRow>
-                    <TableCell className="max-w-[320px]">
-                      <span className="truncate">{item.skuLabel}</span>
-                    </TableCell>
-                    <TableCell>{locationName[item.locationId] ?? '—'}</TableCell>
-                    <TableCell className="text-right tabular-nums">
-                      {item.orderedQty} {item.unit}
-                    </TableCell>
-                    <TableCell className="text-right tabular-nums">
-                      {item.deliveredQty} / {item.orderedQty}
-                      {item.outstandingQty > 0 && (
-                        <div className="text-xs text-muted-foreground">
-                          {t('sal.outstandingQty')}: {item.outstandingQty}
-                        </div>
-                      )}
-                    </TableCell>
-                    <TableCell className="text-right tabular-nums">{item.unitPrice}</TableCell>
-                    <TableCell className="text-right tabular-nums">{item.lineTotal}</TableCell>
-                    {canManage && (
-                      <TableCell className="text-right">
-                        {canDeliverAgainst(so.status as Parameters<typeof canDeliverAgainst>[0]) &&
-                          item.outstandingQty > 0 && (
-                            <Button
-                              size="sm"
-                              variant="outline"
-                              onClick={() =>
-                                setDeliveringItem(
-                                  deliveringItem === item.itemId ? null : item.itemId,
-                                )
-                              }
-                            >
-                              {t('sal.deliverGoods')}
-                            </Button>
-                          )}
-                        {so.status === 'draft' && (
-                          <ConfirmActionButton
-                            action={removeSalesOrderItem}
-                            formData={{ itemId: item.itemId, salesOrderId: so.id }}
-                            label={t('common.delete')}
-                            confirmText={t('sal.confirmRemoveItem')}
-                            variant="destructive"
-                            onSuccess={() => router.refresh()}
+                <TableRow key={item.itemId}>
+                  <TableCell className="max-w-[320px]">
+                    <span className="truncate">{item.skuLabel}</span>
+                  </TableCell>
+                  <TableCell>{locationName[item.locationId] ?? '—'}</TableCell>
+                  <TableCell className="text-right tabular-nums">
+                    {item.orderedQty} {item.unit}
+                  </TableCell>
+                  <TableCell className="text-right tabular-nums">
+                    {item.deliveredQty} / {item.orderedQty}
+                    {item.outstandingQty > 0 && (
+                      <div className="text-xs text-muted-foreground">
+                        {t('sal.outstandingQty')}: {item.outstandingQty}
+                      </div>
+                    )}
+                  </TableCell>
+                  <TableCell className="text-right tabular-nums">{item.unitPrice}</TableCell>
+                  <TableCell className="text-right tabular-nums">{item.lineTotal}</TableCell>
+                  {canManage && (
+                    <TableCell className="text-right">
+                      {canDeliverAgainst(so.status as Parameters<typeof canDeliverAgainst>[0]) &&
+                        item.outstandingQty > 0 && (
+                          <DeliverGoodsDialog
+                            itemId={item.itemId}
+                            outstandingQty={item.outstandingQty}
+                            unit={item.unit}
+                            today={today}
+                            canOverride={canOverride}
+                            onDelivered={() => router.refresh()}
                           />
                         )}
-                      </TableCell>
-                    )}
-                  </TableRow>
-                  {deliveringItem === item.itemId && (
-                    <TableRow>
-                      <TableCell colSpan={canManage ? 7 : 6} className="bg-muted/30">
-                        <DeliverForm
-                          itemId={item.itemId}
-                          outstandingQty={item.outstandingQty}
-                          unit={item.unit}
-                          today={today}
-                          canOverride={canOverride}
-                          onDone={() => {
-                            setDeliveringItem(null);
-                            router.refresh();
-                          }}
+                      {so.status === 'draft' && (
+                        <ConfirmActionButton
+                          action={removeSalesOrderItem}
+                          formData={{ itemId: item.itemId, salesOrderId: so.id }}
+                          label={t('common.delete')}
+                          confirmText={t('sal.confirmRemoveItem')}
+                          variant="destructive"
+                          onSuccess={() => router.refresh()}
                         />
-                      </TableCell>
-                    </TableRow>
+                      )}
+                    </TableCell>
                   )}
-                </Fragment>
+                </TableRow>
               ))}
             </TableBody>
           </Table>
