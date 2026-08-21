@@ -20,8 +20,10 @@
     --popover: 0 0% 100%;
     --popover-foreground: 208 16% 16%;
 
-    /* Signal red */
-    --primary: 354 74% 45%;
+    /* Signal red — matches the literal brand hex (#e31e24) used on printed
+       documents (src/lib/reports/*.ts); was previously a slightly darker,
+       less saturated approximation. */
+    --primary: 358 78% 50%;
     --primary-foreground: 0 0% 100%;
 
     --secondary: 210 16% 93%;
@@ -40,7 +42,7 @@
 
     --border: 214 16% 88%;
     --input: 214 16% 84%;
-    --ring: 354 74% 45%;
+    --ring: 358 78% 50%;
 
     --radius: 0.5rem;
   }
@@ -52,7 +54,7 @@
     --card-foreground: 210 16% 92%;
     --popover: 208 16% 14%;
     --popover-foreground: 210 16% 92%;
-    --primary: 354 78% 52%;
+    --primary: 358 78% 55%;
     --primary-foreground: 0 0% 100%;
     --secondary: 208 12% 20%;
     --secondary-foreground: 210 16% 92%;
@@ -64,7 +66,7 @@
     --destructive-foreground: 0 0% 100%;
     --border: 208 12% 24%;
     --input: 208 12% 26%;
-    --ring: 354 78% 52%;
+    --ring: 358 78% 55%;
   }
 
   * {
@@ -84,7 +86,7 @@
 
 /* Thin industrial accent bar used on the brand mark + sidebar. */
 .zy-accent-bar {
-  background: linear-gradient(180deg, hsl(var(--primary)) 0%, hsl(354 74% 38%) 100%);
+  background: linear-gradient(180deg, hsl(var(--primary)) 0%, hsl(358 78% 43%) 100%);
 }
 
 /* Printed documents (e.g. sales order letterhead) must keep their brand-red
