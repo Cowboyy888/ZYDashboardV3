@@ -11,7 +11,7 @@
     "dev": "next dev --webpack",
     "build": "next build --webpack",
     "start": "next start",
-    "lint": "next lint",
+    "lint": "eslint .",
     "format": "prettier --check \"**/*.{ts,tsx,js,mjs,json,css,md}\"",
     "format:write": "prettier --write \"**/*.{ts,tsx,js,mjs,json,css,md}\"",
     "typecheck": "tsc --noEmit",
@@ -46,6 +46,8 @@
     "zod": "^3.24.1"
   },
   "devDependencies": {
+    "@eslint/eslintrc": "^3.3.6",
+    "@eslint/js": "^10.0.1",
     "@playwright/test": "^1.49.1",
     "@types/node": "^22.10.5",
     "@types/react": "19.2.18",
@@ -53,7 +55,7 @@
     "@types/subset-font": "^2.3.0",
     "@vitejs/plugin-react": "^4.3.4",
     "autoprefixer": "^10.4.20",
-    "eslint": "10.9.0",
+    "eslint": "^9.39.5",
     "eslint-config-next": "16.3.2",
     "eslint-config-prettier": "^9.1.0",
     "postcss": "^8.4.49",

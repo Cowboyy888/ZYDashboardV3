@@ -90,7 +90,6 @@ export function AnimatedBar({
     }
     const raf = requestAnimationFrame(() => setWidth(clamped));
     return () => cancelAnimationFrame(raf);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [clamped]);
 
   return (
