@@ -146,7 +146,7 @@ export function buildInventoryRows(
       size: sku.size,
       hole: sku.hole,
       notes: sku.notes ?? null,
-      specType: classifySpecification(sku.size),
+      specType: classifySpecification(sku.size, sku.rod_count),
       label: buildSkuLabel(
         {
           familyName: fam,

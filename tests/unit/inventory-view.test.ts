@@ -45,6 +45,17 @@ describe('inventory view assembly', () => {
     expect(r.specType).toBe('standard'); // size "3×6"
   });
 
+  it('a 3×6 SKU with rod count 15根 is Special, not Standard — rod_count flows through to specType', () => {
+    const rows = buildInventoryRows(
+      [{ ...skus[0]!, id: 'sku-15rod', rod_count: '15根' }],
+      families,
+      locations,
+      [],
+      'en',
+    );
+    expect(rows[0]!.specType).toBe('special');
+  });
+
   it('reports zero for a SKU with no movements and is not low when no minimum set', () => {
     const rows = buildInventoryRows(
       [{ ...skus[0]!, minimum_level: 0 }],

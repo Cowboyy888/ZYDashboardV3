@@ -113,4 +113,18 @@ describe('classifySpecification — Standard vs Special, computed from size', ()
       expect(classifySpecification(`3${String.fromCodePoint(code)}6`)).toBe('standard');
     }
   });
+
+  it('a rod count of "15根" always forces Special, even on an otherwise-Standard 3×6/2.4×6 sheet', () => {
+    expect(classifySpecification('3×6', '15根')).toBe('special');
+    expect(classifySpecification('2.4×6', '15根')).toBe('special');
+    // Other rod counts don't trigger the exception — the size rule still applies.
+    expect(classifySpecification('3×6', '14根')).toBe('standard');
+    expect(classifySpecification('3×6', '20根')).toBe('standard');
+    // No rod count at all — unaffected.
+    expect(classifySpecification('3×6', null)).toBe('standard');
+    expect(classifySpecification('3×6')).toBe('standard');
+    // The exception still applies even with a hand-typed variant of "15根".
+    const fullwidthRodCount = [0xff11, 0xff15].map((c) => String.fromCharCode(c)).join('') + '根';
+    expect(classifySpecification('3×6', fullwidthRodCount)).toBe('special');
+  });
 });

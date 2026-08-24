@@ -115,27 +115,32 @@ export type SpecificationType = 'standard' | 'special';
 const STANDARD_SIZES = ['3×6', '2.4×6'];
 
 /**
- * `size` is typed by hand (often on a phone, sometimes via a CJK input
- * method or pasted from Excel/WeChat), so a value that LOOKS like "3×6" can
- * still fail a naive string comparison: fullwidth digits ("３×６" from a CJK
- * input method), an invisible zero-width character left over from a paste,
- * or a different but visually-identical "times" glyph instead of the "×"
- * this file uses. Code POINTS (not literal glyphs) below, so this stays
- * legible and isn't itself vulnerable to invisible-character corruption.
+ * `size`/`rod_count` are typed by hand (often on a phone, sometimes via a
+ * CJK input method or pasted from Excel/WeChat), so a value that LOOKS like
+ * "3×6" or "15根" can still fail a naive string comparison: fullwidth
+ * digits ("３×６" from a CJK input method), an invisible zero-width
+ * character left over from a paste, or (for size) a different but
+ * visually-identical "times" glyph instead of the "×" this file uses. Code
+ * POINTS (not literal glyphs) below, so this stays legible and isn't itself
+ * vulnerable to invisible-character corruption.
  */
 const ZERO_WIDTH_CODES = new Set([0x200b, 0x200c, 0x200d, 0xfeff]); // space/joiner/BOM
 const TIMES_LOOKALIKE_CODES = new Set([0x78, 0xd7, 0x2715, 0x2716, 0x2a2f]); // x × ✕ ✖ ⨯
 
-function normalizeSizeForClassification(value: string | null | undefined): string {
-  const cleaned = [...(value ?? '').trim()]
+/** Strips invisible characters and folds fullwidth ASCII down to halfwidth. */
+function stripInvisibleAndFullwidth(value: string | null | undefined): string {
+  return [...(value ?? '').trim()]
     .filter((ch) => !ZERO_WIDTH_CODES.has(ch.codePointAt(0)!))
     .map((ch) => {
       const code = ch.codePointAt(0)!;
-      if (code >= 0xff01 && code <= 0xff5e) return String.fromCharCode(code - 0xfee0); // fullwidth -> halfwidth
-      return ch;
+      return code >= 0xff01 && code <= 0xff5e ? String.fromCharCode(code - 0xfee0) : ch;
     })
     .join('')
     .toLowerCase();
+}
+
+function normalizeSizeForClassification(value: string | null | undefined): string {
+  const cleaned = stripInvisibleAndFullwidth(value);
   return [...cleaned]
     .map((ch) => (TIMES_LOOKALIKE_CODES.has(ch.codePointAt(0)!) ? '×' : ch))
     .join('')
@@ -144,19 +149,34 @@ function normalizeSizeForClassification(value: string | null | undefined): strin
     .replace(/米$/, '');
 }
 
+function normalizeRodCountForClassification(value: string | null | undefined): string {
+  return stripInvisibleAndFullwidth(value).replace(/\s+/g, '');
+}
+
 const NORMALIZED_STANDARD_SIZES = new Set(STANDARD_SIZES.map(normalizeSizeForClassification));
 
+/** Rod counts that force Special regardless of size — a business exception, not a size rule. */
+const SPECIAL_ROD_COUNTS = new Set(['15根'].map(normalizeRodCountForClassification));
+
 /**
- * Standard vs Special specification, computed from the SKU's `size` field —
- * never a manually entered/stored category, so it can't drift out of sync
- * with the size itself. Only "3×6" and "2.4×6" are Standard; every other
- * size (customer-customised dimensions, project specs, or no size at all —
- * e.g. 拔丝料/螺纹盘圆 SKUs) is Special. Normalization is tolerant of
- * "x"/"×"/"X" variants, stray whitespace, and a trailing "m"/"米" unit
- * suffix, since `size` is free-text and has been entered inconsistently.
- * Drives the Inventory Report's Standard/Special split.
+ * Standard vs Special specification, computed from the SKU's `size` (and, as
+ * an exception, `rodCount`) — never a manually entered/stored category, so
+ * it can't drift out of sync with the SKU's own attributes. Only "3×6" and
+ * "2.4×6" are Standard; every other size (customer-customised dimensions,
+ * project specs, or no size at all — e.g. 拔丝料/螺纹盘圆 SKUs) is Special.
+ * Exception: a rod count of "15根" always forces Special, even on an
+ * otherwise-Standard 3×6/2.4×6 size — a 15-rod sheet is a reinforced/custom
+ * order in this business, regardless of its sheet size. Normalization is
+ * tolerant of "x"/"×"/"X" variants, stray whitespace, and a trailing
+ * "m"/"米" unit suffix, since these fields are free-text and have been
+ * entered inconsistently. Drives the Inventory Report's Standard/Special
+ * split (dashboard, PDF/Excel exports, and the Telegram report).
  */
-export function classifySpecification(size: string | null | undefined): SpecificationType {
+export function classifySpecification(
+  size: string | null | undefined,
+  rodCount?: string | null,
+): SpecificationType {
+  if (SPECIAL_ROD_COUNTS.has(normalizeRodCountForClassification(rodCount))) return 'special';
   const normalized = normalizeSizeForClassification(size);
   return normalized.length > 0 && NORMALIZED_STANDARD_SIZES.has(normalized)
     ? 'standard'
