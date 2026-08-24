@@ -158,6 +158,7 @@ export async function buildReportText(type: ReportType, date: string): Promise<s
           hole: sku?.hole ?? null,
           rodCount: sku?.rod_count ?? null,
           extra: sku?.extra ?? null,
+          specType: r.specType,
         };
       });
 

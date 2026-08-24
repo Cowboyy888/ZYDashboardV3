@@ -110,6 +110,7 @@ export async function buildInventoryPreview(date: string): Promise<string> {
         hole: sku?.hole ?? null,
         rodCount: sku?.rod_count ?? null,
         extra: sku?.extra ?? null,
+        specType: r.specType,
       };
     });
 

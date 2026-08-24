@@ -12,6 +12,7 @@ import {
   leadingSpecNumber,
   familyDisplayRank,
   type ConditionCode,
+  type SpecificationType,
 } from './products';
 
 export interface InventoryReportRow {
@@ -31,6 +32,10 @@ export interface InventoryReportRow {
   hole: string | null;
   rodCount: string | null;
   extra: string | null;
+  /** Standard (3×6 / 2.4×6) vs Special — computed by `classifySpecification`
+   * from `size`, never a manually entered category. Splits the report into
+   * its two top-level sections, same split as the Inventory Report page. */
+  specType: SpecificationType;
 }
 
 export interface InventoryReportOptions {
@@ -76,17 +81,13 @@ function coilLine(r: InventoryReportRow): string {
 }
 
 /**
- * Build the daily inventory report: a plain-language stock list grouped by
+ * Renders one specification section's plain-language stock list: grouped by
  * family (网片 first, then 盘圆, then 拔丝料, each sorted by diameter
- * descending), followed by the low-stock warning section.
+ * descending) — the same grouping `renderInventoryReport` always used, now
+ * nested inside a Standard/Special section instead of the whole report.
  */
-export function renderInventoryReport(
-  rows: InventoryReportRow[],
-  options: InventoryReportOptions,
-): string {
+function renderSpecGroup(rows: InventoryReportRow[]): string[] {
   const lines: string[] = [];
-  const dateStr = formatDDMMYYYY(options.businessDate);
-
   const byFamily = new Map<string, InventoryReportRow[]>();
   for (const r of rows) {
     if (!byFamily.has(r.familyName)) byFamily.set(r.familyName, []);
@@ -96,9 +97,13 @@ export function renderInventoryReport(
     (a, b) => familyDisplayRank(a) - familyDisplayRank(b),
   );
 
-  familyNames.forEach((name, i) => {
-    const heading = familyHeading(name);
-    lines.push(i === 0 ? `${dateStr} ${heading}库存` : heading);
+  if (familyNames.length === 0) {
+    lines.push('（无 / none）');
+    return lines;
+  }
+
+  for (const name of familyNames) {
+    lines.push(familyHeading(name));
     lines.push('');
     const items = [...byFamily.get(name)!].sort(
       (a, b) => leadingSpecNumber(b.diameter) - leadingSpecNumber(a.diameter),
@@ -107,7 +112,35 @@ export function renderInventoryReport(
       lines.push(r.size || r.hole ? meshLine(r) : coilLine(r));
     }
     lines.push('');
-  });
+  }
+  return lines;
+}
+
+/**
+ * Build the daily inventory report: a plain-language stock list split into
+ * its two Standard (3×6 / 2.4×6) and Special specification sections — same
+ * split as the Inventory Report page, computed from `size` via
+ * `classifySpecification`, never a manually entered category. Each section
+ * keeps the existing family grouping (网片/盘圆/拔丝料, diameter descending),
+ * followed by the low-stock warning section across both.
+ */
+export function renderInventoryReport(
+  rows: InventoryReportRow[],
+  options: InventoryReportOptions,
+): string {
+  const lines: string[] = [];
+  const dateStr = formatDDMMYYYY(options.businessDate);
+
+  lines.push(`${dateStr} 库存报告 / Inventory Report`);
+  lines.push('');
+
+  lines.push('标准规格 / Standard Specification (3×6 · 2.4×6)');
+  lines.push('');
+  lines.push(...renderSpecGroup(rows.filter((r) => r.specType === 'standard')));
+
+  lines.push('特殊规格 / Special Specification');
+  lines.push('');
+  lines.push(...renderSpecGroup(rows.filter((r) => r.specType === 'special')));
 
   if (options.includeLowStockSection !== false) {
     const low = rows.filter((r) => r.isLow);
