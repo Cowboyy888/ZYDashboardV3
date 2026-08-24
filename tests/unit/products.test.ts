@@ -94,4 +94,23 @@ describe('classifySpecification — Standard vs Special, computed from size', ()
     expect(classifySpecification('2.4 x 6 m')).toBe('standard');
     expect(classifySpecification('2.4×6米')).toBe('standard');
   });
+
+  it('is tolerant of hand-typed input that LOOKS like "3×6" but isn\'t byte-identical', () => {
+    // Fullwidth digits + fullwidth "x" (typed via a CJK input method): "３ｘ６".
+    const fullwidth = [0xff13, 0xff58, 0xff16].map((c) => String.fromCharCode(c)).join('');
+    expect(classifySpecification(fullwidth)).toBe('standard');
+
+    // A zero-width space (U+200B) left over from a copy/paste, between the "3" and "×".
+    const withZeroWidth = `3${String.fromCharCode(0x200b)}×6`;
+    expect(classifySpecification(withZeroWidth)).toBe('standard');
+
+    // A leading BOM / zero-width no-break space (U+FEFF), also a common paste artifact.
+    const withBom = `${String.fromCharCode(0xfeff)}3×6`;
+    expect(classifySpecification(withBom)).toBe('standard');
+
+    // Visually-identical "times" glyphs (✕ U+2715, ✖ U+2716, ⨯ U+2A2F) instead of "×".
+    for (const code of [0x2715, 0x2716, 0x2a2f]) {
+      expect(classifySpecification(`3${String.fromCodePoint(code)}6`)).toBe('standard');
+    }
+  });
 });

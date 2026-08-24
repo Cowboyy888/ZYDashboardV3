@@ -114,11 +114,31 @@ export type SpecificationType = 'standard' | 'special';
 /** The two bulk sheet sizes 钢筋网 ships as standard stock — everything else is Special. */
 const STANDARD_SIZES = ['3×6', '2.4×6'];
 
+/**
+ * `size` is typed by hand (often on a phone, sometimes via a CJK input
+ * method or pasted from Excel/WeChat), so a value that LOOKS like "3×6" can
+ * still fail a naive string comparison: fullwidth digits ("３×６" from a CJK
+ * input method), an invisible zero-width character left over from a paste,
+ * or a different but visually-identical "times" glyph instead of the "×"
+ * this file uses. Code POINTS (not literal glyphs) below, so this stays
+ * legible and isn't itself vulnerable to invisible-character corruption.
+ */
+const ZERO_WIDTH_CODES = new Set([0x200b, 0x200c, 0x200d, 0xfeff]); // space/joiner/BOM
+const TIMES_LOOKALIKE_CODES = new Set([0x78, 0xd7, 0x2715, 0x2716, 0x2a2f]); // x × ✕ ✖ ⨯
+
 function normalizeSizeForClassification(value: string | null | undefined): string {
-  return (value ?? '')
-    .trim()
-    .toLowerCase()
-    .replace(/x/g, '×')
+  const cleaned = [...(value ?? '').trim()]
+    .filter((ch) => !ZERO_WIDTH_CODES.has(ch.codePointAt(0)!))
+    .map((ch) => {
+      const code = ch.codePointAt(0)!;
+      if (code >= 0xff01 && code <= 0xff5e) return String.fromCharCode(code - 0xfee0); // fullwidth -> halfwidth
+      return ch;
+    })
+    .join('')
+    .toLowerCase();
+  return [...cleaned]
+    .map((ch) => (TIMES_LOOKALIKE_CODES.has(ch.codePointAt(0)!) ? '×' : ch))
+    .join('')
     .replace(/\s+/g, '')
     .replace(/m$/, '')
     .replace(/米$/, '');
