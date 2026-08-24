@@ -8,9 +8,13 @@ import {
   isLowStock,
   leadingSpecNumber,
   familyDisplayRank,
+  classifySpecification,
   type ConditionCode,
+  type SpecificationType,
 } from './products';
 import { round3 } from './stock-ledger';
+
+export type { SpecificationType } from './products';
 
 export interface SkuLike {
   id: string;
@@ -23,6 +27,7 @@ export interface SkuLike {
   condition: ConditionCode;
   unit: string;
   minimum_level: number;
+  notes?: string | null;
 }
 
 export interface FamilyLike {
@@ -47,6 +52,11 @@ export interface InventoryDisplayRow {
   familyId: string;
   familyName: string;
   label: string;
+  diameter: string | null;
+  size: string | null;
+  hole: string | null;
+  notes: string | null;
+  specType: SpecificationType;
   condition: ConditionCode;
   unit: string;
   minimumLevel: number;
@@ -132,6 +142,11 @@ export function buildInventoryRows(
       skuId: sku.id,
       familyId: sku.family_id,
       familyName: fam,
+      diameter: sku.diameter,
+      size: sku.size,
+      hole: sku.hole,
+      notes: sku.notes ?? null,
+      specType: classifySpecification(sku.size),
       label: buildSkuLabel(
         {
           familyName: fam,
@@ -155,4 +170,77 @@ export function buildInventoryRows(
       isLow: isLowStock(round3(total), sku.minimum_level),
     };
   });
+}
+
+// --- Inventory Report: Standard / Special split, Reserved / Available -------
+
+export interface InventoryReportRow extends InventoryDisplayRow {
+  /** Outstanding (not yet delivered) quantity on confirmed sales orders. */
+  reserved: number;
+  /** Physical stock − reserved — reuses Sales' own committedStock number. */
+  available: number;
+  /** Customer/project name(s) with outstanding qty on this SKU, joined for display. */
+  customerProject: string;
+}
+
+/**
+ * Layers Reserved / Available and Customer/Project onto each inventory row
+ * for the Inventory Report. Reserved/Available are NOT recomputed here —
+ * both come straight from Sales' `buildCommittedStockRows` (physicalStock −
+ * outstandingOrdered) so Inventory and Sales can never disagree.
+ */
+export function buildInventoryReportRows(
+  rows: InventoryDisplayRow[],
+  committedBySku: Map<string, { outstandingOrdered: number; committedStock: number }>,
+  customersBySku: Map<string, string[]>,
+): InventoryReportRow[] {
+  return rows.map((r) => {
+    const committed = committedBySku.get(r.skuId);
+    const customers = customersBySku.get(r.skuId) ?? [];
+    return {
+      ...r,
+      reserved: committed ? round3(committed.outstandingOrdered) : 0,
+      available: committed ? committed.committedStock : r.total,
+      customerProject: customers.length ? customers.join(', ') : '—',
+    };
+  });
+}
+
+export interface SpecTypeUnitTotal {
+  specType: SpecificationType;
+  unit: string;
+  stockTotal: number;
+  reservedTotal: number;
+  availableTotal: number;
+}
+
+/**
+ * Stock/Reserved/Available totals grouped by (specification type, unit) —
+ * same "never sum across units" rule as `totalsByFamilyUnit`: a Standard
+ * total in 张 and a Special total in 吨 are never added into one number.
+ * Backs the Inventory Report's "Total Standard Stock / Total Special Stock /
+ * Total Reserved / Total Available" summary chips.
+ */
+export function totalsBySpecTypeUnit(rows: InventoryReportRow[]): SpecTypeUnitTotal[] {
+  const map = new Map<string, SpecTypeUnitTotal>();
+  for (const r of rows) {
+    const key = `${r.specType}||${r.unit}`;
+    const existing = map.get(key);
+    if (existing) {
+      existing.stockTotal = round3(existing.stockTotal + r.total);
+      existing.reservedTotal = round3(existing.reservedTotal + r.reserved);
+      existing.availableTotal = round3(existing.availableTotal + r.available);
+    } else {
+      map.set(key, {
+        specType: r.specType,
+        unit: r.unit,
+        stockTotal: round3(r.total),
+        reservedTotal: round3(r.reserved),
+        availableTotal: round3(r.available),
+      });
+    }
+  }
+  return [...map.values()].sort(
+    (a, b) => a.specType.localeCompare(b.specType) || a.unit.localeCompare(b.unit),
+  );
 }

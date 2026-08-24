@@ -4,6 +4,7 @@ import {
   skuSignature,
   isSameSku,
   isLowStock,
+  classifySpecification,
   type SkuAttributes,
 } from '@/lib/domain/products';
 
@@ -70,5 +71,27 @@ describe('low-stock detection', () => {
   it('never flags when no minimum is configured', () => {
     expect(isLowStock(0, null)).toBe(false);
     expect(isLowStock(0, 0)).toBe(false);
+  });
+});
+
+describe('classifySpecification — Standard vs Special, computed from size', () => {
+  it('classifies the two bulk sheet sizes as Standard', () => {
+    expect(classifySpecification('3×6')).toBe('standard');
+    expect(classifySpecification('2.4×6')).toBe('standard');
+  });
+
+  it('classifies every other size as Special', () => {
+    expect(classifySpecification('2×6')).toBe('special'); // close, but not one of the two exact sizes
+    expect(classifySpecification('4×8')).toBe('special');
+    expect(classifySpecification('custom')).toBe('special');
+    expect(classifySpecification(null)).toBe('special'); // wire/coil SKUs have no size at all
+  });
+
+  it('is tolerant of "x"/"×"/"X", whitespace, and a trailing m/米 unit suffix', () => {
+    expect(classifySpecification('3x6')).toBe('standard');
+    expect(classifySpecification('3X6')).toBe('standard');
+    expect(classifySpecification(' 3 × 6 ')).toBe('standard');
+    expect(classifySpecification('2.4 x 6 m')).toBe('standard');
+    expect(classifySpecification('2.4×6米')).toBe('standard');
   });
 });

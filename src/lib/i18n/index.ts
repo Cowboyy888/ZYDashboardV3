@@ -187,6 +187,36 @@ export const dictionary = {
   'inv.movement.transfer_out': { en: 'Transfer out', zh: '调拨出库' },
   'inv.movement.transfer_in': { en: 'Transfer in', zh: '调拨入库' },
 
+  // Inventory Report (Standard / Special split)
+  'inv.reportTab': { en: 'Report', zh: '报表' },
+  'inv.reportDesc': {
+    en: 'Standard bulk sizes vs. Special / custom specifications, with Reserved and Available stock.',
+    zh: '标准规格与特殊/定制规格分开显示，含预留与可用库存。',
+  },
+  'inv.standardSpec': { en: 'Standard Specification', zh: '标准规格' },
+  'inv.standardSpecDesc': { en: '3 × 6 m | 2.4 × 6 m', zh: '3 × 6 米 | 2.4 × 6 米' },
+  'inv.specialSpec': { en: 'Special Specification', zh: '特殊规格' },
+  'inv.specialSpecDesc': { en: 'All other sizes', zh: '其他所有尺寸' },
+  'inv.product': { en: 'Product', zh: '产品' },
+  'inv.diameter': { en: 'Diameter', zh: '直径' },
+  'inv.size': { en: 'Size', zh: '尺寸' },
+  'inv.meshOpening': { en: 'Mesh Opening', zh: '网孔' },
+  'inv.reserved': { en: 'Reserved', zh: '预留' },
+  'inv.available': { en: 'Available', zh: '可用' },
+  'inv.remarks': { en: 'Remarks', zh: '备注' },
+  'inv.customerProject': { en: 'Customer/Project', zh: '客户/项目' },
+  'inv.totalStandardStock': { en: 'Total Standard Stock', zh: '标准规格库存合计' },
+  'inv.totalSpecialStock': { en: 'Total Special Stock', zh: '特殊规格库存合计' },
+  'inv.totalReserved': { en: 'Total Reserved', zh: '预留合计' },
+  'inv.totalAvailable': { en: 'Total Available', zh: '可用合计' },
+  'inv.filterSpecType': { en: 'Specification Type', zh: '规格类型' },
+  'inv.noReportRows': {
+    en: 'No specifications match these filters.',
+    zh: '没有符合筛选条件的规格。',
+  },
+  'inv.downloadPdf': { en: 'Download PDF', zh: '下载 PDF' },
+  'inv.downloadExcel': { en: 'Download Excel', zh: '下载 Excel' },
+
   // Employees
   'emp.title': { en: 'Employees', zh: '员工' },
   'emp.desc': {

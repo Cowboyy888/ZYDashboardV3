@@ -1,6 +1,6 @@
 'use client';
-import { useEffect, useRef, useState, useTransition, useActionState } from 'react';
-import { Loader2, Pencil, Plus, X } from 'lucide-react';
+import { useEffect, useMemo, useRef, useState, useTransition, useActionState } from 'react';
+import { Loader2, Pencil, Plus, X, Download, FileText } from 'lucide-react';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Badge } from '@/components/ui/badge';
@@ -37,7 +37,13 @@ import { MOVEMENT_DIRECTION, type MovementType } from '@/lib/domain/stock-ledger
 import { type MessageKey } from '@/lib/i18n';
 import type { ActionState } from '@/lib/actions/types';
 import { formatDDMMYYYY } from '@/lib/domain/datetime';
-import { totalsByFamilyUnit, type InventoryDisplayRow } from '@/lib/domain/inventory-view';
+import { round3 } from '@/lib/domain/stock-ledger';
+import {
+  totalsByFamilyUnit,
+  totalsBySpecTypeUnit,
+  type InventoryDisplayRow,
+  type InventoryReportRow,
+} from '@/lib/domain/inventory-view';
 import type { StockMovementRow, SkuRow } from '@/lib/db/types';
 
 interface LocationOpt {
@@ -54,6 +60,7 @@ interface FamilyOpt {
 
 export function InventoryClient({
   rows,
+  reportRows,
   skus,
   families,
   locations,
@@ -66,6 +73,7 @@ export function InventoryClient({
   today,
 }: {
   rows: InventoryDisplayRow[];
+  reportRows: InventoryReportRow[];
   skus: SkuRow[];
   families: FamilyOpt[];
   locations: LocationOpt[];
@@ -97,6 +105,7 @@ export function InventoryClient({
           <TabsTrigger value="stock">{t('inv.stockTab')}</TabsTrigger>
           {canRecord && <TabsTrigger value="record">{t('inv.recordTab')}</TabsTrigger>}
           <TabsTrigger value="ledger">{t('inv.ledgerTab')}</TabsTrigger>
+          <TabsTrigger value="report">{t('inv.reportTab')}</TabsTrigger>
         </TabsList>
         {canSend && (
           <SendNowButton
@@ -429,7 +438,328 @@ export function InventoryClient({
           </CardContent>
         </Card>
       </TabsContent>
+
+      {/* --- Report: Standard / Special split --- */}
+      <TabsContent value="report">
+        <InventoryReportPanel reportRows={reportRows} />
+      </TabsContent>
     </Tabs>
+  );
+}
+
+// --- Report tab: Standard / Special split, filters, totals, exports ---------
+
+function uniqueSorted(values: Array<string | null | undefined>): string[] {
+  return [...new Set(values.filter((v): v is string => !!v && v.trim().length > 0))].sort((a, b) =>
+    a.localeCompare(b),
+  );
+}
+
+function InventoryReportPanel({ reportRows }: { reportRows: InventoryReportRow[] }) {
+  const { t } = useT();
+  const [specTypeFilter, setSpecTypeFilter] = useState<'all' | 'standard' | 'special'>('all');
+  const [diameterFilter, setDiameterFilter] = useState('');
+  const [sizeFilter, setSizeFilter] = useState('');
+  const [holeFilter, setHoleFilter] = useState('');
+  const [customerFilter, setCustomerFilter] = useState('');
+  const [statusFilter, setStatusFilter] = useState<'all' | 'low' | 'ok'>('all');
+
+  const diameterOptions = useMemo(
+    () => uniqueSorted(reportRows.map((r) => r.diameter)),
+    [reportRows],
+  );
+  const sizeOptions = useMemo(() => uniqueSorted(reportRows.map((r) => r.size)), [reportRows]);
+  const holeOptions = useMemo(() => uniqueSorted(reportRows.map((r) => r.hole)), [reportRows]);
+  const customerOptions = useMemo(
+    () =>
+      uniqueSorted(reportRows.map((r) => (r.customerProject === '—' ? null : r.customerProject))),
+    [reportRows],
+  );
+
+  const filtered = useMemo(
+    () =>
+      reportRows.filter((r) => {
+        if (specTypeFilter !== 'all' && r.specType !== specTypeFilter) return false;
+        if (diameterFilter && r.diameter !== diameterFilter) return false;
+        if (sizeFilter && r.size !== sizeFilter) return false;
+        if (holeFilter && r.hole !== holeFilter) return false;
+        if (customerFilter && r.customerProject !== customerFilter) return false;
+        if (statusFilter === 'low' && !r.isLow) return false;
+        if (statusFilter === 'ok' && r.isLow) return false;
+        return true;
+      }),
+    [
+      reportRows,
+      specTypeFilter,
+      diameterFilter,
+      sizeFilter,
+      holeFilter,
+      customerFilter,
+      statusFilter,
+    ],
+  );
+
+  const standardRows = filtered.filter((r) => r.specType === 'standard');
+  const specialRows = filtered.filter((r) => r.specType === 'special');
+
+  const unitTotals = totalsBySpecTypeUnit(filtered);
+  const standardTotals = unitTotals.filter((u) => u.specType === 'standard');
+  const specialTotals = unitTotals.filter((u) => u.specType === 'special');
+  const reservedByUnit = new Map<string, number>();
+  const availableByUnit = new Map<string, number>();
+  for (const u of unitTotals) {
+    reservedByUnit.set(u.unit, round3((reservedByUnit.get(u.unit) ?? 0) + u.reservedTotal));
+    availableByUnit.set(u.unit, round3((availableByUnit.get(u.unit) ?? 0) + u.availableTotal));
+  }
+
+  return (
+    <div className="space-y-4">
+      <Card>
+        <CardContent className="flex flex-wrap items-end justify-between gap-3 pt-6">
+          <div className="flex flex-wrap items-end gap-3">
+            <div className="space-y-1.5">
+              <Label htmlFor="rep-spec">{t('inv.filterSpecType')}</Label>
+              <NativeSelect
+                id="rep-spec"
+                value={specTypeFilter}
+                onChange={(e) => setSpecTypeFilter(e.target.value as typeof specTypeFilter)}
+                className="w-44"
+              >
+                <option value="all">{t('common.all')}</option>
+                <option value="standard">{t('inv.standardSpec')}</option>
+                <option value="special">{t('inv.specialSpec')}</option>
+              </NativeSelect>
+            </div>
+            <div className="space-y-1.5">
+              <Label htmlFor="rep-dia">{t('inv.diameter')}</Label>
+              <NativeSelect
+                id="rep-dia"
+                value={diameterFilter}
+                onChange={(e) => setDiameterFilter(e.target.value)}
+                className="w-32"
+              >
+                <option value="">{t('common.all')}</option>
+                {diameterOptions.map((d) => (
+                  <option key={d} value={d}>
+                    {d}
+                  </option>
+                ))}
+              </NativeSelect>
+            </div>
+            <div className="space-y-1.5">
+              <Label htmlFor="rep-size">{t('inv.size')}</Label>
+              <NativeSelect
+                id="rep-size"
+                value={sizeFilter}
+                onChange={(e) => setSizeFilter(e.target.value)}
+                className="w-32"
+              >
+                <option value="">{t('common.all')}</option>
+                {sizeOptions.map((s) => (
+                  <option key={s} value={s}>
+                    {s}
+                  </option>
+                ))}
+              </NativeSelect>
+            </div>
+            <div className="space-y-1.5">
+              <Label htmlFor="rep-hole">{t('inv.meshOpening')}</Label>
+              <NativeSelect
+                id="rep-hole"
+                value={holeFilter}
+                onChange={(e) => setHoleFilter(e.target.value)}
+                className="w-32"
+              >
+                <option value="">{t('common.all')}</option>
+                {holeOptions.map((h) => (
+                  <option key={h} value={h}>
+                    {h}
+                  </option>
+                ))}
+              </NativeSelect>
+            </div>
+            <div className="space-y-1.5">
+              <Label htmlFor="rep-cust">{t('inv.customerProject')}</Label>
+              <NativeSelect
+                id="rep-cust"
+                value={customerFilter}
+                onChange={(e) => setCustomerFilter(e.target.value)}
+                className="w-40"
+              >
+                <option value="">{t('common.all')}</option>
+                {customerOptions.map((c) => (
+                  <option key={c} value={c}>
+                    {c}
+                  </option>
+                ))}
+              </NativeSelect>
+            </div>
+            <div className="space-y-1.5">
+              <Label htmlFor="rep-status">{t('common.status')}</Label>
+              <NativeSelect
+                id="rep-status"
+                value={statusFilter}
+                onChange={(e) => setStatusFilter(e.target.value as typeof statusFilter)}
+                className="w-32"
+              >
+                <option value="all">{t('common.all')}</option>
+                <option value="low">{t('common.low')}</option>
+                <option value="ok">{t('common.ok')}</option>
+              </NativeSelect>
+            </div>
+          </div>
+          <div className="flex gap-2">
+            <Button asChild variant="outline">
+              <a href="/api/export/inventory/pdf" target="_blank" rel="noopener noreferrer">
+                <FileText className="h-4 w-4" /> {t('inv.downloadPdf')}
+              </a>
+            </Button>
+            <Button asChild variant="outline">
+              <a href="/api/export/inventory">
+                <Download className="h-4 w-4" /> {t('inv.downloadExcel')}
+              </a>
+            </Button>
+          </div>
+        </CardContent>
+      </Card>
+
+      <ReportTotals
+        title={t('inv.totalStandardStock')}
+        totals={standardTotals.map((u) => ({ unit: u.unit, value: u.stockTotal }))}
+      />
+      <ReportTotals
+        title={t('inv.totalSpecialStock')}
+        totals={specialTotals.map((u) => ({ unit: u.unit, value: u.stockTotal }))}
+      />
+      <ReportTotals
+        title={t('inv.totalReserved')}
+        totals={[...reservedByUnit.entries()].map(([unit, value]) => ({ unit, value }))}
+      />
+      <ReportTotals
+        title={t('inv.totalAvailable')}
+        totals={[...availableByUnit.entries()].map(([unit, value]) => ({ unit, value }))}
+      />
+
+      <ReportSection
+        title={t('inv.standardSpec')}
+        desc={t('inv.standardSpecDesc')}
+        rows={standardRows}
+        showExtra={false}
+      />
+      <ReportSection
+        title={t('inv.specialSpec')}
+        desc={t('inv.specialSpecDesc')}
+        rows={specialRows}
+        showExtra
+      />
+    </div>
+  );
+}
+
+function ReportTotals({
+  title,
+  totals,
+}: {
+  title: string;
+  totals: Array<{ unit: string; value: number }>;
+}) {
+  return (
+    <div className="rounded-lg border bg-card p-3">
+      <div className="mb-2 text-xs font-medium uppercase tracking-wide text-muted-foreground">
+        {title}
+      </div>
+      <div className="flex flex-wrap gap-x-6 gap-y-1.5">
+        {totals.map((u) => (
+          <span key={u.unit} className="text-sm font-semibold tabular-nums">
+            {u.value.toLocaleString()} {u.unit}
+          </span>
+        ))}
+        {totals.length === 0 && <span className="text-sm text-muted-foreground">—</span>}
+      </div>
+    </div>
+  );
+}
+
+function ReportSection({
+  title,
+  desc,
+  rows,
+  showExtra,
+}: {
+  title: string;
+  desc: string;
+  rows: InventoryReportRow[];
+  showExtra: boolean;
+}) {
+  const { t } = useT();
+  const colSpan = showExtra ? 11 : 9;
+  return (
+    <Card>
+      <CardHeader className="flex flex-row items-center justify-between">
+        <div>
+          <CardTitle className="text-base uppercase tracking-wide">{title}</CardTitle>
+          <p className="text-xs text-muted-foreground">{desc}</p>
+        </div>
+        <Badge variant="secondary">{rows.length}</Badge>
+      </CardHeader>
+      <CardContent className="p-0">
+        <Table>
+          <TableHeader>
+            <TableRow>
+              <TableHead>{t('inv.product')}</TableHead>
+              <TableHead>{t('inv.diameter')}</TableHead>
+              <TableHead>{t('inv.size')}</TableHead>
+              <TableHead>{t('inv.meshOpening')}</TableHead>
+              <TableHead className="text-right">{t('common.quantity')}</TableHead>
+              <TableHead className="text-right">{t('inv.reserved')}</TableHead>
+              <TableHead className="text-right">{t('inv.available')}</TableHead>
+              <TableHead>{t('common.unit')}</TableHead>
+              {showExtra && <TableHead>{t('common.status')}</TableHead>}
+              {showExtra && <TableHead>{t('inv.customerProject')}</TableHead>}
+              <TableHead>{t('inv.remarks')}</TableHead>
+            </TableRow>
+          </TableHeader>
+          <TableBody>
+            {rows.map((r) => (
+              <TableRow key={r.skuId}>
+                <TableCell className="max-w-[260px] truncate">{r.familyName}</TableCell>
+                <TableCell>{r.diameter ?? '—'}</TableCell>
+                <TableCell>{r.size ?? '—'}</TableCell>
+                <TableCell>{r.hole ?? '—'}</TableCell>
+                <TableCell className="text-right font-semibold tabular-nums">{r.total}</TableCell>
+                <TableCell className="text-right tabular-nums">{r.reserved}</TableCell>
+                <TableCell className="text-right tabular-nums">{r.available}</TableCell>
+                <TableCell>{r.unit}</TableCell>
+                {showExtra && (
+                  <TableCell>
+                    {r.isLow ? (
+                      <Badge variant="warning">{t('common.low')}</Badge>
+                    ) : (
+                      <Badge variant="secondary">{t('common.ok')}</Badge>
+                    )}
+                  </TableCell>
+                )}
+                {showExtra && (
+                  <TableCell className="max-w-[200px] truncate text-sm text-muted-foreground">
+                    {r.customerProject}
+                  </TableCell>
+                )}
+                <TableCell className="max-w-[200px] truncate text-sm text-muted-foreground">
+                  {r.notes ?? '—'}
+                </TableCell>
+              </TableRow>
+            ))}
+            {rows.length === 0 && (
+              <TableRow>
+                <TableCell colSpan={colSpan} className="text-center text-muted-foreground">
+                  {t('inv.noReportRows')}
+                </TableCell>
+              </TableRow>
+            )}
+          </TableBody>
+        </Table>
+      </CardContent>
+    </Card>
   );
 }
 

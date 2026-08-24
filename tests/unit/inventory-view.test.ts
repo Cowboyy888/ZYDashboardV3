@@ -1,6 +1,11 @@
 import { describe, it, expect } from 'vitest';
-import { buildInventoryRows, totalsByFamilyUnit } from '@/lib/domain/inventory-view';
-import type { InventoryDisplayRow } from '@/lib/domain/inventory-view';
+import {
+  buildInventoryRows,
+  totalsByFamilyUnit,
+  buildInventoryReportRows,
+  totalsBySpecTypeUnit,
+} from '@/lib/domain/inventory-view';
+import type { InventoryDisplayRow, InventoryReportRow } from '@/lib/domain/inventory-view';
 
 const families = [{ id: 'fam-mesh', name: '钢筋网' }];
 const locations = [
@@ -37,6 +42,7 @@ describe('inventory view assembly', () => {
     expect(r.isLow).toBe(true); // 90 <= min 100
     expect(r.label).toContain('钢筋网');
     expect(r.label).toContain('Normal');
+    expect(r.specType).toBe('standard'); // size "3×6"
   });
 
   it('reports zero for a SKU with no movements and is not low when no minimum set', () => {
@@ -86,6 +92,11 @@ describe('totalsByFamilyUnit — never sum across units', () => {
     familyId,
     familyName,
     label: `${familyName} ${unit}`,
+    diameter: null,
+    size: null,
+    hole: null,
+    notes: null,
+    specType: 'special',
     condition: 'normal',
     unit,
     minimumLevel: 0,
@@ -124,5 +135,88 @@ describe('totalsByFamilyUnit — never sum across units', () => {
     // The 张 count and the 吨 count are never combined.
     expect(totals.find((t) => t.unit === '张')!.total).toBe(100);
     expect(totals.find((t) => t.unit === '吨')!.total).toBe(5);
+  });
+});
+
+describe('Inventory Report — Reserved / Available + Standard/Special totals', () => {
+  const displayRow = (over: Partial<InventoryDisplayRow> = {}): InventoryDisplayRow => ({
+    skuId: 'sku-1',
+    familyId: 'fam-mesh',
+    familyName: '钢筋网',
+    label: '钢筋网 · 3×6 (张)',
+    diameter: '9厘',
+    size: '3×6',
+    hole: '20孔',
+    notes: null,
+    specType: 'standard',
+    condition: 'normal',
+    unit: '张',
+    minimumLevel: 100,
+    storageRoom: 60,
+    warehouse: 30,
+    other: 0,
+    total: 90,
+    isLow: true,
+    ...over,
+  });
+
+  it('layers Reserved/Available from the committed-stock map onto each row', () => {
+    const rows = [displayRow()];
+    const committedBySku = new Map([['sku-1', { outstandingOrdered: 20, committedStock: 70 }]]);
+    const customersBySku = new Map([['sku-1', ['ABC Construction', 'XYZ Builders']]]);
+    const report = buildInventoryReportRows(rows, committedBySku, customersBySku);
+    expect(report[0]!.reserved).toBe(20);
+    expect(report[0]!.available).toBe(70);
+    expect(report[0]!.customerProject).toBe('ABC Construction, XYZ Builders');
+  });
+
+  it('defaults Reserved to 0 and Available to physical total when a SKU has no outstanding orders', () => {
+    const rows = [displayRow({ skuId: 'sku-2' })];
+    const report = buildInventoryReportRows(rows, new Map(), new Map());
+    expect(report[0]!.reserved).toBe(0);
+    expect(report[0]!.available).toBe(90);
+    expect(report[0]!.customerProject).toBe('—');
+  });
+
+  it('totals Stock/Reserved/Available by (specType, unit) — never mixing Standard and Special or different units', () => {
+    const reportRows: InventoryReportRow[] = [
+      {
+        ...displayRow({ skuId: 'a' }),
+        specType: 'standard',
+        unit: '张',
+        total: 100,
+        reserved: 10,
+        available: 90,
+        customerProject: '—',
+      },
+      {
+        ...displayRow({ skuId: 'b' }),
+        specType: 'standard',
+        unit: '张',
+        total: 50,
+        reserved: 5,
+        available: 45,
+        customerProject: '—',
+      },
+      {
+        ...displayRow({ skuId: 'c', size: null, familyName: '螺纹盘圆' }),
+        specType: 'special',
+        unit: '吨',
+        total: 12,
+        reserved: 2,
+        available: 10,
+        customerProject: '—',
+      },
+    ];
+    const totals = totalsBySpecTypeUnit(reportRows);
+    expect(totals).toHaveLength(2); // standard/张 and special/吨 — never combined
+    const standard = totals.find((u) => u.specType === 'standard' && u.unit === '张')!;
+    const special = totals.find((u) => u.specType === 'special' && u.unit === '吨')!;
+    expect(standard.stockTotal).toBe(150);
+    expect(standard.reservedTotal).toBe(15);
+    expect(standard.availableTotal).toBe(135);
+    expect(special.stockTotal).toBe(12);
+    expect(special.reservedTotal).toBe(2);
+    expect(special.availableTotal).toBe(10);
   });
 });

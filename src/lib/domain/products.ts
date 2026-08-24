@@ -109,6 +109,40 @@ export function leadingSpecNumber(value: string | null): number {
   return m ? Number(m[0]) : -Infinity;
 }
 
+export type SpecificationType = 'standard' | 'special';
+
+/** The two bulk sheet sizes 钢筋网 ships as standard stock — everything else is Special. */
+const STANDARD_SIZES = ['3×6', '2.4×6'];
+
+function normalizeSizeForClassification(value: string | null | undefined): string {
+  return (value ?? '')
+    .trim()
+    .toLowerCase()
+    .replace(/x/g, '×')
+    .replace(/\s+/g, '')
+    .replace(/m$/, '')
+    .replace(/米$/, '');
+}
+
+const NORMALIZED_STANDARD_SIZES = new Set(STANDARD_SIZES.map(normalizeSizeForClassification));
+
+/**
+ * Standard vs Special specification, computed from the SKU's `size` field —
+ * never a manually entered/stored category, so it can't drift out of sync
+ * with the size itself. Only "3×6" and "2.4×6" are Standard; every other
+ * size (customer-customised dimensions, project specs, or no size at all —
+ * e.g. 拔丝料/螺纹盘圆 SKUs) is Special. Normalization is tolerant of
+ * "x"/"×"/"X" variants, stray whitespace, and a trailing "m"/"米" unit
+ * suffix, since `size` is free-text and has been entered inconsistently.
+ * Drives the Inventory Report's Standard/Special split.
+ */
+export function classifySpecification(size: string | null | undefined): SpecificationType {
+  const normalized = normalizeSizeForClassification(size);
+  return normalized.length > 0 && NORMALIZED_STANDARD_SIZES.has(normalized)
+    ? 'standard'
+    : 'special';
+}
+
 /**
  * Display order for product families — 钢筋网 (mesh) first, then 螺纹盘圆
  * (coil), then 拔丝料 (wire); any other family sorts after these, in

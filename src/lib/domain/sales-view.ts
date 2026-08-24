@@ -225,3 +225,23 @@ export function buildCommittedStockRows(
     };
   });
 }
+
+/**
+ * Customer/project name(s) with outstanding (not yet delivered) qty on each
+ * SKU — same status/outstandingQty filter as `buildCommittedStockRows`, so
+ * "who is this reserved stock earmarked for" always matches "how much is
+ * reserved". Used by the Inventory Report's Customer/Project column.
+ */
+export function buildOutstandingCustomersBySku(soRows: SalesOrderRow[]): Map<string, string[]> {
+  const bySku = new Map<string, string[]>();
+  for (const so of soRows) {
+    if (so.status !== 'confirmed' && so.status !== 'partially_delivered') continue;
+    for (const item of so.items) {
+      if (item.outstandingQty <= 0) continue;
+      const names = bySku.get(item.skuId) ?? [];
+      if (!names.includes(so.customerName)) names.push(so.customerName);
+      bySku.set(item.skuId, names);
+    }
+  }
+  return bySku;
+}
