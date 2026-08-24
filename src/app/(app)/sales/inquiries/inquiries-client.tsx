@@ -95,6 +95,8 @@ export function InquiriesClient({
   const [customerTypeFilter, setCustomerTypeFilter] = useState('');
   const [salespersonFilter, setSalespersonFilter] = useState('');
   const [productFilter, setProductFilter] = useState('');
+  const [dateFromFilter, setDateFromFilter] = useState('');
+  const [dateToFilter, setDateToFilter] = useState('');
 
   const filteredInquiries = useMemo(() => {
     const q = search.trim().toLowerCase();
@@ -103,6 +105,10 @@ export function InquiriesClient({
       if (customerTypeFilter && i.customer_type_id !== customerTypeFilter) return false;
       if (salespersonFilter && i.salesperson_id !== salespersonFilter) return false;
       if (productFilter && i.family_id !== productFilter) return false;
+      // inquiry_date is an ISO "YYYY-MM-DD" string — plain string comparison
+      // sorts the same as date order, no Date parsing needed.
+      if (dateFromFilter && i.inquiry_date < dateFromFilter) return false;
+      if (dateToFilter && i.inquiry_date > dateToFilter) return false;
       if (
         q &&
         !`${i.customer_name} ${i.company_name ?? ''} ${i.inquiry_no ?? ''}`
@@ -112,7 +118,16 @@ export function InquiriesClient({
         return false;
       return true;
     });
-  }, [inquiries, search, statusFilter, customerTypeFilter, salespersonFilter, productFilter]);
+  }, [
+    inquiries,
+    search,
+    statusFilter,
+    customerTypeFilter,
+    salespersonFilter,
+    productFilter,
+    dateFromFilter,
+    dateToFilter,
+  ]);
 
   const summary = useMemo(
     () =>
@@ -263,6 +278,28 @@ export function InquiriesClient({
                   </option>
                 ))}
               </NativeSelect>
+            </div>
+            <div className="space-y-1.5">
+              <Label htmlFor="inq-filter-date-from">{t('common.dateFrom')}</Label>
+              <Input
+                id="inq-filter-date-from"
+                type="date"
+                value={dateFromFilter}
+                max={dateToFilter || undefined}
+                onChange={(e) => setDateFromFilter(e.target.value)}
+                className="w-40"
+              />
+            </div>
+            <div className="space-y-1.5">
+              <Label htmlFor="inq-filter-date-to">{t('common.dateTo')}</Label>
+              <Input
+                id="inq-filter-date-to"
+                type="date"
+                value={dateToFilter}
+                min={dateFromFilter || undefined}
+                onChange={(e) => setDateToFilter(e.target.value)}
+                className="w-40"
+              />
             </div>
           </CardContent>
         </Card>

@@ -56,6 +56,8 @@ export const dictionary = {
   'common.previous': { en: 'Previous', zh: '上一页' },
   'common.next': { en: 'Next', zh: '下一页' },
   'common.date': { en: 'Date', zh: '日期' },
+  'common.dateFrom': { en: 'Date from', zh: '起始日期' },
+  'common.dateTo': { en: 'Date to', zh: '结束日期' },
   'common.quantity': { en: 'Quantity', zh: '数量' },
   'common.unit': { en: 'Unit', zh: '单位' },
   'common.location': { en: 'Location', zh: '地点' },
