@@ -607,6 +607,8 @@ export const dictionary = {
   'pur.createDraft': { en: 'Create draft', zh: '创建草稿' },
 
   'pur.noOrders': { en: 'No purchase orders yet.', zh: '暂无采购订单。' },
+  'pur.searchOrders': { en: 'Search PO no. or supplier', zh: '搜索采购单号或供应商' },
+  'pur.noOrdersMatch': { en: 'No orders match your search.', zh: '没有符合搜索条件的订单。' },
   'pur.issue': { en: 'Issue', zh: '下单确认' },
   'pur.cancel': { en: 'Cancel PO', zh: '取消订单' },
   'pur.print': { en: 'View PDF', zh: '查看 PDF' },
@@ -643,6 +645,8 @@ export const dictionary = {
   'quo.new': { en: 'New quotation', zh: '新增报价单' },
   'quo.edit': { en: 'Edit quotation', zh: '编辑报价单' },
   'quo.none': { en: 'No quotations yet.', zh: '暂无报价单。' },
+  'quo.noneMatch': { en: 'No quotations match your search.', zh: '没有符合搜索条件的报价单。' },
+  'quo.searchQuotations': { en: 'Search quotation no. or customer', zh: '搜索报价单号或客户' },
   'quo.customer': { en: 'Customer', zh: '客户' },
   'quo.linkCustomer': { en: 'Link to customer record', zh: '关联客户档案' },
   'quo.contact': { en: 'Contact / Tel', zh: '联系电话' },

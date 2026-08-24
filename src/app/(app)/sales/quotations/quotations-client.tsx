@@ -74,12 +74,14 @@ export function QuotationsClient({
   customers,
   canManage,
   linkedOrders,
+  isSearching = false,
 }: {
   quotations: QuotationRow[];
   items: QuotationItemRow[];
   customers: Opt[];
   canManage: boolean;
   linkedOrders: { quotationId: string; soId: string; soNumber: string | null }[];
+  isSearching?: boolean;
 }) {
   const { t } = useT();
   const [editing, setEditing] = useState<QuotationRow | null>(null);
@@ -284,7 +286,7 @@ export function QuotationsClient({
               {quotations.length === 0 && (
                 <TableRow>
                   <TableCell colSpan={7} className="text-center text-muted-foreground">
-                    {t('quo.none')}
+                    {isSearching ? t('quo.noneMatch') : t('quo.none')}
                   </TableCell>
                 </TableRow>
               )}

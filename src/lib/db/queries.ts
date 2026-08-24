@@ -417,6 +417,49 @@ export async function getPurchaseOrders(): Promise<PurchaseOrderRow[]> {
   }
 }
 
+/**
+ * Paginated + searchable purchase_orders — the list page's real query.
+ * getPurchaseOrders() (unfiltered, above) stays for callers that genuinely
+ * need every order (exports). Same shape as getSalesOrdersPage: search
+ * matches po_number directly, plus supplier name via a resolve-then-filter
+ * step, both folded into one .or() so pagination's count/range stays over a
+ * single query.
+ */
+export async function getPurchaseOrdersPage({
+  page,
+  pageSize = DEFAULT_PAGE_SIZE,
+  search,
+}: {
+  page: number;
+  pageSize?: number;
+  search?: string;
+}): Promise<PageResult<PurchaseOrderRow>> {
+  try {
+    const supabase = await client();
+    const from = (page - 1) * pageSize;
+    const to = from + pageSize - 1;
+    let q = supabase.from('purchase_orders').select('*', { count: 'exact' });
+
+    const term = search ? sanitizeSearchTerm(search) : '';
+    if (term) {
+      const { data: matches } = await supabase
+        .from('suppliers')
+        .select('id')
+        .ilike('name', `%${term}%`);
+      const supplierIds = (matches ?? []).map((s) => s.id);
+      const orParts = [`po_number.ilike.%${term}%`];
+      if (supplierIds.length > 0) orParts.push(`supplier_id.in.(${supplierIds.join(',')})`);
+      q = q.or(orParts.join(','));
+    }
+
+    const { data, count } = await q.order('created_at', { ascending: false }).range(from, to);
+    return { rows: (data as PurchaseOrderRow[]) ?? [], total: count ?? 0 };
+  } catch (e) {
+    console.error('[queries] getPurchaseOrdersPage', e);
+    return { rows: [], total: 0 };
+  }
+}
+
 export async function getPurchaseOrder(id: string): Promise<PurchaseOrderRow | null> {
   try {
     const supabase = await client();
@@ -430,12 +473,14 @@ export async function getPurchaseOrder(id: string): Promise<PurchaseOrderRow | n
 
 /** Free-text product lines — mirrors getPurchaseOrderItems' shape, no sku_id. */
 export async function getPurchaseOrderManualItems(
-  purchaseOrderId?: string,
+  purchaseOrderId?: string | string[],
 ): Promise<PurchaseOrderManualItemRow[]> {
+  if (Array.isArray(purchaseOrderId) && purchaseOrderId.length === 0) return [];
   try {
     const supabase = await client();
     let q = supabase.from('purchase_order_manual_items').select('*').order('created_at');
-    if (purchaseOrderId) q = q.eq('purchase_order_id', purchaseOrderId);
+    if (Array.isArray(purchaseOrderId)) q = q.in('purchase_order_id', purchaseOrderId);
+    else if (purchaseOrderId) q = q.eq('purchase_order_id', purchaseOrderId);
     const { data } = await q;
     return (data as PurchaseOrderManualItemRow[]) ?? [];
   } catch (e) {
@@ -909,6 +954,44 @@ export async function getQuotations(): Promise<QuotationRow[]> {
   }
 }
 
+/**
+ * Paginated + searchable quotations — the list page's real query.
+ * getQuotations() (unfiltered, above) stays for callers that genuinely need
+ * every quotation (exports). customer_name is denormalized directly onto
+ * the row (unlike sales_orders/purchase_orders), so search is a single
+ * .or() with no resolve-then-filter join step.
+ */
+export async function getQuotationsPage({
+  page,
+  pageSize = DEFAULT_PAGE_SIZE,
+  search,
+}: {
+  page: number;
+  pageSize?: number;
+  search?: string;
+}): Promise<PageResult<QuotationRow>> {
+  try {
+    const supabase = await client();
+    const from = (page - 1) * pageSize;
+    const to = from + pageSize - 1;
+    let q = supabase.from('quotations').select('*', { count: 'exact' });
+
+    const term = search ? sanitizeSearchTerm(search) : '';
+    if (term) {
+      q = q.or(`quotation_no.ilike.%${term}%,customer_name.ilike.%${term}%`);
+    }
+
+    const { data, count } = await q
+      .order('quotation_date', { ascending: false })
+      .order('created_at', { ascending: false })
+      .range(from, to);
+    return { rows: (data as QuotationRow[]) ?? [], total: count ?? 0 };
+  } catch (e) {
+    console.error('[queries] getQuotationsPage', e);
+    return { rows: [], total: 0 };
+  }
+}
+
 export async function getQuotation(id: string): Promise<QuotationRow | null> {
   try {
     const supabase = await client();
@@ -921,11 +1004,15 @@ export async function getQuotation(id: string): Promise<QuotationRow | null> {
 }
 
 /** Line items for one quotation, or for many (when listing). */
-export async function getQuotationItems(quotationId?: string): Promise<QuotationItemRow[]> {
+export async function getQuotationItems(
+  quotationId?: string | string[],
+): Promise<QuotationItemRow[]> {
+  if (Array.isArray(quotationId) && quotationId.length === 0) return [];
   try {
     const supabase = await client();
     let q = supabase.from('quotation_items').select('*');
-    if (quotationId) q = q.eq('quotation_id', quotationId);
+    if (Array.isArray(quotationId)) q = q.in('quotation_id', quotationId);
+    else if (quotationId) q = q.eq('quotation_id', quotationId);
     const { data } = await q.order('line_no');
     return (data as QuotationItemRow[]) ?? [];
   } catch (e) {

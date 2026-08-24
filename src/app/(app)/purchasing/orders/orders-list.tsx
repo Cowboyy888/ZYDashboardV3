@@ -24,9 +24,11 @@ const STATUS_VARIANT: Record<PoStatus, 'secondary' | 'destructive' | 'outline'> 
 export function OrdersList({
   rows,
   productsByPo,
+  isSearching = false,
 }: {
   rows: PurchaseOrderRow[];
   productsByPo: Record<string, string[]>;
+  isSearching?: boolean;
 }) {
   const { t, locale } = useT();
 
@@ -76,7 +78,7 @@ export function OrdersList({
             {rows.length === 0 && (
               <TableRow>
                 <TableCell colSpan={5} className="text-center text-muted-foreground">
-                  {t('pur.noOrders')}
+                  {isSearching ? t('pur.noOrdersMatch') : t('pur.noOrders')}
                 </TableCell>
               </TableRow>
             )}
