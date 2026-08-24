@@ -1,6 +1,6 @@
 'use client';
 import { useActionState, useEffect, useMemo, useRef, useState } from 'react';
-import { Download, FileText, Loader2, Pencil, Plus, Trash2, X } from 'lucide-react';
+import { Download, FileText, Loader2, Pencil, Plus, Search, Trash2, X } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -90,10 +90,34 @@ export function InquiriesClient({
   const activeTypes = customerTypes.filter((c) => c.is_active);
   const activeStatuses = statuses.filter((s) => s.is_active);
 
+  const [search, setSearch] = useState('');
+  const [statusFilter, setStatusFilter] = useState('');
+  const [customerTypeFilter, setCustomerTypeFilter] = useState('');
+  const [salespersonFilter, setSalespersonFilter] = useState('');
+  const [productFilter, setProductFilter] = useState('');
+
+  const filteredInquiries = useMemo(() => {
+    const q = search.trim().toLowerCase();
+    return inquiries.filter((i) => {
+      if (statusFilter && i.status_id !== statusFilter) return false;
+      if (customerTypeFilter && i.customer_type_id !== customerTypeFilter) return false;
+      if (salespersonFilter && i.salesperson_id !== salespersonFilter) return false;
+      if (productFilter && i.family_id !== productFilter) return false;
+      if (
+        q &&
+        !`${i.customer_name} ${i.company_name ?? ''} ${i.inquiry_no ?? ''}`
+          .toLowerCase()
+          .includes(q)
+      )
+        return false;
+      return true;
+    });
+  }, [inquiries, search, statusFilter, customerTypeFilter, salespersonFilter, productFilter]);
+
   const summary = useMemo(
     () =>
       summarizeInquiries(
-        inquiries.map((i) => ({
+        filteredInquiries.map((i) => ({
           factoryCost: i.factory_cost,
           quotedPrice: i.quoted_price,
           targetPrice: i.target_price,
@@ -106,7 +130,27 @@ export function InquiriesClient({
           salespersonId: i.salesperson_id,
         })),
       ),
-    [inquiries, statusById],
+    [filteredInquiries, statusById],
+  );
+
+  // Filter option sets — only statuses/types/salespeople/products actually
+  // used by an inquiry, not the full master list, so the dropdowns stay
+  // relevant instead of listing options with nothing behind them.
+  const statusOptions = useMemo(
+    () => statuses.filter((s) => inquiries.some((i) => i.status_id === s.id)),
+    [statuses, inquiries],
+  );
+  const customerTypeOptions = useMemo(
+    () => customerTypes.filter((c) => inquiries.some((i) => i.customer_type_id === c.id)),
+    [customerTypes, inquiries],
+  );
+  const salespersonOptions = useMemo(
+    () => employees.filter((e) => inquiries.some((i) => i.salesperson_id === e.id)),
+    [employees, inquiries],
+  );
+  const productOptions = useMemo(
+    () => families.filter((f) => inquiries.some((i) => i.family_id === f.id)),
+    [families, inquiries],
   );
 
   const [showCreate, setShowCreate] = useState(false);
@@ -141,6 +185,88 @@ export function InquiriesClient({
 
       {/* --- Inquiries -------------------------------------------------------- */}
       <TabsContent value="inquiries" className="space-y-4">
+        <Card>
+          <CardContent className="flex flex-wrap items-end gap-3 pt-6">
+            <div className="min-w-[220px] flex-1 space-y-1.5">
+              <Label htmlFor="inq-search">{t('common.search')}</Label>
+              <div className="relative">
+                <Search className="pointer-events-none absolute left-2.5 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+                <Input
+                  id="inq-search"
+                  placeholder={t('inq.searchPlaceholder')}
+                  value={search}
+                  onChange={(e) => setSearch(e.target.value)}
+                  className="pl-8"
+                />
+              </div>
+            </div>
+            <div className="space-y-1.5">
+              <Label htmlFor="inq-filter-status">{t('common.status')}</Label>
+              <NativeSelect
+                id="inq-filter-status"
+                value={statusFilter}
+                onChange={(e) => setStatusFilter(e.target.value)}
+                className="w-40"
+              >
+                <option value="">{t('common.all')}</option>
+                {statusOptions.map((s) => (
+                  <option key={s.id} value={s.id}>
+                    {s.name}
+                  </option>
+                ))}
+              </NativeSelect>
+            </div>
+            <div className="space-y-1.5">
+              <Label htmlFor="inq-filter-type">{t('inq.customerType')}</Label>
+              <NativeSelect
+                id="inq-filter-type"
+                value={customerTypeFilter}
+                onChange={(e) => setCustomerTypeFilter(e.target.value)}
+                className="w-40"
+              >
+                <option value="">{t('common.all')}</option>
+                {customerTypeOptions.map((c) => (
+                  <option key={c.id} value={c.id}>
+                    {c.name}
+                  </option>
+                ))}
+              </NativeSelect>
+            </div>
+            <div className="space-y-1.5">
+              <Label htmlFor="inq-filter-sales">{t('inq.salesperson')}</Label>
+              <NativeSelect
+                id="inq-filter-sales"
+                value={salespersonFilter}
+                onChange={(e) => setSalespersonFilter(e.target.value)}
+                className="w-40"
+              >
+                <option value="">{t('common.all')}</option>
+                {salespersonOptions.map((e) => (
+                  <option key={e.id} value={e.id}>
+                    {e.name}
+                  </option>
+                ))}
+              </NativeSelect>
+            </div>
+            <div className="space-y-1.5">
+              <Label htmlFor="inq-filter-product">{t('inq.product')}</Label>
+              <NativeSelect
+                id="inq-filter-product"
+                value={productFilter}
+                onChange={(e) => setProductFilter(e.target.value)}
+                className="w-40"
+              >
+                <option value="">{t('common.all')}</option>
+                {productOptions.map((f) => (
+                  <option key={f.id} value={f.id}>
+                    {f.name}
+                  </option>
+                ))}
+              </NativeSelect>
+            </div>
+          </CardContent>
+        </Card>
+
         <div className="grid grid-cols-2 gap-3 sm:grid-cols-4 lg:grid-cols-7">
           {kpis.map((k) => (
             <Card key={k.label}>
@@ -189,7 +315,7 @@ export function InquiriesClient({
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {inquiries.map((i) => (
+                {filteredInquiries.map((i) => (
                   <TableRow key={i.id}>
                     <TableCell className="whitespace-nowrap font-mono text-xs">
                       {i.inquiry_no ?? '—'}
@@ -233,13 +359,13 @@ export function InquiriesClient({
                     )}
                   </TableRow>
                 ))}
-                {inquiries.length === 0 && (
+                {filteredInquiries.length === 0 && (
                   <TableRow>
                     <TableCell
                       colSpan={canManage ? 11 : 10}
                       className="text-center text-muted-foreground"
                     >
-                      {t('inq.none')}
+                      {inquiries.length === 0 ? t('inq.none') : t('inq.noMatches')}
                     </TableCell>
                   </TableRow>
                 )}

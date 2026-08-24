@@ -71,6 +71,7 @@ export const dictionary = {
   'common.moveUp': { en: 'Move up', zh: '上移' },
   'common.moveDown': { en: 'Move down', zh: '下移' },
   'common.all': { en: 'All', zh: '全部' },
+  'common.search': { en: 'Search', zh: '搜索' },
   'common.min': { en: 'Min', zh: '最低' },
   'common.ok': { en: 'OK', zh: '正常' },
   'common.low': { en: 'Low', zh: '低' },
@@ -752,6 +753,14 @@ export const dictionary = {
   // Delete
   'inq.deleteTitle': { en: 'Delete this inquiry?', zh: '删除该询价？' },
   'inq.deleteBody': { en: 'This permanently removes inquiry', zh: '此操作将永久删除询价' },
+  'inq.searchPlaceholder': {
+    en: 'Search customer, company, or inquiry no.',
+    zh: '搜索客户、公司或询价编号',
+  },
+  'inq.noMatches': {
+    en: 'No inquiries match these filters.',
+    zh: '没有符合筛选条件的询价。',
+  },
   'sal.dashDesc': {
     en: 'Open orders, expected deliveries, overdue, and committed stock.',
     zh: '未结订单、预计发货、逾期订单与已承诺库存。',
