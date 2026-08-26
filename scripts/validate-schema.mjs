@@ -106,7 +106,56 @@ check(/add column if not exists report_language/i.test(sql), 'telegram_settings.
 check(/add column if not exists morning_time/i.test(sql), 'telegram_settings.morning_time');
 check(/add column if not exists afternoon_time/i.test(sql), 'telegram_settings.afternoon_time');
 check(/create table if not exists public\.sales_inquiries/i.test(sql), 'sales_inquiries table');
+check(
+  /create table if not exists public\.inquiry_sources/i.test(sql),
+  'inquiry_sources (lead source) table',
+);
+check(
+  /create table if not exists public\.inquiry_loss_reasons/i.test(sql),
+  'inquiry_loss_reasons table',
+);
+check(/add column if not exists weighted_value/i.test(sql), 'sales_inquiries.weighted_value');
+check(
+  /function public\.apply_inquiry_probability/i.test(sql),
+  'stage probability snapshot trigger fn',
+);
 check(/create table if not exists public\.inquiry_statuses/i.test(sql), 'inquiry_statuses table');
+check(/create table if not exists public\.sales_targets/i.test(sql), 'sales_targets table');
+check(
+  /create table if not exists public\.construction_projects/i.test(sql),
+  'construction_projects table',
+);
+check(/create table if not exists public\.competitor_prices/i.test(sql), 'competitor_prices table');
+check(
+  /create table if not exists public\.daily_sales_reports/i.test(sql),
+  'daily_sales_reports table',
+);
+check(
+  /create table if not exists public\.daily_marketing_reports/i.test(sql),
+  'daily_marketing_reports table',
+);
+check(
+  /create table if not exists public\.marketing_settings/i.test(sql),
+  'marketing_settings (gross margin assumption)',
+);
+check(
+  /create or replace view public\.sales_forecast/i.test(sql),
+  'sales_forecast view (derived from the pipeline, never a second table)',
+);
+check(
+  /add column if not exists expected_close_date/i.test(sql),
+  'sales_inquiries.expected_close_date',
+);
+check(/create table if not exists public\.kpi_scorecards/i.test(sql), 'kpi_scorecards table');
+check(/create table if not exists public\.commission_bands/i.test(sql), 'commission_bands table');
+check(
+  /create table if not exists public\.commission_entries/i.test(sql),
+  'commission_entries table',
+);
+check(
+  /function public\.apply_commission_rates/i.test(sql),
+  'commission band/accrual snapshot trigger fn',
+);
 check(/function public\.assign_inquiry_no/i.test(sql), 'inquiry number (ZY-YYYY-###) trigger fn');
 check(/function public\.set_my_locale/i.test(sql), 'locale-only self-update function');
 check(/function public\.owner_exists/i.test(sql), 'owner_exists bootstrap guard function');
