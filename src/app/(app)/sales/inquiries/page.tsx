@@ -34,7 +34,7 @@ export default async function InquiriesPage() {
   return (
     <div>
       <PageHeader title={t('sal.inquiries')} description={t('inq.desc')} />
-      <SalesNav active="inquiries" />
+      <SalesNav active="inquiries" role={user.role} />
       <InquiriesClient
         inquiries={inquiries}
         followups={followups}

@@ -71,7 +71,11 @@ export type Permission =
   | 'inquiries:manage'
   | 'payroll:view'
   | 'payroll:manage'
-  | 'payroll:approve';
+  | 'payroll:approve'
+  | 'sales_targets:view'
+  | 'sales_targets:manage'
+  | 'kpi:view'
+  | 'kpi:manage';
 
 const EVERYONE: Permission[] = ['dashboard:view', 'reports:view'];
 
@@ -104,6 +108,10 @@ const ROLE_PERMISSIONS: Record<Role, Permission[]> = {
     'inquiries:view',
     'inquiries:manage',
     'payroll:view',
+    'sales_targets:view',
+    'sales_targets:manage',
+    'kpi:view',
+    'kpi:manage',
   ],
   attendance_admin: [
     ...EVERYONE,
@@ -135,6 +143,10 @@ const ROLE_PERMISSIONS: Record<Role, Permission[]> = {
     'sales:manage',
     'inquiries:view',
     'inquiries:manage',
+    'sales_targets:view',
+    'sales_targets:manage',
+    'kpi:view',
+    'kpi:manage',
   ],
   payroll_admin: [
     ...EVERYONE,

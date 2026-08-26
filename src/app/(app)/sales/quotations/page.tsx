@@ -44,7 +44,7 @@ export default async function QuotationsPage({
   return (
     <div>
       <PageHeader title={t('quo.title')} description={t('quo.desc')} />
-      <SalesNav active="quotations" />
+      <SalesNav active="quotations" role={user.role} />
       <div className="mb-4">
         <SearchBox placeholder={t('quo.searchQuotations')} />
       </div>

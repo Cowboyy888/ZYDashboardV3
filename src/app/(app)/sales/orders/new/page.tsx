@@ -11,7 +11,7 @@ import { NewSoForm } from './new-so-form';
 export const dynamic = 'force-dynamic';
 
 export default async function NewSalesOrderPage() {
-  await requirePermission('sales:manage');
+  const user = await requirePermission('sales:manage');
   const locale = await getLocale();
   const t = translator(locale);
   const [customers, locations, skus, families] = await Promise.all([
@@ -43,7 +43,7 @@ export default async function NewSalesOrderPage() {
   return (
     <div>
       <PageHeader title={t('sal.newSo')} description={t('sal.newSoDesc')} />
-      <SalesNav active="orders" />
+      <SalesNav active="orders" role={user.role} />
       <NewSoForm
         customers={customers.map((c) => ({
           id: c.id,

@@ -13,6 +13,8 @@ import type {
   InquiryCustomerTypeRow,
   InquiryFollowupRow,
   InquiryStatusRow,
+  KpiScorecardLineRow,
+  KpiScorecardRow,
   LocationRow,
   LoginEventRow,
   OvertimeEntryRow,
@@ -32,6 +34,7 @@ import type {
   SalesOrderItemDeliveredRow,
   SalesOrderItemRow,
   SalesOrderRow,
+  SalesTargetRow,
   SkuRow,
   StockMovementRow,
   SupplierRow,
@@ -933,6 +936,61 @@ export async function getPayrollRunLines(itemIds: string[]): Promise<PayrollItem
     return (data as PayrollItemLineRow[]) ?? [];
   } catch (e) {
     console.error('[queries] getPayrollRunLines', e);
+    return [];
+  }
+}
+
+// --- Sales targets (sheet 18) / KPI scorecards (sheet 07) -----------------------
+
+/** `period` (YYYY-MM) narrows to one period; omit for every target on record. */
+export async function getSalesTargets(period?: string): Promise<SalesTargetRow[]> {
+  try {
+    const supabase = await client();
+    let q = supabase
+      .from('sales_targets')
+      .select('*')
+      .order('period', { ascending: false })
+      .order('created_at', { ascending: false });
+    if (period) q = q.eq('period', period);
+    const { data } = await q;
+    return (data as SalesTargetRow[]) ?? [];
+  } catch (e) {
+    console.error('[queries] getSalesTargets', e);
+    return [];
+  }
+}
+
+/** `period` (YYYY-MM) narrows to one period; omit for every scorecard on record. */
+export async function getKpiScorecards(period?: string): Promise<KpiScorecardRow[]> {
+  try {
+    const supabase = await client();
+    let q = supabase
+      .from('kpi_scorecards')
+      .select('*')
+      .order('period', { ascending: false })
+      .order('created_at', { ascending: false });
+    if (period) q = q.eq('period', period);
+    const { data } = await q;
+    return (data as KpiScorecardRow[]) ?? [];
+  } catch (e) {
+    console.error('[queries] getKpiScorecards', e);
+    return [];
+  }
+}
+
+/** Every line for the given scorecards — pass just the current page's ids, same as getPayrollRunLines. */
+export async function getKpiScorecardLines(scorecardIds: string[]): Promise<KpiScorecardLineRow[]> {
+  if (scorecardIds.length === 0) return [];
+  try {
+    const supabase = await client();
+    const { data } = await supabase
+      .from('kpi_scorecard_lines')
+      .select('*')
+      .in('scorecard_id', scorecardIds)
+      .order('line_no');
+    return (data as KpiScorecardLineRow[]) ?? [];
+  } catch (e) {
+    console.error('[queries] getKpiScorecardLines', e);
     return [];
   }
 }

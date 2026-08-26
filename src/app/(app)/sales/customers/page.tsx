@@ -18,7 +18,7 @@ export default async function CustomersPage() {
   return (
     <div>
       <PageHeader title={t('sal.customers')} description={t('sal.customersDesc')} />
-      <SalesNav active="customers" />
+      <SalesNav active="customers" role={user.role} />
       <CustomersManager
         customers={customers}
         canManage={hasPermission(user.role, 'sales:manage')}

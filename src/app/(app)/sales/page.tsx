@@ -20,7 +20,7 @@ import { SalesDashboard } from './sales-dashboard';
 export const dynamic = 'force-dynamic';
 
 export default async function SalesPage() {
-  await requirePermission('sales:view');
+  const user = await requirePermission('sales:view');
   const locale = await getLocale();
   const t = translator(locale);
   const today = businessDate();
@@ -73,7 +73,7 @@ export default async function SalesPage() {
   return (
     <div>
       <PageHeader title={t('sal.dashboard')} description={t('sal.dashDesc')} />
-      <SalesNav active="dashboard" />
+      <SalesNav active="dashboard" role={user.role} />
       <SalesDashboard rows={rows} committedRows={committedRows} />
     </div>
   );

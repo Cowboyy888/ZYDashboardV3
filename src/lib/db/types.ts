@@ -539,3 +539,47 @@ export interface PayrollItemLiveRow {
   live_base_amount: number;
   live_overtime_amount: number;
 }
+
+// --- Sales & Marketing Toolkit: sales targets (sheet 18), KPI (sheet 07) -------
+
+export interface SalesTargetRow {
+  id: string;
+  employee_id: string;
+  period: string; // YYYY-MM
+  revenue_target: number;
+  target_margin_pct: number;
+  gp_target: number; // generated: revenue_target * target_margin_pct
+  orders_target: number;
+  new_customers: number;
+  quotations_week: number;
+  qualified_week: number;
+  contacts_day: number;
+  visits_day: number;
+  leads_day: number;
+  notes: string | null;
+  created_by: string | null;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface KpiScorecardRow {
+  id: string;
+  employee_id: string;
+  period: string; // YYYY-MM
+  notes: string | null;
+  created_by: string | null;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface KpiScorecardLineRow {
+  id: string;
+  scorecard_id: string;
+  line_no: number;
+  label: string;
+  weight: number;
+  target_value: number | null;
+  actual_value: number | null;
+  lower_is_better: boolean;
+  created_at: string;
+}

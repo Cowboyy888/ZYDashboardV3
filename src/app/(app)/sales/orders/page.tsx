@@ -80,7 +80,7 @@ export default async function SalesOrdersPage({
           </>
         }
       />
-      <SalesNav active="orders" />
+      <SalesNav active="orders" role={user.role} />
       <div className="mb-4">
         <SearchBox placeholder={t('sal.searchOrders')} />
       </div>

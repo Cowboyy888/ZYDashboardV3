@@ -588,3 +588,50 @@ export const inquiryStatusSchema = z.object({
   category: z.enum(INQUIRY_STATUS_CATEGORIES).default('open'),
 });
 export type InquiryStatusInput = z.infer<typeof inquiryStatusSchema>;
+
+// --- Sales targets (sheet 18) / KPI scorecards (sheet 07) -----------------------
+
+const periodSchema = z.string().regex(/^\d{4}-\d{2}$/, 'Expected YYYY-MM');
+// nonNegNumber (empty -> 0, coerced, >= 0) is already defined above for Overtime.
+const nonNegInt = z.coerce.number().int().min(0, 'Must be zero or more');
+// Both target_margin_pct and a KPI line's weight are stored as a 0–1 fraction
+// (matches the DB check constraints and kpi.ts's pure functions directly, no
+// 0–100 percent conversion to get wrong).
+const fraction = z.coerce.number().min(0).max(1, 'Must be between 0 and 1');
+
+export const createSalesTargetSchema = z.object({
+  employeeId: z.string().uuid(),
+  period: periodSchema,
+  revenueTarget: nonNegNumber,
+  targetMarginPct: fraction,
+  ordersTarget: nonNegInt,
+  newCustomers: nonNegInt,
+  quotationsWeek: nonNegInt,
+  qualifiedWeek: nonNegInt,
+  contactsDay: nonNegInt,
+  visitsDay: nonNegInt,
+  leadsDay: nonNegInt,
+  notes: optionalText,
+});
+export type CreateSalesTargetInput = z.infer<typeof createSalesTargetSchema>;
+
+const kpiLineSchema = z.object({
+  label: nonEmpty.max(120),
+  weight: fraction,
+  targetValue: optionalNumber,
+  actualValue: optionalNumber,
+  // A structural property of the line (which metric it is), not something the
+  // salesperson toggles per period — the KPI editor submits it as an
+  // always-present hidden field (sales/kpi/kpi-manager.tsx), not a checkbox,
+  // so there's no unchecked-box-goes-missing index misalignment with the
+  // other repeated line fields.
+  lowerIsBetter: z.preprocess((v) => v === 'true' || v === true, z.boolean()),
+});
+
+export const saveKpiScorecardSchema = z.object({
+  employeeId: z.string().uuid(),
+  period: periodSchema,
+  notes: optionalText,
+  lines: z.array(kpiLineSchema).min(1, 'Add at least one KPI line'),
+});
+export type SaveKpiScorecardInput = z.infer<typeof saveKpiScorecardSchema>;

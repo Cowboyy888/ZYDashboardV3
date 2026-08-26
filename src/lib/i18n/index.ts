@@ -637,6 +637,8 @@ export const dictionary = {
   'sal.orders': { en: 'Sales Orders', zh: '销售订单' },
   'sal.inquiries': { en: 'Inquiries', zh: '询价' },
   'sal.quotations': { en: 'Quotations', zh: '报价单' },
+  'sal.targets': { en: 'Targets', zh: '销售目标' },
+  'sal.kpi': { en: 'KPI', zh: 'KPI考核' },
 
   // Quotations / deposit + balance invoices
   'quo.title': { en: 'Quotations & Invoices', zh: '报价单与发票' },
@@ -953,6 +955,54 @@ export const dictionary = {
   'pay.cancel': { en: 'Cancel run', zh: '取消工资单' },
   'pay.confirmCancel': { en: 'Cancel this payroll run?', zh: '确认取消此工资单？' },
   'pay.editDates': { en: 'Edit dates', zh: '编辑日期' },
+
+  // --- Sales targets (Sales & Marketing Toolkit sheet 18) -----------------------
+  'tgt.title': { en: 'Sales Targets', zh: '销售目标' },
+  'tgt.desc': {
+    en: 'Monthly revenue, margin and activity targets per salesperson.',
+    zh: '每位销售人员的月度销售额、毛利率与活动目标。',
+  },
+  'tgt.filter': { en: 'Filter', zh: '筛选' },
+  'tgt.newTarget': { en: 'New target', zh: '新建目标' },
+  'tgt.saveTarget': { en: 'Save target', zh: '保存目标' },
+  'tgt.revenueTarget': { en: 'Revenue target', zh: '销售额目标' },
+  'tgt.targetMarginPct': { en: 'Target margin', zh: '目标毛利率' },
+  'tgt.targetMarginHint': {
+    en: 'Enter as a fraction, e.g. 0.18 for 18%.',
+    zh: '请输入小数，例如 18% 请输入 0.18。',
+  },
+  'tgt.gpTarget': { en: 'GP target (implied)', zh: '毛利目标（推算）' },
+  'tgt.ordersTarget': { en: 'Orders target', zh: '订单数目标' },
+  'tgt.impliedOrderValue': { en: 'Implied avg. order value', zh: '推算平均订单价值' },
+  'tgt.newCustomers': { en: 'New customers target', zh: '新客户目标' },
+  'tgt.quotationsWeek': { en: 'Quotations / week', zh: '每周报价数' },
+  'tgt.qualifiedWeek': { en: 'Qualified leads / week', zh: '每周合格线索数' },
+  'tgt.contactsDay': { en: 'Contacts / day', zh: '每日联系数' },
+  'tgt.visitsDay': { en: 'Visits / day', zh: '每日拜访数' },
+  'tgt.leadsDay': { en: 'Leads / day', zh: '每日线索数' },
+  'tgt.noTargets': { en: 'No sales targets for this period.', zh: '该周期暂无销售目标。' },
+
+  // --- Salesperson KPI scorecards (Sales & Marketing Toolkit sheet 07) ----------
+  'kpi.title': { en: 'Salesperson KPI Scorecards', zh: '销售人员 KPI 考核表' },
+  'kpi.desc': {
+    en: 'Weighted monthly scorecard against each target, with an automatic rating.',
+    zh: '按权重对照月度目标打分，并自动生成评级。',
+  },
+  'kpi.filter': { en: 'Filter', zh: '筛选' },
+  'kpi.newScorecard': { en: 'New scorecard', zh: '新建考核表' },
+  'kpi.saveScorecard': { en: 'Save scorecard', zh: '保存考核表' },
+  'kpi.line': { en: 'KPI line', zh: '考核项' },
+  'kpi.weight': { en: 'Weight', zh: '权重' },
+  'kpi.target': { en: 'Target', zh: '目标值' },
+  'kpi.actual': { en: 'Actual', zh: '实际值' },
+  'kpi.totalScore': { en: 'Total score', zh: '总分' },
+  'kpi.rating': { en: 'Rating', zh: '评级' },
+  'kpi.lowerIsBetter': { en: 'Lower is better', zh: '数值越低越好' },
+  'kpi.weightsUnbalanced': {
+    en: 'Weights do not sum to 100% — check the setup.',
+    zh: '权重合计不等于 100% — 请检查设置。',
+  },
+  'kpi.noScorecards': { en: 'No KPI scorecards for this period.', zh: '该周期暂无 KPI 考核表。' },
 } satisfies Record<string, Entry>;
 
 export type MessageKey = keyof typeof dictionary;
@@ -1177,6 +1227,10 @@ const PHRASES: Record<string, string> = {
   'Payroll run marked Paid': '已将工资单标记为已发放',
   'This payroll run cannot be cancelled in its current status.': '该工资单在当前状态下无法取消。',
   'Payroll run cancelled': '已取消工资单',
+  // Sales targets / KPI scorecards
+  'Sales target saved': '已保存销售目标',
+  'KPI scorecard saved': '已保存 KPI 考核表',
+  'Add at least one KPI line': '请至少添加一项 KPI 考核项',
 };
 
 /** Localise an action/validation message for display. */
