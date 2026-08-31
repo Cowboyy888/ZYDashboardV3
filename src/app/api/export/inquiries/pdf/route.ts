@@ -7,7 +7,11 @@ import {
   getFamilies,
 } from '@/lib/db/queries';
 import { businessDate, formatDDMMYYYY } from '@/lib/domain/datetime';
-import { summarizeInquiries, type StatusCategory } from '@/lib/domain/sales-inquiry';
+import {
+  summarizeInquiries,
+  filterInquiries,
+  type StatusCategory,
+} from '@/lib/domain/sales-inquiry';
 import {
   buildInquiryReportHtml,
   toReportRow,
@@ -15,19 +19,24 @@ import {
   type InquiryReportData,
 } from '@/lib/reports/inquiry-report-html';
 import { renderHtmlToPdf, pdfResponse } from '@/lib/reports/pdf';
+import { inquiryFiltersFromSearchParams } from '@/lib/reports/inquiry-report-filters';
 
 export const dynamic = 'force-dynamic';
 
 export async function GET(request: Request) {
   await requirePermission('inquiries:view');
 
-  const [inquiries, statuses, customerTypes, employees, families] = await Promise.all([
+  const [allInquiries, statuses, customerTypes, employees, families] = await Promise.all([
     getInquiries(),
     getInquiryStatuses(true),
     getInquiryCustomerTypes(true),
     getEmployees(true),
     getFamilies(true),
   ]);
+  const inquiries = filterInquiries(
+    allInquiries,
+    inquiryFiltersFromSearchParams(new URL(request.url).searchParams),
+  );
 
   const empName = new Map(
     employees.map((e) => [

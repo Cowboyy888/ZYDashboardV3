@@ -43,6 +43,7 @@ import {
   priceDifference,
   estimatedProfit,
   summarizeInquiries,
+  filterInquiries,
   type StatusCategory,
 } from '@/lib/domain/sales-inquiry';
 import type { ActionState } from '@/lib/actions/types';
@@ -98,36 +99,46 @@ export function InquiriesClient({
   const [dateFromFilter, setDateFromFilter] = useState('');
   const [dateToFilter, setDateToFilter] = useState('');
 
-  const filteredInquiries = useMemo(() => {
-    const q = search.trim().toLowerCase();
-    return inquiries.filter((i) => {
-      if (statusFilter && i.status_id !== statusFilter) return false;
-      if (customerTypeFilter && i.customer_type_id !== customerTypeFilter) return false;
-      if (salespersonFilter && i.salesperson_id !== salespersonFilter) return false;
-      if (productFilter && i.family_id !== productFilter) return false;
-      // inquiry_date is an ISO "YYYY-MM-DD" string — plain string comparison
-      // sorts the same as date order, no Date parsing needed.
-      if (dateFromFilter && i.inquiry_date < dateFromFilter) return false;
-      if (dateToFilter && i.inquiry_date > dateToFilter) return false;
-      if (
-        q &&
-        !`${i.customer_name} ${i.company_name ?? ''} ${i.inquiry_no ?? ''}`
-          .toLowerCase()
-          .includes(q)
-      )
-        return false;
-      return true;
-    });
-  }, [
-    inquiries,
-    search,
-    statusFilter,
-    customerTypeFilter,
-    salespersonFilter,
-    productFilter,
-    dateFromFilter,
-    dateToFilter,
-  ]);
+  const activeFilters = useMemo(
+    () => ({
+      status: statusFilter,
+      customerType: customerTypeFilter,
+      salesperson: salespersonFilter,
+      product: productFilter,
+      dateFrom: dateFromFilter,
+      dateTo: dateToFilter,
+      search,
+    }),
+    [
+      statusFilter,
+      customerTypeFilter,
+      salespersonFilter,
+      productFilter,
+      dateFromFilter,
+      dateToFilter,
+      search,
+    ],
+  );
+
+  const filteredInquiries = useMemo(
+    () => filterInquiries(inquiries, activeFilters),
+    [inquiries, activeFilters],
+  );
+
+  // Same filters as the on-screen table, carried onto the download links so
+  // "download" always exports what's currently filtered, not everything.
+  const exportQuery = useMemo(() => {
+    const params = new URLSearchParams();
+    if (activeFilters.status) params.set('status', activeFilters.status);
+    if (activeFilters.customerType) params.set('customerType', activeFilters.customerType);
+    if (activeFilters.salesperson) params.set('salesperson', activeFilters.salesperson);
+    if (activeFilters.product) params.set('product', activeFilters.product);
+    if (activeFilters.dateFrom) params.set('dateFrom', activeFilters.dateFrom);
+    if (activeFilters.dateTo) params.set('dateTo', activeFilters.dateTo);
+    if (activeFilters.search.trim()) params.set('q', activeFilters.search.trim());
+    const qs = params.toString();
+    return qs ? `?${qs}` : '';
+  }, [activeFilters]);
 
   const summary = useMemo(
     () =>
@@ -315,14 +326,21 @@ export function InquiriesClient({
           ))}
         </div>
 
-        <div className="flex flex-wrap justify-end gap-2">
+        <div className="flex flex-wrap items-center justify-end gap-2">
+          {exportQuery && (
+            <span className="text-xs text-muted-foreground">{t('inq.downloadFiltered')}</span>
+          )}
           <Button asChild variant="outline">
-            <a href="/api/export/inquiries">
+            <a href={`/api/export/inquiries${exportQuery}`}>
               <Download className="h-4 w-4" /> {t('inq.downloadExcel')}
             </a>
           </Button>
           <Button asChild variant="outline">
-            <a href="/api/export/inquiries/pdf" target="_blank" rel="noopener noreferrer">
+            <a
+              href={`/api/export/inquiries/pdf${exportQuery}`}
+              target="_blank"
+              rel="noopener noreferrer"
+            >
               <FileText className="h-4 w-4" /> {t('inq.downloadPdf')}
             </a>
           </Button>

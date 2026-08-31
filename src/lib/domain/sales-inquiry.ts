@@ -65,6 +65,60 @@ export function formatInquiryNo(year: number, seq: number): string {
   return `ZY-${year}-${String(seq).padStart(3, '0')}`;
 }
 
+// --- Filtering ------------------------------------------------------------------
+
+/** The fields a row needs for filterInquiries — deliberately narrower than the
+ * full DB row so this stays reusable from both the client table and the
+ * export routes without importing db/types.ts into the domain layer. */
+export interface InquiryFilterable {
+  status_id: string | null;
+  customer_type_id: string | null;
+  salesperson_id: string | null;
+  family_id: string | null;
+  inquiry_date: string; // ISO "YYYY-MM-DD"
+  customer_name: string;
+  company_name: string | null;
+  inquiry_no: string | null;
+}
+
+export interface InquiryFilters {
+  status?: string;
+  customerType?: string;
+  salesperson?: string;
+  product?: string; // family_id
+  dateFrom?: string; // ISO "YYYY-MM-DD"
+  dateTo?: string;
+  search?: string;
+}
+
+/**
+ * The single filter predicate behind both the Inquiries tab's on-screen table
+ * and its Excel/PDF export routes, so "download" always means "download what
+ * you're looking at" — one rule, not two copies that can drift apart.
+ */
+export function filterInquiries<T extends InquiryFilterable>(
+  rows: T[],
+  filters: InquiryFilters,
+): T[] {
+  const q = filters.search?.trim().toLowerCase() ?? '';
+  return rows.filter((i) => {
+    if (filters.status && i.status_id !== filters.status) return false;
+    if (filters.customerType && i.customer_type_id !== filters.customerType) return false;
+    if (filters.salesperson && i.salesperson_id !== filters.salesperson) return false;
+    if (filters.product && i.family_id !== filters.product) return false;
+    // inquiry_date is an ISO "YYYY-MM-DD" string — plain string comparison
+    // sorts the same as date order, no Date parsing needed.
+    if (filters.dateFrom && i.inquiry_date < filters.dateFrom) return false;
+    if (filters.dateTo && i.inquiry_date > filters.dateTo) return false;
+    if (
+      q &&
+      !`${i.customer_name} ${i.company_name ?? ''} ${i.inquiry_no ?? ''}`.toLowerCase().includes(q)
+    )
+      return false;
+    return true;
+  });
+}
+
 // --- Dashboard summary --------------------------------------------------------
 
 /** Minimal shape the dashboard needs from each inquiry. */

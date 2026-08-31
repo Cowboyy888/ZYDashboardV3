@@ -704,6 +704,10 @@ export const dictionary = {
   'inq.new': { en: 'New inquiry', zh: '新增询价' },
   'inq.downloadExcel': { en: 'Download Excel', zh: '下载 Excel' },
   'inq.downloadPdf': { en: 'View PDF', zh: '查看 PDF' },
+  'inq.downloadFiltered': {
+    en: 'Downloads match the filters above',
+    zh: '下载内容将按上方筛选条件生成',
+  },
   'inq.edit': { en: 'Edit inquiry', zh: '编辑询价' },
   'inq.none': { en: 'No inquiries yet.', zh: '暂无询价。' },
   'inq.formHint': {

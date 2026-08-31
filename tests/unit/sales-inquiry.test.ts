@@ -6,7 +6,9 @@ import {
   quotationValue,
   formatInquiryNo,
   summarizeInquiries,
+  filterInquiries,
   type InquiryForSummary,
+  type InquiryFilterable,
 } from '@/lib/domain/sales-inquiry';
 import { inquirySchema } from '@/lib/validation/schemas';
 
@@ -136,6 +138,67 @@ describe('dashboard summary', () => {
   it('conversion rate is 0 when nothing is decided', () => {
     const s = summarizeInquiries([row({ statusCategory: 'open' })]);
     expect(s.conversionRate).toBe(0);
+  });
+});
+
+describe('filterInquiries (backs both the on-screen table and the export routes)', () => {
+  const row = (o: Partial<InquiryFilterable>): InquiryFilterable => ({
+    status_id: null,
+    customer_type_id: null,
+    salesperson_id: null,
+    family_id: null,
+    inquiry_date: '2026-01-01',
+    customer_name: 'Galleria Tile',
+    company_name: null,
+    inquiry_no: 'ZY-2026-001',
+    ...o,
+  });
+
+  it('returns every row when no filter is set', () => {
+    const rows = [row({}), row({ inquiry_no: 'ZY-2026-002' })];
+    expect(filterInquiries(rows, {})).toHaveLength(2);
+  });
+
+  it('narrows by status, customer type, salesperson, and product independently', () => {
+    const rows = [
+      row({ status_id: 'won', customer_type_id: 'a', salesperson_id: 'ash', family_id: 'mesh' }),
+      row({ status_id: 'lost', customer_type_id: 'b', salesperson_id: 'sam', family_id: 'coil' }),
+    ];
+    expect(filterInquiries(rows, { status: 'won' })).toHaveLength(1);
+    expect(filterInquiries(rows, { customerType: 'b' })).toHaveLength(1);
+    expect(filterInquiries(rows, { salesperson: 'ash' })).toHaveLength(1);
+    expect(filterInquiries(rows, { product: 'coil' })[0]?.status_id).toBe('lost');
+  });
+
+  it('narrows by inquiry_date as an inclusive [dateFrom, dateTo] range', () => {
+    const rows = [
+      row({ inquiry_date: '2026-01-10' }),
+      row({ inquiry_date: '2026-02-15' }),
+      row({ inquiry_date: '2026-03-20' }),
+    ];
+    expect(filterInquiries(rows, { dateFrom: '2026-02-01' })).toHaveLength(2);
+    expect(filterInquiries(rows, { dateTo: '2026-02-01' })).toHaveLength(1);
+    expect(filterInquiries(rows, { dateFrom: '2026-01-10', dateTo: '2026-01-10' })).toHaveLength(1);
+  });
+
+  it('search matches customer name, company name, or inquiry number, case-insensitively', () => {
+    const rows = [
+      row({ customer_name: 'Galleria Tile', company_name: 'Galleria Co', inquiry_no: 'ZY-1' }),
+      row({ customer_name: 'Other Customer', company_name: null, inquiry_no: 'ZY-2' }),
+    ];
+    expect(filterInquiries(rows, { search: 'galleria' })).toHaveLength(1);
+    expect(filterInquiries(rows, { search: 'ZY-2' })).toHaveLength(1);
+    expect(filterInquiries(rows, { search: 'nobody' })).toHaveLength(0);
+  });
+
+  it('combines every filter with AND', () => {
+    const rows = [
+      row({ status_id: 'won', inquiry_date: '2026-01-05', customer_name: 'Match Me' }),
+      row({ status_id: 'won', inquiry_date: '2026-06-05', customer_name: 'Match Me' }),
+    ];
+    expect(
+      filterInquiries(rows, { status: 'won', dateFrom: '2026-01-01', dateTo: '2026-02-01' }),
+    ).toHaveLength(1);
   });
 });
 
