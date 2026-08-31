@@ -79,7 +79,12 @@ export async function GET() {
   });
 
   const today = businessDate();
+  // "Balance paid" implies the deposit was collected first (deposit is always
+  // invoiced before the balance) — the grand total a reader actually wants is
+  // both legs together, not just the balance leg on its own.
+  const depositCollected = rows.reduce((sum, r) => sum + r.totals.depositDue, 0);
   const balanceCollected = rows.reduce((sum, r) => sum + r.totals.balanceDue, 0);
+  const totalCollected = depositCollected + balanceCollected;
   const currencies = [...new Set(rows.map((r) => r.quotation.currency))];
 
   const buffer = await buildXlsxBuffer('Balance Paid', COLUMNS, rows, {
@@ -92,9 +97,11 @@ export async function GET() {
     ],
     totals: [
       { label: 'Quotations 数量:', value: rows.length },
+      { label: 'Deposit Collected 订金合计:', value: depositCollected, numFmt: '#,##0.00' },
+      { label: 'Balance Collected 尾款合计:', value: balanceCollected, numFmt: '#,##0.00' },
       {
-        label: 'Balance Collected 尾款合计:',
-        value: balanceCollected,
+        label: 'Total Collected (Deposit + Balance) 总计（订金+尾款）:',
+        value: totalCollected,
         numFmt: '#,##0.00',
         highlight: true,
       },
