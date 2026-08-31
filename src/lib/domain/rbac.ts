@@ -75,7 +75,8 @@ export type Permission =
   | 'sales_targets:view'
   | 'sales_targets:manage'
   | 'kpi:view'
-  | 'kpi:manage';
+  | 'kpi:manage'
+  | 'invoice:manage'; // company VAT/tax config (settings/invoice) — sensitive, owner/system_admin only
 
 const EVERYONE: Permission[] = ['dashboard:view', 'reports:view'];
 
@@ -92,6 +93,7 @@ const ROLE_PERMISSIONS: Record<Role, Permission[]> = {
     'users:manage',
     'telegram:manage',
     'telegram:send',
+    'invoice:manage',
     'audit:view',
     'employees:view',
     'employees:manage',

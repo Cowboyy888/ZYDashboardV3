@@ -13,6 +13,7 @@ import type {
   InquiryCustomerTypeRow,
   InquiryFollowupRow,
   InquiryStatusRow,
+  InvoiceSettingsRow,
   KpiScorecardLineRow,
   KpiScorecardRow,
   LocationRow,
@@ -308,6 +309,18 @@ export async function getTelegramSettings(): Promise<TelegramSettingsRow | null>
     return (data as TelegramSettingsRow) ?? null;
   } catch (e) {
     console.error('[queries] getTelegramSettings', e);
+    return null;
+  }
+}
+
+/** Company-wide VAT/invoice config (singleton row) — null if the seed row is somehow missing. */
+export async function getInvoiceSettings(): Promise<InvoiceSettingsRow | null> {
+  try {
+    const supabase = await client();
+    const { data } = await supabase.from('invoice_settings').select('*').eq('id', 1).maybeSingle();
+    return (data as InvoiceSettingsRow) ?? null;
+  } catch (e) {
+    console.error('[queries] getInvoiceSettings', e);
     return null;
   }
 }

@@ -1,6 +1,11 @@
 import { notFound } from 'next/navigation';
 import { requirePermission } from '@/lib/auth';
-import { getQuotation, getQuotationItems, getSalesOrdersByQuotationIds } from '@/lib/db/queries';
+import {
+  getQuotation,
+  getQuotationItems,
+  getSalesOrdersByQuotationIds,
+  getInvoiceSettings,
+} from '@/lib/db/queries';
 import { businessDate, formatDDMMYYYY } from '@/lib/domain/datetime';
 import { DOCUMENT_KINDS, type DocumentKind } from '@/lib/domain/quotation';
 import { buildQuotationDocHtml, type DocLine } from '@/lib/reports/quotation-doc-html';
@@ -21,10 +26,11 @@ export async function GET(request: Request, { params }: { params: Promise<{ id: 
     return new Response('Invalid document kind', { status: 400 });
   }
 
-  const [quotation, items, linkedOrders] = await Promise.all([
+  const [quotation, items, linkedOrders, invoiceSettings] = await Promise.all([
     getQuotation(id),
     getQuotationItems(id),
     getSalesOrdersByQuotationIds([id]),
+    getInvoiceSettings(),
   ]);
   if (!quotation) notFound();
 
@@ -66,6 +72,13 @@ export async function GET(request: Request, { params }: { params: Promise<{ id: 
     refDepositNo: quotation.deposit_no,
     orderNo: linkedOrders[0]?.so_number ?? null,
     pricingBasis: quotation.pricing_basis,
+    // Read from this quotation's own snapshot, never live invoice_settings —
+    // that's the whole point of snapshotting (see 0043_invoice_vat.sql). The
+    // TIN itself isn't snapshotted per-quotation (VAT TIN essentially never
+    // changes once a company registers), so it's the current settings value.
+    vatRegistered: quotation.vat_registered_snapshot,
+    vatRate: Number(quotation.vat_rate_snapshot),
+    vatTin: quotation.vat_registered_snapshot ? (invoiceSettings?.vat_tin ?? null) : null,
   });
 
   const buffer = await renderHtmlToPdf(html, { baseUrl: new URL(request.url).origin });

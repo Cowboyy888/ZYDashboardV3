@@ -14,9 +14,13 @@ import {
   quotationTotals,
   validUntil,
   DOC_TITLES,
+  INVOICE_TYPE_LABELS,
+  invoiceType,
   type DocumentKind,
   type QuotationLine,
+  type VatConfig,
 } from '@/lib/domain/quotation';
+import { amountInWords } from '@/lib/domain/number-to-words';
 import { KHMER_FONT_FACE_CSS } from './fonts/noto-sans-khmer';
 
 export interface DocLine extends QuotationLine {
@@ -59,6 +63,16 @@ export interface QuotationDocData {
   bankName?: string | null;
   accountName?: string | null;
   accountNo?: string | null;
+  /**
+   * VAT status THIS document was issued under (see 0043_invoice_vat.sql —
+   * the quotation's own vat_registered_snapshot/vat_rate_snapshot, never
+   * live company settings). Defaults to not-registered so every existing
+   * caller that doesn't pass these keeps rendering exactly as before.
+   */
+  vatRegistered?: boolean;
+  vatRate?: number;
+  /** Shown only when vatRegistered is true. */
+  vatTin?: string | null;
 }
 
 const RED = '#e31e24';
@@ -86,6 +100,10 @@ function qty(n: number | null): string {
   return n == null ? '' : Number(n).toLocaleString('en-US', { maximumFractionDigits: 3 });
 }
 
+function vatConfigOf(d: QuotationDocData): VatConfig {
+  return { registered: d.vatRegistered ?? false, rate: d.vatRate ?? 0 };
+}
+
 /** Default terms & conditions from the quotation sheet. */
 export function defaultTerms(validDays: number): string[] {
   return [
@@ -100,7 +118,7 @@ export function defaultTerms(validDays: number): string[] {
 
 /** Payment instructions for the deposit / balance invoices. */
 function paymentInstructions(d: QuotationDocData): string[] {
-  const t = quotationTotals(d.lines, d.depositPct);
+  const t = quotationTotals(d.lines, d.depositPct, vatConfigOf(d));
   const bank = d.bankName ?? 'ABA Bank';
   const account = d.accountName ?? 'Ma Jiang Ou';
   const accountNo = d.accountNo ?? '6686 88888';
@@ -131,7 +149,7 @@ export function documentTitle(kind: DocumentKind, depositPct: number): string {
 
 /** Build the print-ready HTML document. */
 export function buildQuotationDocHtml(d: QuotationDocData): string {
-  const t = quotationTotals(d.lines, d.depositPct);
+  const t = quotationTotals(d.lines, d.depositPct, vatConfigOf(d));
   const isQuotation = d.kind === 'quotation';
   const toLabel = isQuotation ? 'QUOTATION TO:' : 'INVOICE TO:';
 
@@ -208,12 +226,21 @@ export function buildQuotationDocHtml(d: QuotationDocData): string {
     .join('');
 
   // --- Totals ----------------------------------------------------------------
+  // VAT + Grand Total rows are the same on every kind: N/A while ZY Steel is
+  // not VAT-registered (t.vatRegistered false → t.grandTotal === t.subtotal,
+  // so every number below this point is unchanged from before VAT existed).
+  const vatLabel = t.vatRegistered ? `VAT (${Math.round(t.vatRate * 100)}%):` : 'VAT:';
+  const vatValue = t.vatRegistered ? money(t.vatAmount) : 'N/A';
+  const vatRows: Array<[string, string, boolean]> = [[vatLabel, vatValue, false]];
+
   let totalsHtml = '';
   let dueLabel = '';
   let dueValue = '';
   if (!isQuotation) {
     const rows: Array<[string, string, boolean]> = [
       ['Contract Subtotal:', money(t.subtotal), false],
+      ...vatRows,
+      ['Grand Total:', money(t.grandTotal), false],
     ];
     if (d.kind === 'deposit') {
       rows.push([`Deposit Due Now (${t.depositPercent}%):`, money(t.depositDue), true]);
@@ -234,8 +261,37 @@ export function buildQuotationDocHtml(d: QuotationDocData): string {
       )
       .join('');
   } else {
-    totalsHtml = `<tr><td class="tl">Estimated Total:</td><td class="tv">${esc(money(t.subtotal))}</td></tr>`;
+    const rows: Array<[string, string, boolean]> = [
+      ['Subtotal:', money(t.subtotal), false],
+      ...vatRows,
+      ['Estimated Total:', money(t.grandTotal), false],
+    ];
+    totalsHtml = rows
+      .map(([l, v]) => `<tr><td class="tl">${esc(l)}</td><td class="tv">${esc(v)}</td></tr>`)
+      .join('');
   }
+
+  // --- Invoice type / VAT status (deposit + balance invoices only — the
+  // quotation itself is an estimate, not a bill, so it keeps no such label).
+  const invoiceTypeLabels = INVOICE_TYPE_LABELS[invoiceType(t.vatRegistered)];
+  const vatStatusHtml = isQuotation
+    ? ''
+    : `<div class="vatline">
+        <span><strong>Invoice Type:</strong> ${esc(invoiceTypeLabels.en)} · ${esc(invoiceTypeLabels.zh)}</span>
+        <span><strong>VAT Status:</strong> ${esc(t.vatRegistered ? 'VAT Registered' : 'Not VAT Registered')}</span>
+        ${t.vatRegistered && d.vatTin ? `<span><strong>VAT TIN:</strong> ${esc(d.vatTin)}</span>` : ''}
+      </div>
+      <div class="vatnote">${
+        t.vatRegistered
+          ? esc(`VAT is charged at ${Math.round(t.vatRate * 100)}% on this invoice.`)
+          : esc(
+              'VAT: ZY Steel is currently not VAT registered. VAT is not charged on this invoice.',
+            )
+      }</div>`;
+
+  const amountInWordsHtml = isQuotation
+    ? ''
+    : `<div class="words"><strong>Amount in Words:</strong> ${esc(amountInWords(t.grandTotal, d.currency))}</div>`;
 
   // --- Notes block -----------------------------------------------------------
   const notesTitle = isQuotation ? 'TERMS &amp; CONDITIONS' : 'PAYMENT INSTRUCTIONS';
@@ -294,6 +350,9 @@ ${KHMER_FONT_FACE_CSS}
   .totals tr.hi .tl, .totals tr.hi .tv { background: ${PINK}; color: ${RED}; }
   .due { display: flex; justify-content: space-between; align-items: baseline;
          margin-top: 18px; font-weight: 700; color: ${RED}; font-size: 13px; max-width: 460px; }
+  .vatline { display: flex; flex-wrap: wrap; gap: 14px; font-size: 9.5px; color: ${INK}; margin-top: 8px; }
+  .vatnote { font-size: 9px; color: ${MUTED}; font-style: italic; margin-top: 2px; }
+  .words { font-size: 10px; margin-top: 10px; }
   .notes { margin-top: 20px; }
   .notes h4 { margin: 0 0 6px; font-size: 10.5px; color: ${RED}; letter-spacing: .3px; }
   .notes ol { margin: 0; padding-left: 18px; font-size: 9.5px; }
@@ -322,6 +381,7 @@ ${KHMER_FONT_FACE_CSS}
   </div>
 
   <div class="bar">${esc(documentTitle(d.kind, d.depositPct))}</div>
+  ${vatStatusHtml}
 
   <div class="head">
     <div>
@@ -341,6 +401,7 @@ ${KHMER_FONT_FACE_CSS}
   ${pricingBasis}
 
   <div class="totals"><table>${totalsHtml}</table></div>
+  ${amountInWordsHtml}
 
   ${dueLabel ? `<div class="due"><span>${esc(dueLabel)}</span><span>${esc(dueValue)}</span></div>` : ''}
 

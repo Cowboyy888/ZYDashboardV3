@@ -78,6 +78,17 @@ export async function createQuotation(
   const d = parsed.data;
 
   const supabase = await createSupabaseServerClient();
+
+  // Snapshot the company's CURRENT VAT status onto this quotation — never
+  // read live from invoice_settings again once issued, so re-tuning VAT
+  // registration later can't silently alter an already-issued document
+  // (see 0043_invoice_vat.sql).
+  const { data: invoiceSettings } = await supabase
+    .from('invoice_settings')
+    .select('vat_registered, vat_rate')
+    .eq('id', 1)
+    .maybeSingle();
+
   const { data, error } = await supabase
     .from('quotations')
     .insert({
@@ -91,6 +102,8 @@ export async function createQuotation(
       deposit_pct: normalizeDepositPct(d.depositPct),
       pricing_basis: d.pricingBasis ?? null,
       notes: d.notes ?? null,
+      vat_registered_snapshot: invoiceSettings?.vat_registered ?? false,
+      vat_rate_snapshot: invoiceSettings?.vat_registered ? (invoiceSettings.vat_rate ?? 0) : 0,
       created_by: user.id,
     })
     .select('id')

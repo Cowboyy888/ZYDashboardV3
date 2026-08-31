@@ -168,3 +168,64 @@ describe('empty state', () => {
     expect(doc({ lines: [] })).toContain('No line items');
   });
 });
+
+describe('VAT / invoice type (0043_invoice_vat.sql)', () => {
+  it('non-VAT (default, no vatRegistered passed): shows VAT N/A, Commercial Invoice, no TIN', () => {
+    const html = doc({ kind: 'deposit', docNo: 'ZYS-DP2607-001' });
+    expect(html).toContain('VAT:');
+    expect(html).toContain('N/A');
+    expect(html).toContain('Invoice Type:');
+    expect(html).toContain('COMMERCIAL INVOICE');
+    expect(html).toContain('Not VAT Registered');
+    expect(html).toContain('ZY Steel is currently not VAT registered');
+    expect(html).not.toContain('TAX INVOICE');
+    expect(html).not.toContain('VAT TIN');
+    // The pre-existing deposit numbers are completely unaffected.
+    expect(html).toContain('Deposit Due Now (30%):');
+    expect(html).toContain('$2,371.68');
+    expect(html).toContain('Grand Total:');
+    expect(html).toContain('$7,905.60'); // grand total = subtotal when VAT is off
+  });
+
+  it('the quotation document shows Subtotal/VAT/Estimated Total too, but no Invoice Type label', () => {
+    const html = doc({ kind: 'quotation' });
+    expect(html).toContain('Subtotal:');
+    expect(html).toContain('VAT:');
+    expect(html).toContain('N/A');
+    expect(html).toContain('Estimated Total:');
+    expect(html).not.toContain('Invoice Type:');
+    expect(html).not.toContain('COMMERCIAL INVOICE');
+  });
+
+  it('VAT registered at 10%: shows Tax Invoice, the VAT amount, TIN, and a grand-total-based deposit', () => {
+    const html = doc({
+      kind: 'deposit',
+      docNo: 'ZYS-DP2607-001',
+      vatRegistered: true,
+      vatRate: 0.1,
+      vatTin: 'K001-900123456',
+    });
+    expect(html).toContain('TAX INVOICE');
+    expect(html).toContain('VAT Registered');
+    expect(html).toContain('VAT TIN');
+    expect(html).toContain('K001-900123456');
+    expect(html).toContain('VAT (10%):');
+    expect(html).toContain('$790.56'); // 10% of $7,905.60
+    expect(html).toContain('Grand Total:');
+    expect(html).toContain('$8,696.16'); // 7,905.60 + 790.56
+    // Deposit is 30% of the GRAND TOTAL, not the pre-VAT subtotal.
+    expect(html).toContain('Deposit Due Now (30%):');
+    expect(html).toContain('$2,608.85'); // round2(8696.16 * 0.3)
+    expect(html).not.toContain('ZY Steel is currently not VAT registered');
+  });
+
+  it('shows the Amount in Words line on invoices, matching the grand total', () => {
+    const html = doc({ kind: 'deposit', docNo: 'ZYS-DP2607-001' });
+    expect(html).toContain('Amount in Words:');
+    expect(html).toContain('Seven Thousand Nine Hundred Five US Dollars and Sixty Cents Only');
+  });
+
+  it('does not show Amount in Words on the plain quotation', () => {
+    expect(doc({ kind: 'quotation' })).not.toContain('Amount in Words:');
+  });
+});

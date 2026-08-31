@@ -298,6 +298,7 @@ export const dictionary = {
   'set.products': { en: 'Products & Specs', zh: '产品与规格' },
   'set.groups': { en: 'Attendance Groups', zh: '考勤分组' },
   'set.telegram': { en: 'Telegram', zh: 'Telegram 设置' },
+  'set.invoice': { en: 'Invoice Settings', zh: '发票设置' },
   'set.users': { en: 'Users & Roles', zh: '用户与角色' },
   'set.audit': { en: 'Audit Log', zh: '审计日志' },
   'set.logins': { en: 'Login History', zh: '登录记录' },
@@ -648,6 +649,12 @@ export const dictionary = {
   },
   'quo.new': { en: 'New quotation', zh: '新增报价单' },
   'quo.downloadBalancePaid': { en: 'Download balance-paid report', zh: '下载尾款已付报表' },
+  'quo.invoiceType': { en: 'Invoice Type', zh: '发票类型' },
+  'quo.commercialInvoice': { en: 'Commercial Invoice', zh: '商业发票' },
+  'quo.taxInvoice': { en: 'Tax Invoice', zh: '税务发票' },
+  'quo.vatStatus': { en: 'VAT', zh: '增值税' },
+  'quo.vatOn': { en: 'Registered', zh: '已注册' },
+  'quo.vatOff': { en: 'N/A — Not VAT Registered', zh: 'N/A — 未注册增值税' },
   'quo.edit': { en: 'Edit quotation', zh: '编辑报价单' },
   'quo.none': { en: 'No quotations yet.', zh: '暂无报价单。' },
   'quo.noneMatch': { en: 'No quotations match your search.', zh: '没有符合搜索条件的报价单。' },
@@ -1008,6 +1015,34 @@ export const dictionary = {
     zh: '权重合计不等于 100% — 请检查设置。',
   },
   'kpi.noScorecards': { en: 'No KPI scorecards for this period.', zh: '该周期暂无 KPI 考核表。' },
+
+  // --- Invoice / VAT settings ------------------------------------------------------
+  // Prefixed "ivc." (not "inv.", already Inventory's prefix above).
+  'ivc.desc': {
+    en: 'Company VAT registration status — controls whether new quotations charge VAT.',
+    zh: '公司增值税注册状态 — 决定新报价单是否收取增值税。',
+  },
+  'ivc.vatStatus': { en: 'VAT Status', zh: '增值税状态' },
+  'ivc.registered': { en: 'VAT Registered', zh: '已注册增值税' },
+  'ivc.notRegistered': { en: 'Not VAT Registered', zh: '未注册增值税' },
+  'ivc.currentNote': {
+    en: 'ZY Steel is currently not VAT registered. VAT is not charged on new invoices while this is off.',
+    zh: '中粤铁网目前未注册增值税。此项关闭期间，新发票不收取增值税。',
+  },
+  'ivc.vatRegisteredLabel': { en: 'VAT registered', zh: '已注册增值税' },
+  'ivc.vatRate': { en: 'VAT rate', zh: '增值税税率' },
+  'ivc.vatRateHint': {
+    en: 'Enter as a fraction, e.g. 0.10 for 10%.',
+    zh: '请输入小数，例如 10% 请输入 0.10。',
+  },
+  'ivc.vatTin': { en: 'VAT TIN', zh: '增值税纳税人识别号' },
+  'ivc.commercialPrefix': { en: 'Commercial Invoice prefix', zh: '商业发票编号前缀' },
+  'ivc.taxPrefix': { en: 'Tax Invoice prefix', zh: '税务发票编号前缀' },
+  'ivc.prefixHint': {
+    en: 'Reference only — does not change existing quotation/invoice numbering.',
+    zh: '仅供参考 — 不会改变现有报价单/发票的编号规则。',
+  },
+  'ivc.save': { en: 'Save invoice settings', zh: '保存发票设置' },
 } satisfies Record<string, Entry>;
 
 export type MessageKey = keyof typeof dictionary;
@@ -1236,6 +1271,10 @@ const PHRASES: Record<string, string> = {
   'Sales target saved': '已保存销售目标',
   'KPI scorecard saved': '已保存 KPI 考核表',
   'Add at least one KPI line': '请至少添加一项 KPI 考核项',
+  // Invoice / VAT settings
+  'Invoice settings saved': '已保存发票设置',
+  'VAT TIN is required when VAT registered is enabled':
+    '启用增值税注册后必须填写增值税纳税人识别号',
 };
 
 /** Localise an action/validation message for display. */

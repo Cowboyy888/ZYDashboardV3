@@ -82,6 +82,7 @@ export function QuotationsClient({
   quotations,
   items,
   customers,
+  vatRegistered,
   canManage,
   linkedOrders,
   isSearching = false,
@@ -89,6 +90,10 @@ export function QuotationsClient({
   quotations: QuotationRow[];
   items: QuotationItemRow[];
   customers: Opt[];
+  /** Company's CURRENT VAT status (invoice_settings) — informational only on
+   * this form; a new quotation snapshots this at creation, see
+   * actions/quotations.ts createQuotation. */
+  vatRegistered: boolean;
   canManage: boolean;
   linkedOrders: { quotationId: string; soId: string; soNumber: string | null }[];
   isSearching?: boolean;
@@ -136,6 +141,7 @@ export function QuotationsClient({
         <QuotationForm
           action={createQuotation}
           customers={customers}
+          vatRegistered={vatRegistered}
           onDone={() => setShowCreate(false)}
         />
       )}
@@ -536,12 +542,15 @@ function QuotationForm({
   customers,
   quotation,
   lines: existing,
+  vatRegistered,
   onDone,
 }: {
   action: (s: ActionState, f: FormData) => Promise<ActionState>;
   customers: Opt[];
   quotation?: QuotationRow;
   lines?: QuotationItemRow[];
+  /** Shown only on the create form — an edit never changes a quotation's own VAT snapshot. */
+  vatRegistered?: boolean;
   onDone: () => void;
 }) {
   const { t, m } = useT();
@@ -584,6 +593,20 @@ function QuotationForm({
       <CardContent>
         <form action={formAction} className="space-y-4">
           {quotation && <input type="hidden" name="id" value={quotation.id} />}
+
+          {!quotation && (
+            <div className="flex flex-wrap items-center gap-2 rounded-md bg-muted/40 px-3 py-2 text-xs text-muted-foreground">
+              <span>
+                {t('quo.invoiceType')}:{' '}
+                <strong>{vatRegistered ? t('quo.taxInvoice') : t('quo.commercialInvoice')}</strong>
+              </span>
+              <span>·</span>
+              <span>
+                {t('quo.vatStatus')}:{' '}
+                <strong>{vatRegistered ? t('quo.vatOn') : t('quo.vatOff')}</strong>
+              </span>
+            </div>
+          )}
 
           <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
             <div className="space-y-1.5">

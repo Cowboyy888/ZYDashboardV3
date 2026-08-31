@@ -258,6 +258,26 @@ export const telegramSettingsSchema = z.object({
 });
 export type TelegramSettingsInput = z.infer<typeof telegramSettingsSchema>;
 
+// --- Invoice / VAT settings ----------------------------------------------------
+
+export const invoiceSettingsSchema = z
+  .object({
+    vatRegistered: z.boolean().default(false),
+    // Stored as a 0-1 fraction (e.g. 0.10 for 10%) — same convention as
+    // sales_targets.target_margin_pct and the DB check constraint.
+    vatRate: z.coerce.number().min(0).max(1, 'Must be between 0 and 1').default(0.1),
+    vatTin: optionalText,
+    taxInvoicePrefix: nonEmpty.max(20).default('ZYS-TAX'),
+    commercialInvoicePrefix: nonEmpty.max(20).default('ZYS-Q'),
+  })
+  // A registered company must have a TIN on file — otherwise the "VAT TIN"
+  // line on a Tax Invoice would be blank, which defeats the point of it.
+  .refine((d) => !d.vatRegistered || !!d.vatTin, {
+    message: 'VAT TIN is required when VAT registered is enabled',
+    path: ['vatTin'],
+  });
+export type InvoiceSettingsInput = z.infer<typeof invoiceSettingsSchema>;
+
 // --- Auth / users ------------------------------------------------------------
 
 export const signInSchema = z.object({

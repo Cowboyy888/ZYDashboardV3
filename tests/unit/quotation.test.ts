@@ -14,6 +14,10 @@ import {
   validUntil,
   isExpired,
   DOC_PREFIX,
+  vatAmount,
+  grandTotal,
+  invoiceType,
+  NO_VAT,
 } from '@/lib/domain/quotation';
 
 describe('workbook formulas — Amount / Subtotal / Deposit / Balance', () => {
@@ -77,16 +81,60 @@ describe('workbook formulas — Amount / Subtotal / Deposit / Balance', () => {
     expect(balancePercentLabel(41.4)).toBe(58.6);
   });
 
-  it('bundles every figure the three documents need', () => {
+  it("bundles every figure the three documents need — no VAT arg = today's exact numbers, unchanged", () => {
     const t = quotationTotals([{ unitPrice: 1.83, quantity: 4320 }], 0.3);
     expect(t).toEqual({
       subtotal: 7905.6,
+      vatRegistered: false,
+      vatRate: 0,
+      vatAmount: 0,
+      grandTotal: 7905.6,
       depositPct: 0.3,
       depositDue: 2371.68,
       balanceDue: 5533.92,
       depositPercent: 30,
       balancePercent: 70,
     });
+  });
+});
+
+describe('VAT (Test 1/2/3 from the ZY Steel invoice spec)', () => {
+  it('Test 1 — not VAT registered: VAT is N/A/0, grand total = subtotal', () => {
+    expect(vatAmount(10000, NO_VAT)).toBe(0);
+    expect(grandTotal(10000, NO_VAT)).toBe(10000);
+    expect(invoiceType(false)).toBe('commercial');
+  });
+
+  it('Test 2 — VAT registered at 10%: VAT = $1,000, grand total = $11,000', () => {
+    const vat = { registered: true, rate: 0.1 };
+    expect(vatAmount(10000, vat)).toBe(1000);
+    expect(grandTotal(10000, vat)).toBe(11000);
+    expect(invoiceType(true)).toBe('tax');
+  });
+
+  it('Test 3 — deposit against the grand total: $10,000 grand total, $2,715 deposit -> $7,285 balance', () => {
+    expect(depositDue(10000, 0.2715)).toBe(2715);
+    expect(balanceDue(10000, 0.2715)).toBe(7285);
+  });
+
+  it('quotationTotals bases deposit/balance on GRAND TOTAL once VAT is on', () => {
+    // $10,000 subtotal, 10% VAT -> $11,000 grand total, 30% deposit of THAT.
+    const t = quotationTotals([{ unitPrice: 100, quantity: 100 }], 0.3, {
+      registered: true,
+      rate: 0.1,
+    });
+    expect(t.subtotal).toBe(10000);
+    expect(t.vatAmount).toBe(1000);
+    expect(t.grandTotal).toBe(11000);
+    expect(t.depositDue).toBe(3300); // 30% of 11,000, not 10,000
+    expect(t.balanceDue).toBe(7700);
+    expect(t.depositDue + t.balanceDue).toBeCloseTo(t.grandTotal, 2);
+  });
+
+  it('a VAT-off quotation produces identical deposit/balance to before VAT existed', () => {
+    const withoutArg = quotationTotals([{ unitPrice: 1.83, quantity: 4320 }], 0.3);
+    const withNoVat = quotationTotals([{ unitPrice: 1.83, quantity: 4320 }], 0.3, NO_VAT);
+    expect(withNoVat).toEqual(withoutArg);
   });
 });
 

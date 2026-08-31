@@ -1,5 +1,14 @@
 import Link from 'next/link';
-import { MapPin, Package, Send, Users, ShieldCheck, ListOrdered, Globe } from 'lucide-react';
+import {
+  MapPin,
+  Package,
+  Send,
+  Users,
+  ShieldCheck,
+  ListOrdered,
+  Globe,
+  Receipt,
+} from 'lucide-react';
 import { requirePermission } from '@/lib/auth';
 import { getLocale } from '@/lib/i18n/locale';
 import { translator } from '@/lib/i18n';
@@ -38,6 +47,12 @@ export default async function SettingsPage() {
       icon: Send,
       label: t('set.telegram'),
       show: hasPermission(user.role, 'telegram:manage'),
+    },
+    {
+      href: '/settings/invoice',
+      icon: Receipt,
+      label: t('set.invoice'),
+      show: hasPermission(user.role, 'invoice:manage'),
     },
     {
       href: '/settings/users',

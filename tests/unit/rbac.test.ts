@@ -74,6 +74,20 @@ describe('role permission matrix', () => {
     expect(hasPermission('warehouse_admin', 'telegram:send')).toBe(true);
     expect(hasPermission('warehouse_admin', 'telegram:manage')).toBe(false);
   });
+
+  it('only Owner and System Admin can edit the company VAT/invoice configuration', () => {
+    expect(hasPermission('owner', 'invoice:manage')).toBe(true);
+    expect(hasPermission('system_admin', 'invoice:manage')).toBe(true);
+    for (const role of [
+      'attendance_admin',
+      'warehouse_admin',
+      'sales_admin',
+      'payroll_admin',
+      'viewer',
+    ] as Role[]) {
+      expect(hasPermission(role, 'invoice:manage')).toBe(false);
+    }
+  });
 });
 
 describe('acceptance — purchase order costs visible only to Owner/System Admin/Warehouse Admin', () => {

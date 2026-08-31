@@ -193,6 +193,9 @@ export interface QuotationRow {
   balance_issued_on: string | null;
   deposit_paid_on: string | null;
   balance_paid_on: string | null;
+  /** Snapshotted from invoice_settings at creation — see 0043_invoice_vat.sql. */
+  vat_registered_snapshot: boolean;
+  vat_rate_snapshot: number;
   created_by: string | null;
   created_at: string;
   updated_at: string;
@@ -582,4 +585,16 @@ export interface KpiScorecardLineRow {
   actual_value: number | null;
   lower_is_better: boolean;
   created_at: string;
+}
+
+// --- Invoice settings (company-wide VAT config, singleton) -----------------------
+
+export interface InvoiceSettingsRow {
+  id: 1;
+  vat_registered: boolean;
+  vat_rate: number;
+  vat_tin: string | null;
+  tax_invoice_prefix: string;
+  commercial_invoice_prefix: string;
+  updated_at: string;
 }
