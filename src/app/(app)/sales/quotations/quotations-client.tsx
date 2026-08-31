@@ -2,7 +2,17 @@
 import { useActionState, useEffect, useMemo, useState, useTransition } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
-import { FileText, Loader2, Pencil, Plus, Receipt, Trash2, Wallet, X } from 'lucide-react';
+import {
+  Download,
+  FileText,
+  Loader2,
+  Pencil,
+  Plus,
+  Receipt,
+  Trash2,
+  Wallet,
+  X,
+} from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -105,8 +115,13 @@ export function QuotationsClient({
 
   return (
     <div className="space-y-4">
-      {canManage && (
-        <div className="flex justify-end">
+      <div className="flex flex-wrap justify-end gap-2">
+        <Button asChild variant="outline">
+          <a href="/api/export/quotations">
+            <Download className="h-4 w-4" /> {t('quo.downloadBalancePaid')}
+          </a>
+        </Button>
+        {canManage && (
           <Button
             variant={showCreate ? 'secondary' : 'default'}
             onClick={() => setShowCreate((s) => !s)}
@@ -114,8 +129,8 @@ export function QuotationsClient({
             {showCreate ? <X className="h-4 w-4" /> : <Plus className="h-4 w-4" />}
             {showCreate ? t('common.close') : t('quo.new')}
           </Button>
-        </div>
-      )}
+        )}
+      </div>
 
       {canManage && showCreate && (
         <QuotationForm

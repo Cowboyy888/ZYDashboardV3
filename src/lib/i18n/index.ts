@@ -647,6 +647,7 @@ export const dictionary = {
     zh: '创建报价单，然后生成报价单、订金发票与尾款发票 PDF。',
   },
   'quo.new': { en: 'New quotation', zh: '新增报价单' },
+  'quo.downloadBalancePaid': { en: 'Download balance-paid report', zh: '下载尾款已付报表' },
   'quo.edit': { en: 'Edit quotation', zh: '编辑报价单' },
   'quo.none': { en: 'No quotations yet.', zh: '暂无报价单。' },
   'quo.noneMatch': { en: 'No quotations match your search.', zh: '没有符合搜索条件的报价单。' },
