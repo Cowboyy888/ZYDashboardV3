@@ -162,6 +162,11 @@ export const dictionary = {
   },
   'inv.archivedTab': { en: 'Archived', zh: '已归档' },
   'inv.noArchivedSpecs': { en: 'No archived specifications.', zh: '暂无已归档的规格。' },
+  'inv.hasStockHint': { en: 'Has stock — reactivate to manage', zh: '仍有库存 — 请启用后处理' },
+  'inv.confirmDeleteArchivedBody': {
+    en: 'Stock is zero, but this permanently deletes its stock movement history too — this cannot be undone. Delete anyway?',
+    zh: '库存已为零，但此操作会同时永久删除其库存记录，且无法撤销。确定要删除吗？',
+  },
   'inv.recordMovement': { en: 'Record movement', zh: '记录出入库' },
   'inv.type': { en: 'Type', zh: '类型' },
   'inv.sendInventory': { en: 'Send inventory report', zh: '发送库存报告' },
@@ -1143,6 +1148,12 @@ const PHRASES: Record<string, string> = {
   'Specification deleted': '已删除规格',
   'Cannot delete: this specification has records. Archive it instead.':
     '无法删除：该规格存在记录，请改为归档。',
+  'Cannot delete: this specification has purchase order history. Archive it instead.':
+    '无法删除：该规格存在采购单记录，请改为归档。',
+  'Cannot delete: this specification has sales order history. Archive it instead.':
+    '无法删除：该规格存在销售订单记录，请改为归档。',
+  'Cannot delete: this specification still has stock. Archive it instead.':
+    '无法删除：该规格仍有库存，请改为归档。',
   'Specification not found': '未找到规格',
   'Missing specification': '缺少规格',
   // Users

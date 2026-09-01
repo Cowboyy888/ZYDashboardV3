@@ -477,7 +477,7 @@ export function InventoryClient({
                         {r.total} {r.unit}
                       </TableCell>
                       <TableCell className="text-right">
-                        <div className="flex justify-end gap-1">
+                        <div className="flex items-center justify-end gap-1">
                           <ActionForm action={toggleSku} className="space-y-0">
                             <input type="hidden" name="id" value={r.skuId} />
                             <input type="hidden" name="isActive" value="false" />
@@ -485,13 +485,22 @@ export function InventoryClient({
                               {t('common.reactivate')}
                             </SubmitButton>
                           </ActionForm>
-                          <ConfirmActionButton
-                            action={deleteSku}
-                            formData={{ id: r.skuId }}
-                            label={t('common.delete')}
-                            confirmText={t('set.confirmDeleteSpecBody')}
-                            variant="destructive"
-                          />
+                          {r.total === 0 ? (
+                            <ConfirmActionButton
+                              action={deleteSku}
+                              formData={{ id: r.skuId }}
+                              label={t('common.delete')}
+                              confirmText={t('inv.confirmDeleteArchivedBody')}
+                              variant="destructive"
+                            />
+                          ) : (
+                            <span
+                              className="text-xs text-muted-foreground"
+                              title={t('inv.hasStockHint')}
+                            >
+                              {t('inv.hasStockHint')}
+                            </span>
+                          )}
                         </div>
                       </TableCell>
                     </TableRow>

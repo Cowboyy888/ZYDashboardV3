@@ -18,6 +18,7 @@ import {
 import { canDeleteFamily, type FamilyUsage } from '@/lib/domain/products';
 import { hasPermission } from '@/lib/domain/rbac';
 import { businessDate } from '@/lib/domain/datetime';
+import { round3 } from '@/lib/domain/stock-ledger';
 import { fail, ok, zodFieldErrors, type ActionState } from './types';
 
 type ServerClient = Awaited<ReturnType<typeof createSupabaseServerClient>>;
@@ -442,7 +443,31 @@ export async function toggleSku(_prev: ActionState, formData: FormData): Promise
   return ok(isActive ? 'Specification archived' : 'Specification activated');
 }
 
-/** Safe delete: only when the SKU has NO history (stock movements or purchase orders). */
+/**
+ * Delete a specification.
+ *
+ * A spec with NO ledger history at all deletes outright, same as always.
+ * A spec that DOES have stock-movement history can only be deleted once it's
+ * archived AND its current balance has fully netted to zero — an active spec,
+ * or one still holding real stock anywhere, is always "Archive it instead."
+ * Purchase order AND sales order history are never discarded here regardless
+ * of stock level — skus is referenced by purchase_order_items and
+ * sales_order_items with their own ON DELETE RESTRICT, and a completed
+ * order's own line items are a different, more sensitive record than the
+ * stock ledger. Checked BEFORE touching stock_movements — discovering one of
+ * these only after the ledger rows are already gone would destroy history
+ * for a delete that was never going to succeed anyway.
+ *
+ * stock_movements has NO delete RLS policy for anyone (append-only, by
+ * design — see 0001_schema.sql), so the zero-balance-with-history case
+ * cannot go through a plain `.delete()` at all — it's routed to
+ * delete_archived_sku_if_empty() (0044_delete_archived_sku.sql), a SECURITY
+ * DEFINER function that bypasses RLS specifically for that one guarded
+ * operation and re-checks every guard itself (archived, no PO/SO history,
+ * zero balance) since it can't trust the caller. The checks here are a fast,
+ * friendly error, not the actual safety boundary. writeAudit records exactly
+ * how many movement rows the RPC discarded.
+ */
 export async function deleteSku(_prev: ActionState, formData: FormData): Promise<ActionState> {
   const user = await assertPermission('products:manage');
   const id = String(formData.get('id') ?? '');
@@ -452,26 +477,65 @@ export async function deleteSku(_prev: ActionState, formData: FormData): Promise
   const { data: sku } = await supabase.from('skus').select('*').eq('id', id).maybeSingle();
   if (!sku) return fail('Specification not found');
 
-  const [movements, poItems] = await Promise.all([
+  const [movements, poItems, soItems, balances] = await Promise.all([
     supabase.from('stock_movements').select('id', { count: 'exact', head: true }).eq('sku_id', id),
     supabase
       .from('purchase_order_items')
       .select('id', { count: 'exact', head: true })
       .eq('sku_id', id),
+    supabase
+      .from('sales_order_items')
+      .select('id', { count: 'exact', head: true })
+      .eq('sku_id', id),
+    supabase.from('stock_balances').select('quantity').eq('sku_id', id),
   ]);
-  if ((movements.count ?? 0) > 0 || (poItems.count ?? 0) > 0) {
-    return fail('Cannot delete: this specification has records. Archive it instead.');
+  if ((poItems.count ?? 0) > 0) {
+    return fail(
+      'Cannot delete: this specification has purchase order history. Archive it instead.',
+    );
+  }
+  if ((soItems.count ?? 0) > 0) {
+    return fail('Cannot delete: this specification has sales order history. Archive it instead.');
   }
 
-  const { error } = await supabase.from('skus').delete().eq('id', id);
-  if (error) {
-    // Backstop for the FK on_delete restrict guard — treat as "has history".
-    if (error.code === '23503')
+  const movementCount = movements.count ?? 0;
+  let deletedMovementCount = 0;
+
+  if (movementCount === 0) {
+    // No ledger history at all — the plain path, unchanged from before this
+    // feature existed: works on an active OR archived spec (e.g. deleting a
+    // freshly-created spec made by mistake, no need to archive it first).
+    const { error } = await supabase.from('skus').delete().eq('id', id);
+    if (error) {
+      // Backstop for the FK on_delete restrict guard — treat as "has history".
+      if (error.code === '23503')
+        return fail('Cannot delete: this specification has records. Archive it instead.');
+      return fail(error.message);
+    }
+  } else {
+    if (sku.is_active) {
       return fail('Cannot delete: this specification has records. Archive it instead.');
-    return fail(error.message);
+    }
+    const totalStock = round3(
+      (balances.data ?? []).reduce((sum, b) => sum + Number(b.quantity), 0),
+    );
+    if (totalStock !== 0) {
+      return fail('Cannot delete: this specification still has stock. Archive it instead.');
+    }
+    const { data: rpcResult, error: rpcError } = await supabase.rpc(
+      'delete_archived_sku_if_empty',
+      { p_sku: id },
+    );
+    if (rpcError) return fail(rpcError.message);
+    deletedMovementCount = Number(rpcResult ?? 0);
   }
 
-  await writeAudit(user, { action: 'sku.delete', entity: 'skus', entityId: id, oldValue: sku });
+  await writeAudit(user, {
+    action: 'sku.delete',
+    entity: 'skus',
+    entityId: id,
+    oldValue: { ...sku, deletedMovementCount },
+  });
   revalidatePath('/settings/products');
   revalidatePath('/inventory');
   return ok('Specification deleted');
