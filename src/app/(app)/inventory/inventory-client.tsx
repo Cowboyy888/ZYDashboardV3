@@ -60,6 +60,7 @@ interface FamilyOpt {
 
 export function InventoryClient({
   rows,
+  archivedRows,
   reportRows,
   skus,
   families,
@@ -73,6 +74,8 @@ export function InventoryClient({
   today,
 }: {
   rows: InventoryDisplayRow[];
+  /** Same shape as `rows`, but for archived specs — see toggleSku/StockRow's Archive button. */
+  archivedRows: InventoryDisplayRow[];
   reportRows: InventoryReportRow[];
   skus: SkuRow[];
   families: FamilyOpt[];
@@ -106,6 +109,7 @@ export function InventoryClient({
           {canRecord && <TabsTrigger value="record">{t('inv.recordTab')}</TabsTrigger>}
           <TabsTrigger value="ledger">{t('inv.ledgerTab')}</TabsTrigger>
           <TabsTrigger value="report">{t('inv.reportTab')}</TabsTrigger>
+          {canManageProducts && <TabsTrigger value="archived">{t('inv.archivedTab')}</TabsTrigger>}
         </TabsList>
         {canSend && (
           <SendNowButton
@@ -443,6 +447,68 @@ export function InventoryClient({
       <TabsContent value="report">
         <InventoryReportPanel reportRows={reportRows} />
       </TabsContent>
+
+      {/* --- Archived specs: where "Archive" on the Stock tab actually sends them --- */}
+      {canManageProducts && (
+        <TabsContent value="archived" className="space-y-3">
+          <Card>
+            <CardContent className="p-0">
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead>{t('inv.specification')}</TableHead>
+                    <TableHead className="text-right">{t('inv.storageRoom')}</TableHead>
+                    <TableHead className="text-right">{t('inv.warehouse')}</TableHead>
+                    <TableHead className="text-right">{t('inv.company')}</TableHead>
+                    <TableHead className="text-right">{t('common.actions')}</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {archivedRows.map((r) => (
+                    <TableRow key={r.skuId}>
+                      <TableCell className="max-w-[420px]">
+                        <span className="truncate text-muted-foreground line-through">
+                          {r.label}
+                        </span>
+                      </TableCell>
+                      <TableCell className="text-right tabular-nums">{r.storageRoom}</TableCell>
+                      <TableCell className="text-right tabular-nums">{r.warehouse}</TableCell>
+                      <TableCell className="text-right font-semibold tabular-nums">
+                        {r.total} {r.unit}
+                      </TableCell>
+                      <TableCell className="text-right">
+                        <div className="flex justify-end gap-1">
+                          <ActionForm action={toggleSku} className="space-y-0">
+                            <input type="hidden" name="id" value={r.skuId} />
+                            <input type="hidden" name="isActive" value="false" />
+                            <SubmitButton variant="ghost" size="sm">
+                              {t('common.reactivate')}
+                            </SubmitButton>
+                          </ActionForm>
+                          <ConfirmActionButton
+                            action={deleteSku}
+                            formData={{ id: r.skuId }}
+                            label={t('common.delete')}
+                            confirmText={t('set.confirmDeleteSpecBody')}
+                            variant="destructive"
+                          />
+                        </div>
+                      </TableCell>
+                    </TableRow>
+                  ))}
+                  {archivedRows.length === 0 && (
+                    <TableRow>
+                      <TableCell colSpan={5} className="text-center text-muted-foreground">
+                        {t('inv.noArchivedSpecs')}
+                      </TableCell>
+                    </TableRow>
+                  )}
+                </TableBody>
+              </Table>
+            </CardContent>
+          </Card>
+        </TabsContent>
+      )}
     </Tabs>
   );
 }

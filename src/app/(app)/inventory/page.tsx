@@ -49,9 +49,12 @@ export default async function InventoryPage() {
   const user = await requirePermission('inventory:view');
   const locale = await getLocale();
   const t = translator(locale);
-  const [skus, families, locations, balances, movements, sos, items, delivered, customers] =
+  const [allSkus, families, locations, balances, movements, sos, items, delivered, customers] =
     await Promise.all([
-      getSkus(),
+      // Fetch once, archived included, then split below — one query instead
+      // of two, and the Archived tab needs the same balance-lookup logic as
+      // the live Stock tab (an archived spec can still be sitting on stock).
+      getSkus(true),
       getFamilies(),
       getLocations(),
       getBalances(),
@@ -61,8 +64,11 @@ export default async function InventoryPage() {
       getSalesOrderItemsDelivered(),
       getCustomers(true),
     ]);
+  const skus = allSkus.filter((s) => s.is_active);
+  const archivedSkus = allSkus.filter((s) => !s.is_active);
 
   const rows = buildInventoryRows(skus, families, locations, balances, locale);
+  const archivedRows = buildInventoryRows(archivedSkus, families, locations, balances, locale);
   const allowedTypes = SINGLE_ENTRY_TYPES.filter((ty) => hasPermission(user.role, PERM[ty]));
   const canTransfer = hasPermission(user.role, 'stock:transfer');
 
@@ -112,6 +118,7 @@ export default async function InventoryPage() {
       <PageHeader title={t('inv.title')} description={t('inv.desc')} />
       <InventoryClient
         rows={rows}
+        archivedRows={archivedRows}
         reportRows={reportRows}
         skus={skus}
         families={families.map((f) => ({ id: f.id, name: f.name, name_english: f.name_english }))}

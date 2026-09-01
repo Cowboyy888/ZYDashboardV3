@@ -160,6 +160,8 @@ export const dictionary = {
     en: 'No specifications yet. Add them in Settings → Products.',
     zh: '暂无规格，请在 设置 → 产品 中新增。',
   },
+  'inv.archivedTab': { en: 'Archived', zh: '已归档' },
+  'inv.noArchivedSpecs': { en: 'No archived specifications.', zh: '暂无已归档的规格。' },
   'inv.recordMovement': { en: 'Record movement', zh: '记录出入库' },
   'inv.type': { en: 'Type', zh: '类型' },
   'inv.sendInventory': { en: 'Send inventory report', zh: '发送库存报告' },
