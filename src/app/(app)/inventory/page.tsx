@@ -10,6 +10,7 @@ import {
   getSalesOrderItems,
   getSalesOrderItemsDelivered,
   getCustomers,
+  getSkusWithOrderHistory,
 } from '@/lib/db/queries';
 import { buildInventoryRows, buildInventoryReportRows } from '@/lib/domain/inventory-view';
 import {
@@ -71,6 +72,12 @@ export default async function InventoryPage() {
   const archivedRows = buildInventoryRows(archivedSkus, families, locations, balances, locale);
   const allowedTypes = SINGLE_ENTRY_TYPES.filter((ty) => hasPermission(user.role, PERM[ty]));
   const canTransfer = hasPermission(user.role, 'stock:transfer');
+  const canManageProducts = hasPermission(user.role, 'products:manage');
+  // Only the Archived tab (product-managers only) needs this — skip the
+  // query entirely for anyone who can't see that tab.
+  const skusWithOrderHistory = canManageProducts
+    ? await getSkusWithOrderHistory(archivedSkus.map((s) => s.id))
+    : new Set<string>();
 
   // Reserved / Available / Customer-Project for the Inventory Report — reuses
   // Sales' own committed-stock numbers so the two pages never disagree.
@@ -119,6 +126,7 @@ export default async function InventoryPage() {
       <InventoryClient
         rows={rows}
         archivedRows={archivedRows}
+        skusWithOrderHistory={skusWithOrderHistory}
         reportRows={reportRows}
         skus={skus}
         families={families.map((f) => ({ id: f.id, name: f.name, name_english: f.name_english }))}
@@ -128,7 +136,7 @@ export default async function InventoryPage() {
         canTransfer={canTransfer}
         canOverride={canOverrideNegativeStock(user.role)}
         canSend={hasPermission(user.role, 'telegram:send')}
-        canManageProducts={hasPermission(user.role, 'products:manage')}
+        canManageProducts={canManageProducts}
         today={businessDate()}
       />
     </div>

@@ -21,6 +21,14 @@ export default defineConfig([
     '**/coverage/',
     '**/playwright-report/',
     '**/test-results/',
+    // `vercel build` (e.g. to sanity-check a vercel.json change locally,
+    // without deploying) writes .vercel/output/**, a huge tree of bundled/
+    // traced dependency code. Without this it isn't linted so much as it
+    // crashes the whole run — confirmed directly: `eslint .` failed with a
+    // misleading "could not find plugin react-hooks" (a red herring; every
+    // real source file lints fine on its own) the moment that directory
+    // existed, and went away the moment it didn't.
+    '**/.vercel/output/',
   ]),
   {
     extends: [...nextCoreWebVitals, ...nextTypescript, ...compat.extends('prettier')],

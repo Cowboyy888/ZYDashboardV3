@@ -61,6 +61,7 @@ interface FamilyOpt {
 export function InventoryClient({
   rows,
   archivedRows,
+  skusWithOrderHistory,
   reportRows,
   skus,
   families,
@@ -76,6 +77,10 @@ export function InventoryClient({
   rows: InventoryDisplayRow[];
   /** Same shape as `rows`, but for archived specs — see toggleSku/StockRow's Archive button. */
   archivedRows: InventoryDisplayRow[];
+  /** Archived sku ids with purchase/sales order history — deleteSku blocks these
+   * regardless of stock level, so the Archived tab shows this up front instead
+   * of letting Delete fail after the click. */
+  skusWithOrderHistory: Set<string>;
   reportRows: InventoryReportRow[];
   skus: SkuRow[];
   families: FamilyOpt[];
@@ -485,7 +490,21 @@ export function InventoryClient({
                               {t('common.reactivate')}
                             </SubmitButton>
                           </ActionForm>
-                          {r.total === 0 ? (
+                          {r.total !== 0 ? (
+                            <span
+                              className="text-xs text-muted-foreground"
+                              title={t('inv.hasStockHint')}
+                            >
+                              {t('inv.hasStockHint')}
+                            </span>
+                          ) : skusWithOrderHistory.has(r.skuId) ? (
+                            <span
+                              className="text-xs text-muted-foreground"
+                              title={t('inv.hasOrderHistoryHint')}
+                            >
+                              {t('inv.hasOrderHistoryHint')}
+                            </span>
+                          ) : (
                             <ConfirmActionButton
                               action={deleteSku}
                               formData={{ id: r.skuId }}
@@ -493,13 +512,6 @@ export function InventoryClient({
                               confirmText={t('inv.confirmDeleteArchivedBody')}
                               variant="destructive"
                             />
-                          ) : (
-                            <span
-                              className="text-xs text-muted-foreground"
-                              title={t('inv.hasStockHint')}
-                            >
-                              {t('inv.hasStockHint')}
-                            </span>
                           )}
                         </div>
                       </TableCell>

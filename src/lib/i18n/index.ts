@@ -163,6 +163,10 @@ export const dictionary = {
   'inv.archivedTab': { en: 'Archived', zh: '已归档' },
   'inv.noArchivedSpecs': { en: 'No archived specifications.', zh: '暂无已归档的规格。' },
   'inv.hasStockHint': { en: 'Has stock — reactivate to manage', zh: '仍有库存 — 请启用后处理' },
+  'inv.hasOrderHistoryHint': {
+    en: 'Has order history — cannot be deleted',
+    zh: '存在订单记录 — 无法删除',
+  },
   'inv.confirmDeleteArchivedBody': {
     en: 'Stock is zero, but this permanently deletes its stock movement history too — this cannot be undone. Delete anyway?',
     zh: '库存已为零，但此操作会同时永久删除其库存记录，且无法撤销。确定要删除吗？',

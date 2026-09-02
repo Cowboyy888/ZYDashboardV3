@@ -123,6 +123,30 @@ export async function getSkus(includeArchived = false, ids?: string[]): Promise<
   }
 }
 
+/**
+ * Which of the given sku ids have purchase or sales order history — one
+ * batched pair of queries, not N+1. Lets the Archived tab show "Has order
+ * history" up front instead of a Delete button that only fails after the
+ * click (deleteSku, actions/settings.ts, blocks this regardless of stock).
+ */
+export async function getSkusWithOrderHistory(skuIds: string[]): Promise<Set<string>> {
+  if (skuIds.length === 0) return new Set();
+  try {
+    const supabase = await client();
+    const [po, so] = await Promise.all([
+      supabase.from('purchase_order_items').select('sku_id').in('sku_id', skuIds),
+      supabase.from('sales_order_items').select('sku_id').in('sku_id', skuIds),
+    ]);
+    const ids = new Set<string>();
+    for (const row of po.data ?? []) ids.add(row.sku_id as string);
+    for (const row of so.data ?? []) ids.add(row.sku_id as string);
+    return ids;
+  } catch (e) {
+    console.error('[queries] getSkusWithOrderHistory', e);
+    return new Set();
+  }
+}
+
 export interface BalanceRow {
   sku_id: string;
   location_id: string;
