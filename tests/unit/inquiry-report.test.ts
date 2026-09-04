@@ -86,11 +86,45 @@ describe('toReportRow', () => {
     ).toBe('Customer wants a sample first');
   });
 
+  it('includes every other free-text/detail field the create/edit form collects', () => {
+    const row = toReportRow(
+      inquiry({
+        contact: '012 345 678',
+        sheet_size: '2.4m x 6m',
+        mesh_opening: '150*150',
+        delivery_location: '金边',
+        next_action: 'Send updated quote by Friday',
+        follow_up_notes: 'Customer asked about bulk discount',
+      }),
+      resolvers,
+    );
+    expect(row.contact).toBe('012 345 678');
+    expect(row.sheetSize).toBe('2.4m x 6m');
+    expect(row.meshOpening).toBe('150*150');
+    expect(row.delivery).toBe('金边');
+    expect(row.nextAction).toBe('Send updated quote by Friday');
+    expect(row.followupNotes).toBe('Customer asked about bulk discount');
+  });
+
   it('has a stable, complete column set', () => {
     const keys = INQUIRY_REPORT_COLUMNS.map((c) => c.key);
     expect(keys).toContain('quoted');
     expect(keys).toContain('profit');
-    expect(keys).toContain('remarks');
+    // Every free-text/detail field on the inquiry form belongs in the report —
+    // this is the regression guard for that: add a field to SalesInquiryRow
+    // display-side, and this list needs a matching entry (or a deliberate
+    // decision to leave it out) rather than it silently going missing again.
+    for (const key of [
+      'contact',
+      'sheetSize',
+      'meshOpening',
+      'delivery',
+      'nextAction',
+      'followupNotes',
+      'remarks',
+    ]) {
+      expect(keys).toContain(key);
+    }
     expect(new Set(keys).size).toBe(keys.length); // unique
   });
 });
