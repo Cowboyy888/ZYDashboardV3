@@ -885,7 +885,6 @@ function InquiryForm({
         </div>
         {field(t('inq.specification'), 'specification', row?.specification)}
         {field(t('inq.diameter'), 'diameter', row?.diameter)}
-        {field(t('inq.sheetSize'), 'sheetSize', row?.sheet_size)}
         {field(t('inq.meshOpening'), 'meshOpening', row?.mesh_opening)}
         <div className="space-y-1.5">
           <Label htmlFor="if-area">{t('inq.area')}</Label>

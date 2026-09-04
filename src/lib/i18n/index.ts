@@ -743,7 +743,6 @@ export const dictionary = {
   'inq.product': { en: 'Product', zh: '产品' },
   'inq.specification': { en: 'Specification', zh: '规格' },
   'inq.diameter': { en: 'Diameter (mm)', zh: '直径(毫米)' },
-  'inq.sheetSize': { en: 'Sheet size', zh: '单张尺寸' },
   'inq.meshOpening': { en: 'Mesh opening', zh: '网孔尺寸' },
   'inq.area': { en: 'Area/sheet (m²)', zh: '单张面积(m²)' },
   'inq.qty': { en: 'Qty (sheets)', zh: '数量(张)' },
