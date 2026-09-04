@@ -79,10 +79,18 @@ describe('toReportRow', () => {
     expect(row.profit).toBe(99);
   });
 
+  it('includes remarks, blank when unset', () => {
+    expect(toReportRow(inquiry(), resolvers).remarks).toBe('');
+    expect(
+      toReportRow(inquiry({ remarks: 'Customer wants a sample first' }), resolvers).remarks,
+    ).toBe('Customer wants a sample first');
+  });
+
   it('has a stable, complete column set', () => {
     const keys = INQUIRY_REPORT_COLUMNS.map((c) => c.key);
     expect(keys).toContain('quoted');
     expect(keys).toContain('profit');
+    expect(keys).toContain('remarks');
     expect(new Set(keys).size).toBe(keys.length); // unique
   });
 });
@@ -118,6 +126,16 @@ describe('buildInquiryReportHtml', () => {
     expect(html).toContain('Galleria Tile'); // a data row
     expect(html).toContain('21/07/2026'); // generated date
     expect(html).toContain('Thank you for your business'); // red footer strip
+  });
+
+  it('shows the remarks column in the printed table', () => {
+    const html = buildInquiryReportHtml({
+      generatedOn: '21/07/2026',
+      summary,
+      rows: [toReportRow(inquiry({ remarks: 'Needs 3-week lead time' }), resolvers)],
+    });
+    expect(html).toContain('Remarks 备注'); // column header
+    expect(html).toContain('Needs 3-week lead time'); // the actual data
   });
 
   it('escapes HTML-special characters in data', () => {

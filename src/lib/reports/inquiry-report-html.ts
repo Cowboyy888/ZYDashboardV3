@@ -43,6 +43,7 @@ export const INQUIRY_REPORT_COLUMNS: ReportColumn[] = [
   { key: 'profit', header: 'Est. Profit ($) 预估利润', width: 15, kind: 'usd' },
   { key: 'status', header: 'Status 状态', width: 12, kind: 'text' },
   { key: 'followup', header: 'Follow-up 跟进日期', width: 13, kind: 'text' },
+  { key: 'remarks', header: 'Remarks 备注', width: 24, kind: 'text' },
 ];
 
 /** A report row: text columns hold strings, num/usd columns hold number|null. */
@@ -84,6 +85,7 @@ export function toReportRow(i: SalesInquiryRow, r: InquiryReportResolvers): Inqu
     profit: i.estimated_profit,
     status: r.status(i.status_id)?.name ?? '',
     followup: i.follow_up_date ?? '',
+    remarks: i.remarks ?? '',
   };
 }
 
