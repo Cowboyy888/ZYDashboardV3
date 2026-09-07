@@ -1,5 +1,7 @@
 import 'server-only';
 import { createSupabaseServerClient } from '@/lib/supabase/server';
+import type { Currency } from '@/lib/domain/purchasing';
+import type { PriceStatus } from '@/lib/domain/price-records';
 import type {
   AttendanceGroupRow,
   AttendanceRow,
@@ -27,6 +29,8 @@ import type {
   PayrollItemLiveRow,
   PayrollItemRow,
   PayrollRunRow,
+  PriceRecordRow,
+  PriceTypeRow,
   ProductFamilyRow,
   ProfileRow,
   PurchaseOrderRow,
@@ -1250,5 +1254,261 @@ export async function getOpenInquiryCount(): Promise<number> {
   } catch (e) {
     console.error('[queries] getOpenInquiryCount', e);
     return 0;
+  }
+}
+
+// --- Price records (historical price database) -----------------------------------
+
+/** `includeArchived` mirrors getSkus()/getFamilies() — false by default. */
+export async function getPriceTypes(includeArchived = false): Promise<PriceTypeRow[]> {
+  try {
+    const supabase = await client();
+    let q = supabase.from('price_types').select('*').order('sort_order');
+    if (!includeArchived) q = q.eq('is_active', true);
+    const { data } = await q;
+    return (data as PriceTypeRow[]) ?? [];
+  } catch (e) {
+    console.error('[queries] getPriceTypes', e);
+    return [];
+  }
+}
+
+export interface PriceRecordFilters {
+  skuId?: string;
+  customerId?: string;
+  priceTypeId?: string;
+  status?: PriceStatus;
+  currency?: Currency;
+  effectiveFrom?: string;
+  effectiveTo?: string;
+}
+
+/**
+ * Resolves free-text `search` into an .or() filter against price_records'
+ * own columns (notes) plus ids resolved from related tables (customer name,
+ * sku spec attributes / family name) — same "resolve then filter" shape as
+ * getSalesOrdersPage's customer-name search, just with an extra resolution
+ * step since a sku's full spec isn't denormalized onto price_records.
+ */
+async function priceRecordSearchOrFilter(
+  supabase: Awaited<ReturnType<typeof client>>,
+  term: string,
+): Promise<string> {
+  const [{ data: customers }, { data: families }] = await Promise.all([
+    supabase.from('customers').select('id').ilike('name', `%${term}%`),
+    supabase
+      .from('product_families')
+      .select('id')
+      .or(`name.ilike.%${term}%,name_english.ilike.%${term}%`),
+  ]);
+  const familyIds = (families ?? []).map((f) => f.id as string);
+  const skuQuery = supabase
+    .from('skus')
+    .select('id')
+    .or(
+      [
+        `diameter.ilike.%${term}%`,
+        `size.ilike.%${term}%`,
+        `hole.ilike.%${term}%`,
+        `rod_count.ilike.%${term}%`,
+      ].join(','),
+    );
+  const { data: skusByAttr } = await skuQuery;
+  let skuIds = (skusByAttr ?? []).map((s) => s.id as string);
+  if (familyIds.length > 0) {
+    const { data: skusByFamily } = await supabase
+      .from('skus')
+      .select('id')
+      .in('family_id', familyIds);
+    skuIds = [...new Set([...skuIds, ...(skusByFamily ?? []).map((s) => s.id as string)])];
+  }
+  const customerIds = (customers ?? []).map((c) => c.id as string);
+
+  const orParts = [`notes.ilike.%${term}%`];
+  if (customerIds.length > 0) orParts.push(`customer_id.in.(${customerIds.join(',')})`);
+  if (skuIds.length > 0) orParts.push(`sku_id.in.(${skuIds.join(',')})`);
+  return orParts.join(',');
+}
+
+/** Paginated + searchable + filterable price records — the list page's real query. */
+export async function getPriceRecordsPage({
+  page,
+  pageSize = DEFAULT_PAGE_SIZE,
+  search,
+  filters = {},
+}: {
+  page: number;
+  pageSize?: number;
+  search?: string;
+  filters?: PriceRecordFilters;
+}): Promise<PageResult<PriceRecordRow>> {
+  try {
+    const supabase = await client();
+    const from = (page - 1) * pageSize;
+    const to = from + pageSize - 1;
+    let q = supabase.from('price_records').select('*', { count: 'exact' });
+    if (filters.skuId) q = q.eq('sku_id', filters.skuId);
+    if (filters.customerId) q = q.eq('customer_id', filters.customerId);
+    if (filters.priceTypeId) q = q.eq('price_type_id', filters.priceTypeId);
+    if (filters.status) q = q.eq('status', filters.status);
+    if (filters.currency) q = q.eq('currency', filters.currency);
+    if (filters.effectiveFrom) q = q.gte('effective_date', filters.effectiveFrom);
+    if (filters.effectiveTo) q = q.lte('effective_date', filters.effectiveTo);
+
+    const term = search ? sanitizeSearchTerm(search) : '';
+    if (term) q = q.or(await priceRecordSearchOrFilter(supabase, term));
+
+    const { data, count } = await q
+      .order('effective_date', { ascending: false })
+      .order('created_at', { ascending: false })
+      .range(from, to);
+    return { rows: (data as PriceRecordRow[]) ?? [], total: count ?? 0 };
+  } catch (e) {
+    console.error('[queries] getPriceRecordsPage', e);
+    return { rows: [], total: 0 };
+  }
+}
+
+/** Every price record matching the given filters/search, unpaginated — for exports. */
+export async function getAllPriceRecords(
+  opts: { search?: string; filters?: PriceRecordFilters } = {},
+): Promise<PriceRecordRow[]> {
+  try {
+    const supabase = await client();
+    const filters = opts.filters ?? {};
+    let q = supabase.from('price_records').select('*');
+    if (filters.skuId) q = q.eq('sku_id', filters.skuId);
+    if (filters.customerId) q = q.eq('customer_id', filters.customerId);
+    if (filters.priceTypeId) q = q.eq('price_type_id', filters.priceTypeId);
+    if (filters.status) q = q.eq('status', filters.status);
+    if (filters.currency) q = q.eq('currency', filters.currency);
+    if (filters.effectiveFrom) q = q.gte('effective_date', filters.effectiveFrom);
+    if (filters.effectiveTo) q = q.lte('effective_date', filters.effectiveTo);
+    const term = opts.search ? sanitizeSearchTerm(opts.search) : '';
+    if (term) q = q.or(await priceRecordSearchOrFilter(supabase, term));
+    const { data } = await q
+      .order('effective_date', { ascending: false })
+      .order('created_at', { ascending: false });
+    return (data as PriceRecordRow[]) ?? [];
+  } catch (e) {
+    console.error('[queries] getAllPriceRecords', e);
+    return [];
+  }
+}
+
+/** Full price history for one sku (+ optional customer), newest first — the "View History" dialog. */
+export async function getPriceHistory(
+  skuId: string,
+  customerId: string | null,
+): Promise<PriceRecordRow[]> {
+  try {
+    const supabase = await client();
+    let q = supabase.from('price_records').select('*').eq('sku_id', skuId);
+    q = customerId ? q.eq('customer_id', customerId) : q.is('customer_id', null);
+    const { data } = await q.order('effective_date', { ascending: false });
+    return (data as PriceRecordRow[]) ?? [];
+  } catch (e) {
+    console.error('[queries] getPriceHistory', e);
+    return [];
+  }
+}
+
+/**
+ * Every price_records row (any customer, any status) for the given skus, one
+ * batched IN query — lets the list page's "View History" dialog open
+ * instantly by filtering already-fetched rows to the clicked row's
+ * (sku_id, customer_id) client-side, instead of a per-row fetch.
+ */
+export async function getPriceHistoryForSkuIds(skuIds: string[]): Promise<PriceRecordRow[]> {
+  if (skuIds.length === 0) return [];
+  try {
+    const supabase = await client();
+    const { data } = await supabase
+      .from('price_records')
+      .select('*')
+      .in('sku_id', skuIds)
+      .order('effective_date', { ascending: false });
+    return (data as PriceRecordRow[]) ?? [];
+  } catch (e) {
+    console.error('[queries] getPriceHistoryForSkuIds', e);
+    return [];
+  }
+}
+
+export interface PriceRecordCounts {
+  active: number;
+  expired: number;
+  customerPrices: number;
+  specialPrices: number;
+  changedThisMonth: number;
+  /** Active, not yet expired, but within 30 days of expiry — dashboard alert count. */
+  expiringSoon: number;
+}
+
+/** Dashboard + list-page KPI counts, computed server-side rather than fetching everything. */
+export async function getPriceRecordCounts(): Promise<PriceRecordCounts> {
+  try {
+    const supabase = await client();
+    const now = new Date();
+    const monthStart = `${now.toISOString().slice(0, 7)}-01`;
+    const today = now.toISOString().slice(0, 10);
+    const in30Days = new Date(now.getTime() + 30 * 86_400_000).toISOString().slice(0, 10);
+    const { data: specialType } = await supabase
+      .from('price_types')
+      .select('id')
+      .eq('name', 'Special Price')
+      .maybeSingle();
+
+    const [active, expired, customerPrices, specialPrices, changedThisMonth, expiringSoon] =
+      await Promise.all([
+        supabase
+          .from('price_records')
+          .select('id', { count: 'exact', head: true })
+          .eq('status', 'active'),
+        supabase
+          .from('price_records')
+          .select('id', { count: 'exact', head: true })
+          .eq('status', 'expired'),
+        supabase
+          .from('price_records')
+          .select('id', { count: 'exact', head: true })
+          .eq('status', 'active')
+          .not('customer_id', 'is', null),
+        specialType
+          ? supabase
+              .from('price_records')
+              .select('id', { count: 'exact', head: true })
+              .eq('status', 'active')
+              .eq('price_type_id', specialType.id)
+          : Promise.resolve({ count: 0 }),
+        supabase
+          .from('price_records')
+          .select('id', { count: 'exact', head: true })
+          .gte('created_at', monthStart),
+        supabase
+          .from('price_records')
+          .select('id', { count: 'exact', head: true })
+          .eq('status', 'active')
+          .gte('expiry_date', today)
+          .lte('expiry_date', in30Days),
+      ]);
+    return {
+      active: active.count ?? 0,
+      expired: expired.count ?? 0,
+      customerPrices: customerPrices.count ?? 0,
+      specialPrices: specialPrices.count ?? 0,
+      changedThisMonth: changedThisMonth.count ?? 0,
+      expiringSoon: expiringSoon.count ?? 0,
+    };
+  } catch (e) {
+    console.error('[queries] getPriceRecordCounts', e);
+    return {
+      active: 0,
+      expired: 0,
+      customerPrices: 0,
+      specialPrices: 0,
+      changedThisMonth: 0,
+      expiringSoon: 0,
+    };
   }
 }

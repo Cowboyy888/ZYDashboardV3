@@ -13,6 +13,7 @@ import {
   Truck,
   Wallet,
   Inbox,
+  Tags,
 } from 'lucide-react';
 import { requireUser } from '@/lib/auth';
 import { hasPermission } from '@/lib/domain/rbac';
@@ -40,6 +41,7 @@ import {
   getPendingDeliveryOrderCount,
   getDraftPayrollRunCount,
   getOpenInquiryCount,
+  getPriceRecordCounts,
 } from '@/lib/db/queries';
 import { PageHeader } from '@/components/page-header';
 import { StatCard } from '@/components/stat-card';
@@ -87,6 +89,7 @@ export default async function DashboardPage() {
   const canPayroll = hasPermission(user.role, 'payroll:view');
   const canInquiries = hasPermission(user.role, 'inquiries:view');
   const canLogProduction = hasPermission(user.role, 'stock:production');
+  const canPriceRecords = hasPermission(user.role, 'price_records:view');
 
   const [
     employees,
@@ -102,6 +105,7 @@ export default async function DashboardPage() {
     pendingDeliveryCount,
     payrollApprovalCount,
     openInquiryCount,
+    priceRecordCounts,
   ] = await Promise.all([
     getEmployees(),
     getAttendanceForDate(today),
@@ -116,6 +120,7 @@ export default async function DashboardPage() {
     canSales ? getPendingDeliveryOrderCount() : Promise.resolve(0),
     canPayroll ? getDraftPayrollRunCount() : Promise.resolve(0),
     canInquiries ? getOpenInquiryCount() : Promise.resolve(0),
+    canPriceRecords ? getPriceRecordCounts() : Promise.resolve(null),
   ]);
 
   const activeIds = employees.map((e) => e.id);
@@ -316,6 +321,46 @@ export default async function DashboardPage() {
           </Card>
         </Link>
       </div>
+
+      {canPriceRecords && priceRecordCounts && (
+        <Link
+          href="/sales/prices"
+          className={`mt-4 block ${ENTER_CLASS} ${LINK_CARD_CLASS}`}
+          style={enterStyle(330)}
+        >
+          <Card>
+            <CardHeader className="pb-3">
+              <CardTitle className="flex items-center gap-2 text-base">
+                <Tags className="h-4 w-4 text-primary" /> {t('pr.dashCard')}
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="grid grid-cols-3 gap-3 text-sm">
+                <div>
+                  <div className="text-xs text-muted-foreground">{t('pr.kpiActive')}</div>
+                  <div className="text-lg font-semibold tabular-nums">
+                    {priceRecordCounts.active}
+                  </div>
+                </div>
+                <div>
+                  <div className="text-xs text-muted-foreground">{t('pr.kpiChangedThisMonth')}</div>
+                  <div className="text-lg font-semibold tabular-nums">
+                    {priceRecordCounts.changedThisMonth}
+                  </div>
+                </div>
+                <div>
+                  <div className="text-xs text-muted-foreground">{t('pr.kpiExpiringSoon')}</div>
+                  <div
+                    className={`text-lg font-semibold tabular-nums ${priceRecordCounts.expiringSoon > 0 ? 'text-warning' : ''}`}
+                  >
+                    {priceRecordCounts.expiringSoon}
+                  </div>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+        </Link>
+      )}
 
       <Link
         href="/attendance"

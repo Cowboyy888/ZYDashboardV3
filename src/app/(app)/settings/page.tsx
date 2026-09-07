@@ -8,6 +8,7 @@ import {
   ListOrdered,
   Globe,
   Receipt,
+  Tags,
 } from 'lucide-react';
 import { requirePermission } from '@/lib/auth';
 import { getLocale } from '@/lib/i18n/locale';
@@ -53,6 +54,12 @@ export default async function SettingsPage() {
       icon: Receipt,
       label: t('set.invoice'),
       show: hasPermission(user.role, 'invoice:manage'),
+    },
+    {
+      href: '/settings/price-types',
+      icon: Tags,
+      label: t('pr.priceTypes'),
+      show: hasPermission(user.role, 'price_records:manage'),
     },
     {
       href: '/settings/users',

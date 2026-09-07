@@ -655,3 +655,27 @@ export const saveKpiScorecardSchema = z.object({
   lines: z.array(kpiLineSchema).min(1, 'Add at least one KPI line'),
 });
 export type SaveKpiScorecardInput = z.infer<typeof saveKpiScorecardSchema>;
+
+// --- Price records ---------------------------------------------------------------
+
+export const priceRecordSchema = z
+  .object({
+    skuId: z.string().uuid('Product is required'),
+    customerId: optionalUuid,
+    priceTypeId: z.string().uuid('Price type is required'),
+    price: z.coerce.number().min(0, 'Must be zero or more'),
+    currency: z.enum(CURRENCIES),
+    unit: nonEmpty.max(20),
+    minimumQuantity: optionalNumber,
+    effectiveDate: isoDate,
+    expiryDate: z.preprocess((v) => (v === '' || v == null ? undefined : v), isoDate.optional()),
+    notes: optionalText,
+  })
+  .refine((d) => !d.expiryDate || d.expiryDate >= d.effectiveDate, {
+    message: 'Expiry date cannot be before the effective date',
+    path: ['expiryDate'],
+  });
+export type PriceRecordInput = z.infer<typeof priceRecordSchema>;
+
+export const priceTypeSchema = z.object({ name: nonEmpty.max(80) });
+export type PriceTypeInput = z.infer<typeof priceTypeSchema>;

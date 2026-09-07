@@ -88,6 +88,21 @@ describe('role permission matrix', () => {
       expect(hasPermission(role, 'invoice:manage')).toBe(false);
     }
   });
+
+  it('Owner, System Admin, and Sales Admin can manage price records; nobody else', () => {
+    expect(hasPermission('owner', 'price_records:manage')).toBe(true);
+    expect(hasPermission('system_admin', 'price_records:manage')).toBe(true);
+    expect(hasPermission('sales_admin', 'price_records:manage')).toBe(true);
+    for (const role of [
+      'attendance_admin',
+      'warehouse_admin',
+      'payroll_admin',
+      'viewer',
+    ] as Role[]) {
+      expect(hasPermission(role, 'price_records:view')).toBe(false);
+      expect(hasPermission(role, 'price_records:manage')).toBe(false);
+    }
+  });
 });
 
 describe('acceptance — purchase order costs visible only to Owner/System Admin/Warehouse Admin', () => {

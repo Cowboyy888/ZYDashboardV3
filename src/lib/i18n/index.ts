@@ -651,6 +651,7 @@ export const dictionary = {
   'sal.quotations': { en: 'Quotations', zh: '报价单' },
   'sal.targets': { en: 'Targets', zh: '销售目标' },
   'sal.kpi': { en: 'KPI', zh: 'KPI考核' },
+  'sal.prices': { en: 'Prices', zh: '价格' },
 
   // Quotations / deposit + balance invoices
   'quo.title': { en: 'Quotations & Invoices', zh: '报价单与发票' },
@@ -1053,6 +1054,61 @@ export const dictionary = {
     zh: '仅供参考 — 不会改变现有报价单/发票的编号规则。',
   },
   'ivc.save': { en: 'Save invoice settings', zh: '保存发票设置' },
+
+  // --- Price Record / Price History module --------------------------------------
+  'pr.title': { en: 'Price Records', zh: '价格记录' },
+  'pr.desc': {
+    en: 'Historical price ledger — every price ever given, never overwritten.',
+    zh: '历史价格台账 — 记录曾经给出的每一个价格，从不覆盖。',
+  },
+  'pr.new': { en: 'New Price', zh: '新增价格' },
+  'pr.savePrice': { en: 'Save Price', zh: '保存价格' },
+  'pr.edit': { en: 'Edit Price Record', zh: '编辑价格记录' },
+  'pr.duplicate': { en: 'Duplicate', zh: '复制' },
+  'pr.duplicateHint': {
+    en: 'Pre-filled from the source record — enter the new price and effective date.',
+    zh: '已根据原记录预填 — 请输入新价格和生效日期。',
+  },
+  'pr.deactivate': { en: 'Deactivate', zh: '停用' },
+  'pr.deactivateConfirm': {
+    en: 'Deactivate this price record? It stays in the price history but will no longer be used as the current price.',
+    zh: '确认停用此价格记录？该记录仍会保留在价格历史中，但不再作为当前价格使用。',
+  },
+  'pr.viewHistory': { en: 'View History', zh: '查看历史' },
+  'pr.priceHistory': { en: 'Price History', zh: '价格历史' },
+  'pr.noRecords': { en: 'No price records found', zh: '未找到价格记录' },
+  'pr.searchPlaceholder': {
+    en: 'Search product, spec, customer, notes…',
+    zh: '搜索产品、规格、客户、备注…',
+  },
+  'pr.product': { en: 'Product / Specification', zh: '产品/规格' },
+  'pr.customer': { en: 'Customer', zh: '客户' },
+  'pr.allCustomers': { en: 'Standard (all customers)', zh: '标准（所有客户）' },
+  'pr.price': { en: 'Price', zh: '价格' },
+  'pr.currency': { en: 'Currency', zh: '币种' },
+  'pr.priceType': { en: 'Price Type', zh: '价格类型' },
+  'pr.minimumQuantity': { en: 'Minimum Quantity', zh: '最低数量' },
+  'pr.effectiveDate': { en: 'Effective Date', zh: '生效日期' },
+  'pr.expiryDate': { en: 'Expiry Date', zh: '失效日期' },
+  'pr.createdBy': { en: 'Created By', zh: '录入人' },
+  'pr.exportPdf': { en: 'Export to PDF', zh: '导出 PDF' },
+  'pr.status.active': { en: 'Active', zh: '生效中' },
+  'pr.status.expired': { en: 'Expired', zh: '已过期' },
+  'pr.status.cancelled': { en: 'Cancelled', zh: '已停用' },
+  'pr.kpiActive': { en: 'Active Prices', zh: '生效价格' },
+  'pr.kpiExpired': { en: 'Expired Prices', zh: '已过期价格' },
+  'pr.kpiCustomerPrices': { en: 'Customer Prices', zh: '客户专属价格' },
+  'pr.kpiSpecialPrices': { en: 'Special Prices', zh: '特殊价格' },
+  'pr.kpiChangedThisMonth': { en: 'Changed This Month', zh: '本月变更' },
+  'pr.kpiExpiringSoon': { en: 'Expiring Soon', zh: '即将到期' },
+  'pr.dashCard': { en: 'Price Overview', zh: '价格概览' },
+  'pr.priceTypes': { en: 'Price Types', zh: '价格类型' },
+  'pr.priceTypesDesc': {
+    en: 'The list of price categories offered when recording a price (Standard, Customer, Wholesale, Project, Special, Promotional). Archive one to hide it from new records without touching price history that already uses it.',
+    zh: '录入价格时可选择的价格分类列表（标准、客户、批发、项目、特殊、促销）。归档某一类型后，新记录将不再显示它，但不会影响已使用该类型的历史记录。',
+  },
+  'pr.noPriceTypes': { en: 'No price types yet', zh: '暂无价格类型' },
+  'pr.currentPriceOnFile': { en: 'Current price on file', zh: '当前存档价格' },
 } satisfies Record<string, Entry>;
 
 export type MessageKey = keyof typeof dictionary;
@@ -1291,6 +1347,19 @@ const PHRASES: Record<string, string> = {
   'Invoice settings saved': '已保存发票设置',
   'VAT TIN is required when VAT registered is enabled':
     '启用增值税注册后必须填写增值税纳税人识别号',
+  // Price records
+  'Price type added': '已添加价格类型',
+  'Price type archived': '已归档价格类型',
+  'Price type reactivated': '已重新启用价格类型',
+  'Missing price type': '缺少价格类型',
+  'Price record saved': '已保存价格记录',
+  'Price record not found': '未找到价格记录',
+  'Price record updated': '已更新价格记录',
+  'Missing price record': '缺少价格记录',
+  'Price record deactivated': '已停用价格记录',
+  'Product is required': '产品为必填',
+  'Price type is required': '价格类型为必填',
+  'Expiry date cannot be before the effective date': '失效日期不能早于生效日期',
 };
 
 /** Localise an action/validation message for display. */

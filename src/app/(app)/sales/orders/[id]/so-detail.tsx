@@ -31,6 +31,7 @@ import {
   computeSoPaymentStatus,
 } from '@/lib/domain/deposit-invoice';
 import { formatDateTime, formatDDMMYYYY } from '@/lib/domain/datetime';
+import type { PriceRecordLike } from '@/lib/domain/price-records';
 import type { SalesOrderRow } from '@/lib/domain/sales-view';
 import type {
   SalesOrderRow as SoRow,
@@ -72,6 +73,7 @@ export function SoDetail({
   sourceQuotation,
   sourceQuotationItems,
   skuOptions,
+  activePrices,
 }: {
   row: SalesOrderRow;
   so: SoRow;
@@ -86,6 +88,8 @@ export function SoDetail({
   sourceQuotation: QuotationRow | null;
   sourceQuotationItems: QuotationItemRow[];
   skuOptions: { id: string; unit: string; label: string }[];
+  /** Empty when the viewer lacks price_records:view — hint just doesn't render. */
+  activePrices: PriceRecordLike[];
 }) {
   const { t, locale } = useT();
   const router = useRouter();
@@ -145,6 +149,9 @@ export function SoDetail({
                 salesOrderId={so.id}
                 locations={locations}
                 skuOptions={skuOptions}
+                customerId={so.customer_id}
+                activePrices={activePrices}
+                today={today}
                 onAdded={() => router.refresh()}
               />
             )}

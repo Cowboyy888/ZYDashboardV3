@@ -15,6 +15,7 @@ import {
 import { useT } from '@/components/i18n-provider';
 import { FormError } from '@/components/forms/form-error';
 import { addSalesOrderItem } from '@/lib/actions/sales';
+import { resolveCurrentPrice, type PriceRecordLike } from '@/lib/domain/price-records';
 import type { ActionState } from '@/lib/actions/types';
 
 interface LocationOpt {
@@ -38,11 +39,19 @@ export function AddSoItemDialog({
   salesOrderId,
   locations,
   skuOptions,
+  customerId,
+  activePrices,
+  today,
   onAdded,
 }: {
   salesOrderId: string;
   locations: LocationOpt[];
   skuOptions: SkuOpt[];
+  /** This SO's customer — narrows the price hint to customer-specific pricing. */
+  customerId: string;
+  /** Empty when the viewer lacks price_records:view — hint just doesn't render. */
+  activePrices: PriceRecordLike[];
+  today: string;
   onAdded: () => void;
 }) {
   const { t } = useT();
@@ -63,6 +72,9 @@ export function AddSoItemDialog({
   }, [state]);
 
   const unit = skuOptions.find((s) => s.id === skuId)?.unit ?? '';
+  const currentPrice = skuId
+    ? resolveCurrentPrice(activePrices, { skuId, customerId, asOfDate: today })
+    : null;
 
   return (
     <Dialog open={open} onOpenChange={setOpen}>
@@ -128,6 +140,11 @@ export function AddSoItemDialog({
               <Input id="asi-price" name="unitPrice" type="number" step="0.0001" min="0" required />
             </div>
           </div>
+          {currentPrice && (
+            <p className="text-xs text-muted-foreground">
+              {t('pr.currentPriceOnFile')}: {currentPrice.price.toFixed(4)}
+            </p>
+          )}
           <FormError error={state?.error} />
           <Button type="submit" disabled={isPending}>
             {isPending && <Loader2 className="h-4 w-4 animate-spin" />}

@@ -14,10 +14,13 @@ import {
   getDepositInvoiceForSo,
   getQuotation,
   getQuotationItems,
+  getAllPriceRecords,
+  getPriceTypes,
 } from '@/lib/db/queries';
 import type { QuotationRow, QuotationItemRow } from '@/lib/db/types';
 import { buildSalesOrderRows } from '@/lib/domain/sales-view';
 import { buildSkuLabel } from '@/lib/domain/products';
+import { toPriceRecordLike, type PriceRecordLike } from '@/lib/domain/price-records';
 import { businessDate } from '@/lib/domain/datetime';
 import { getLocale } from '@/lib/i18n/locale';
 import { PageHeader } from '@/components/page-header';
@@ -57,10 +60,17 @@ export default async function SalesOrderDetailPage({
       : Promise.resolve([null, []] as [QuotationRow | null, QuotationItemRow[]]),
   ]);
   const itemIds = items.map((i) => i.id);
-  const [delivered, deliveries] = await Promise.all([
+  const canViewPrices = hasPermission(user.role, 'price_records:view');
+  const [delivered, deliveries, priceRecords, priceTypes] = await Promise.all([
     getSalesOrderItemsDelivered(itemIds),
     getSalesOrderDeliveries(itemIds),
+    canViewPrices ? getAllPriceRecords({ filters: { status: 'active' } }) : Promise.resolve([]),
+    canViewPrices ? getPriceTypes(true) : Promise.resolve([]),
   ]);
+  const priceTypeNameById = new Map(priceTypes.map((pt) => [pt.id, pt.name]));
+  const activePrices: PriceRecordLike[] = priceRecords.map((r) =>
+    toPriceRecordLike(r, priceTypeNameById),
+  );
 
   const rows = buildSalesOrderRows(
     [so],
@@ -111,6 +121,7 @@ export default async function SalesOrderDetailPage({
         sourceQuotation={sourceQuotation}
         sourceQuotationItems={sourceQuotationItems}
         skuOptions={skuOptions}
+        activePrices={activePrices}
       />
     </div>
   );

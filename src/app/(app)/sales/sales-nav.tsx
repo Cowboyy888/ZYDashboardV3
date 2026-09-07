@@ -9,7 +9,15 @@ export function SalesNav({
   active,
   role,
 }: {
-  active: 'dashboard' | 'orders' | 'inquiries' | 'quotations' | 'customers' | 'targets' | 'kpi';
+  active:
+    | 'dashboard'
+    | 'orders'
+    | 'inquiries'
+    | 'quotations'
+    | 'customers'
+    | 'targets'
+    | 'kpi'
+    | 'prices';
   role: Role;
 }) {
   const { t } = useT();
@@ -27,6 +35,9 @@ export function SalesNav({
       : []),
     ...(hasPermission(role, 'kpi:view')
       ? [{ key: 'kpi' as const, href: '/sales/kpi', label: t('sal.kpi') }]
+      : []),
+    ...(hasPermission(role, 'price_records:view')
+      ? [{ key: 'prices' as const, href: '/sales/prices', label: t('sal.prices') }]
       : []),
   ];
   return (

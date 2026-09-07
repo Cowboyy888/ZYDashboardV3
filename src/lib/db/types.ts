@@ -17,6 +17,7 @@ import type { SoStatus } from '@/lib/domain/sales';
 import type { PayrollStatus, DeductionKind } from '@/lib/domain/payroll';
 import type { DepositInvoiceStatus, SoPaymentStatus } from '@/lib/domain/deposit-invoice';
 import type { PaymentReceiptType } from '@/lib/domain/payment-receipt';
+import type { PriceStatus } from '@/lib/domain/price-records';
 
 export interface ProfileRow {
   id: string;
@@ -596,5 +597,33 @@ export interface InvoiceSettingsRow {
   vat_tin: string | null;
   tax_invoice_prefix: string;
   commercial_invoice_prefix: string;
+  updated_at: string;
+}
+
+// --- Price records (historical price database) -----------------------------------
+
+export interface PriceTypeRow {
+  id: string;
+  name: string;
+  sort_order: number;
+  is_active: boolean;
+  created_at: string;
+}
+
+export interface PriceRecordRow {
+  id: string;
+  sku_id: string;
+  customer_id: string | null;
+  price_type_id: string;
+  price: number;
+  currency: Currency;
+  unit: string;
+  minimum_quantity: number | null;
+  effective_date: string;
+  expiry_date: string | null;
+  status: PriceStatus;
+  notes: string | null;
+  created_by: string | null;
+  created_at: string;
   updated_at: string;
 }
