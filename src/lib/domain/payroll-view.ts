@@ -23,7 +23,7 @@ export interface PayrollItemLike {
   id: string;
   payroll_run_id: string;
   employee_id: string;
-  pay_type: 'daily';
+  pay_type: 'monthly' | 'daily';
   days_worked: number | null;
   rate: number;
   base_amount: number;
@@ -38,7 +38,7 @@ export interface DeductionsLike {
 
 export interface PayrollItemLiveLike {
   id: string;
-  live_days_worked: number;
+  live_days_worked: number | null;
   live_rate: number;
   live_base_amount: number;
   live_overtime_amount: number;
@@ -77,7 +77,7 @@ export interface PayrollItemRow {
   employeeId: string;
   employeeCode: string;
   employeeName: string;
-  payType: 'daily';
+  payType: 'monthly' | 'daily';
   daysWorked: number | null;
   rate: number;
   baseAmount: number;

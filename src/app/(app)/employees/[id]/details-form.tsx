@@ -1,6 +1,7 @@
 'use client';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
+import { NativeSelect } from '@/components/ui/native-select';
 import { ActionForm } from '@/components/forms/action-form';
 import { SubmitButton } from '@/components/forms/submit-button';
 import { useT } from '@/components/i18n-provider';
@@ -37,6 +38,13 @@ export function EmployeeDetailsForm({ employee }: { employee: EmployeeRow }) {
             type="date"
             defaultValue={employee.start_date ?? ''}
           />
+        </div>
+        <div className="space-y-1.5">
+          <Label htmlFor="df-pay">{t('emp.payType')}</Label>
+          <NativeSelect id="df-pay" name="payType" defaultValue={employee.pay_type}>
+            <option value="daily">{t('emp.daily')}</option>
+            <option value="monthly">{t('emp.monthly')}</option>
+          </NativeSelect>
         </div>
         <div className="space-y-1.5 sm:col-span-2">
           <Label htmlFor="df-notes">{t('common.notes')}</Label>

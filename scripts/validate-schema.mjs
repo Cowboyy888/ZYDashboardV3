@@ -301,12 +301,18 @@ check(
   "daily-rate pay counts 'present'/'late' attendance as a worked day (confirmed rule)",
 );
 check(
-  /add constraint employees_pay_type_check check \(pay_type = 'daily'\)/i.test(sql),
-  'monthly-salary pay removed — employees.pay_type constrained to daily only',
+  /add constraint employees_pay_type_check check \(pay_type in \('monthly', 'daily'\)\)/i.test(sql),
+  "employees.pay_type constrained to ('monthly','daily') — monthly-salary pay restored (0047)",
 );
 check(
-  /add constraint payroll_items_pay_type_check check \(pay_type = 'daily'\)/i.test(sql),
-  'monthly-salary pay removed — payroll_items.pay_type constrained to daily only',
+  /add constraint payroll_items_pay_type_check check \(pay_type in \('monthly', 'daily'\)\)/i.test(
+    sql,
+  ),
+  "payroll_items.pay_type constrained to ('monthly','daily') — monthly-salary pay restored (0047)",
+);
+check(
+  /case when e\.pay_type = 'monthly'[\s\S]*?coalesce\(ep\.base_salary/i.test(sql),
+  'payroll_items_live recomputes a monthly employee as base_salary, not daily_rate × attendance (0047)',
 );
 
 // --- Sensitive-data protection ----------------------------------------------

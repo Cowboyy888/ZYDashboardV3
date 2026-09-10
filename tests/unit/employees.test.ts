@@ -25,6 +25,7 @@ describe('create-employee schema — root cause of "Validation failed" fixed', (
     });
     expect(r.success).toBe(true);
     if (r.success) {
+      expect(r.data.payType).toBe('daily'); // default — most factory staff are daily wage
       expect(r.data.startDate).toBeUndefined(); // action defaults it to today
     }
   });

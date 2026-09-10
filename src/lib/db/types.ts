@@ -101,7 +101,7 @@ export interface EmployeeRow {
   position: string | null;
   start_date: string | null;
   is_active: boolean;
-  pay_type: 'daily';
+  pay_type: 'monthly' | 'daily';
   photo_path: string | null;
   photo_thumb_path: string | null;
   notes: string | null;
@@ -512,7 +512,7 @@ export interface PayrollItemRow {
   id: string;
   payroll_run_id: string;
   employee_id: string;
-  pay_type: 'daily';
+  pay_type: 'monthly' | 'daily';
   days_worked: number | null;
   rate: number;
   base_amount: number;
@@ -538,7 +538,7 @@ export interface PayrollItemLiveRow {
   id: string;
   payroll_run_id: string;
   employee_id: string;
-  live_days_worked: number;
+  live_days_worked: number | null; // null for a monthly-salary employee
   live_rate: number;
   live_base_amount: number;
   live_overtime_amount: number;

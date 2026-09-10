@@ -20,6 +20,7 @@ const BLANK = {
   phone: '',
   department: '',
   startDate: '',
+  payType: 'daily',
   notes: '',
 };
 
@@ -232,6 +233,13 @@ export function CreateEmployeeForm({ groups }: { groups: AttendanceGroupRow[] })
               value={v.startDate}
               onChange={set('startDate')}
             />
+          </div>
+          <div className="space-y-1.5">
+            <Label htmlFor="ce-pay">{t('emp.payType')}</Label>
+            <NativeSelect id="ce-pay" name="payType" value={v.payType} onChange={set('payType')}>
+              <option value="daily">{t('emp.daily')}</option>
+              <option value="monthly">{t('emp.monthly')}</option>
+            </NativeSelect>
           </div>
         </div>
       </div>
