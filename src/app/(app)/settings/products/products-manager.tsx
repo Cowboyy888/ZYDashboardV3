@@ -71,6 +71,24 @@ export function ProductsManager({
   // Archived families disappear from NEW spec/inventory/purchase/etc. forms.
   const activeFamilies = useMemo(() => selectableFamilies(families), [families]);
 
+  // Add-spec form: autocomplete diameter/size/hole/rod/extra from values already
+  // used within the selected family, so the common ones don't have to be retyped
+  // (and stay consistent — these feed the SKU uniqueness signature). Falls back
+  // to every family's values before a family is picked.
+  const [specFamilyId, setSpecFamilyId] = useState('');
+  const specSuggestions = useMemo(() => {
+    const scoped = specFamilyId ? skus.filter((s) => s.family_id === specFamilyId) : skus;
+    const distinct = (values: (string | null)[]) =>
+      [...new Set(values.filter((v): v is string => !!v))].sort();
+    return {
+      diameter: distinct(scoped.map((s) => s.diameter)),
+      size: distinct(scoped.map((s) => s.size)),
+      hole: distinct(scoped.map((s) => s.hole)),
+      rodCount: distinct(scoped.map((s) => s.rod_count)),
+      extra: distinct(scoped.map((s) => s.extra)),
+    };
+  }, [skus, specFamilyId]);
+
   const visibleFamilies = useMemo(() => {
     const q = query.trim().toLowerCase();
     return families.filter((f) => {
@@ -173,7 +191,13 @@ export function ProductsManager({
             <div className="grid grid-cols-2 gap-3 lg:grid-cols-4">
               <div className="space-y-1.5">
                 <Label htmlFor="sku-family">{t('set.family')}</Label>
-                <NativeSelect id="sku-family" name="familyId" required defaultValue="">
+                <NativeSelect
+                  id="sku-family"
+                  name="familyId"
+                  required
+                  value={specFamilyId}
+                  onChange={(e) => setSpecFamilyId(e.target.value)}
+                >
                   <option value="" disabled>
                     {t('common.select')}
                   </option>
@@ -197,19 +221,39 @@ export function ProductsManager({
               </div>
               <div className="space-y-1.5">
                 <Label htmlFor="sku-dia">{t('set.diameter')}</Label>
-                <Input id="sku-dia" name="diameter" placeholder="9厘" />
+                <Input id="sku-dia" name="diameter" placeholder="9厘" list="sku-dia-options" />
+                <datalist id="sku-dia-options">
+                  {specSuggestions.diameter.map((v) => (
+                    <option key={v} value={v} />
+                  ))}
+                </datalist>
               </div>
               <div className="space-y-1.5">
                 <Label htmlFor="sku-size">{t('set.size')}</Label>
-                <Input id="sku-size" name="size" placeholder="3×6" />
+                <Input id="sku-size" name="size" placeholder="3×6" list="sku-size-options" />
+                <datalist id="sku-size-options">
+                  {specSuggestions.size.map((v) => (
+                    <option key={v} value={v} />
+                  ))}
+                </datalist>
               </div>
               <div className="space-y-1.5">
                 <Label htmlFor="sku-hole">{t('set.hole')}</Label>
-                <Input id="sku-hole" name="hole" placeholder="20孔" />
+                <Input id="sku-hole" name="hole" placeholder="20孔" list="sku-hole-options" />
+                <datalist id="sku-hole-options">
+                  {specSuggestions.hole.map((v) => (
+                    <option key={v} value={v} />
+                  ))}
+                </datalist>
               </div>
               <div className="space-y-1.5">
                 <Label htmlFor="sku-rod">{t('set.rod')}</Label>
-                <Input id="sku-rod" name="rodCount" placeholder="15根" />
+                <Input id="sku-rod" name="rodCount" placeholder="15根" list="sku-rod-options" />
+                <datalist id="sku-rod-options">
+                  {specSuggestions.rodCount.map((v) => (
+                    <option key={v} value={v} />
+                  ))}
+                </datalist>
               </div>
               <div className="space-y-1.5">
                 <Label htmlFor="sku-unit">{t('common.unit')}</Label>
@@ -229,7 +273,12 @@ export function ProductsManager({
             </div>
             <div className="space-y-1.5">
               <Label htmlFor="sku-extra">{t('set.extra')}</Label>
-              <Input id="sku-extra" name="extra" placeholder="free-form" />
+              <Input id="sku-extra" name="extra" placeholder="free-form" list="sku-extra-options" />
+              <datalist id="sku-extra-options">
+                {specSuggestions.extra.map((v) => (
+                  <option key={v} value={v} />
+                ))}
+              </datalist>
             </div>
             <SubmitButton>{t('set.addSpecBtn')}</SubmitButton>
           </ActionForm>
