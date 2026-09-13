@@ -182,6 +182,7 @@ export interface QuotationRow {
   quotation_date: string;
   valid_days: number;
   currency: string;
+  salesperson_id: string | null;
   deposit_pct: number;
   pricing_basis: string | null;
   terms: string | null;

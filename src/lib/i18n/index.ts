@@ -678,6 +678,7 @@ export const dictionary = {
   'quo.linkCustomer': { en: 'Link to customer record', zh: '关联客户档案' },
   'quo.contact': { en: 'Contact / Tel', zh: '联系电话' },
   'quo.projectSite': { en: 'Project / Site', zh: '项目 / 工地' },
+  'quo.salesperson': { en: 'Salesperson', zh: '销售员' },
   'quo.date': { en: 'Date', zh: '日期' },
   'quo.validDays': { en: 'Valid (days)', zh: '有效期（天）' },
   'quo.validUntil': { en: 'Valid until', zh: '有效期至' },

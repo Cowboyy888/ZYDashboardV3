@@ -82,6 +82,7 @@ export function QuotationsClient({
   quotations,
   items,
   customers,
+  employees,
   vatRegistered,
   canManage,
   linkedOrders,
@@ -90,6 +91,7 @@ export function QuotationsClient({
   quotations: QuotationRow[];
   items: QuotationItemRow[];
   customers: Opt[];
+  employees: Opt[];
   /** Company's CURRENT VAT status (invoice_settings) — informational only on
    * this form; a new quotation snapshots this at creation, see
    * actions/quotations.ts createQuotation. */
@@ -103,6 +105,8 @@ export function QuotationsClient({
   const [showCreate, setShowCreate] = useState(false);
   const [deleting, setDeleting] = useState<QuotationRow | null>(null);
   const [editingDepositPct, setEditingDepositPct] = useState<QuotationRow | null>(null);
+
+  const employeeName = useMemo(() => new Map(employees.map((e) => [e.id, e.name])), [employees]);
 
   const itemsByQuotation = useMemo(() => {
     const map = new Map<string, QuotationItemRow[]>();
@@ -141,6 +145,7 @@ export function QuotationsClient({
         <QuotationForm
           action={createQuotation}
           customers={customers}
+          employees={employees}
           vatRegistered={vatRegistered}
           onDone={() => setShowCreate(false)}
         />
@@ -150,6 +155,7 @@ export function QuotationsClient({
         <QuotationForm
           action={updateQuotation}
           customers={customers}
+          employees={employees}
           quotation={editing}
           lines={itemsByQuotation.get(editing.id) ?? []}
           onDone={() => setEditing(null)}
@@ -186,6 +192,11 @@ export function QuotationsClient({
                       <div className="font-medium">{q.customer_name}</div>
                       {q.project_site && (
                         <div className="text-xs text-muted-foreground">{q.project_site}</div>
+                      )}
+                      {q.salesperson_id && employeeName.get(q.salesperson_id) && (
+                        <div className="text-xs text-muted-foreground">
+                          {t('quo.salesperson')}: {employeeName.get(q.salesperson_id)}
+                        </div>
                       )}
                       <div className="text-xs text-muted-foreground">
                         {lines.length} {t('quo.lines')}
@@ -540,6 +551,7 @@ function DeleteDialog({
 function QuotationForm({
   action,
   customers,
+  employees,
   quotation,
   lines: existing,
   vatRegistered,
@@ -547,6 +559,7 @@ function QuotationForm({
 }: {
   action: (s: ActionState, f: FormData) => Promise<ActionState>;
   customers: Opt[];
+  employees: Opt[];
   quotation?: QuotationRow;
   lines?: QuotationItemRow[];
   /** Shown only on the create form — an edit never changes a quotation's own VAT snapshot. */
@@ -645,6 +658,21 @@ function QuotationForm({
             <div className="space-y-1.5">
               <Label htmlFor="q-site">{t('quo.projectSite')}</Label>
               <Input id="q-site" name="projectSite" defaultValue={quotation?.project_site ?? ''} />
+            </div>
+            <div className="space-y-1.5">
+              <Label htmlFor="q-salesperson">{t('quo.salesperson')}</Label>
+              <NativeSelect
+                id="q-salesperson"
+                name="salespersonId"
+                defaultValue={quotation?.salesperson_id ?? ''}
+              >
+                <option value="">{t('common.select')}</option>
+                {employees.map((e) => (
+                  <option key={e.id} value={e.id}>
+                    {e.name}
+                  </option>
+                ))}
+              </NativeSelect>
             </div>
             <div className="space-y-1.5">
               <Label htmlFor="q-date">{t('quo.date')}</Label>

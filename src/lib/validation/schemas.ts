@@ -474,6 +474,7 @@ export const quotationSchema = z.object({
   customerName: nonEmpty.max(120),
   contact: optionalText,
   projectSite: optionalText,
+  salespersonId: optionalUuid,
   quotationDate: isoDate,
   validDays: z.coerce.number().int().min(0).max(365).default(15),
   currency: z.enum(['USD', 'KHR', 'CNY']).default('USD'),

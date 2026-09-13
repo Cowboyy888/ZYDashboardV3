@@ -6,6 +6,7 @@ import {
   getCustomers,
   getSalesOrdersByQuotationIds,
   getInvoiceSettings,
+  getEmployees,
   DEFAULT_PAGE_SIZE,
 } from '@/lib/db/queries';
 import { getLocale } from '@/lib/i18n/locale';
@@ -36,11 +37,12 @@ export default async function QuotationsPage({
   });
   const quotationIds = quotations.map((quo) => quo.id);
 
-  const [items, customers, linkedOrders, invoiceSettings] = await Promise.all([
+  const [items, customers, linkedOrders, invoiceSettings, employees] = await Promise.all([
     getQuotationItems(quotationIds),
     getCustomers(true),
     getSalesOrdersByQuotationIds(quotationIds),
     getInvoiceSettings(),
+    getEmployees(),
   ]);
 
   return (
@@ -54,6 +56,10 @@ export default async function QuotationsPage({
         quotations={quotations}
         items={items}
         customers={customers.map((c) => ({ id: c.id, name: c.name }))}
+        employees={employees.map((e) => ({
+          id: e.id,
+          name: e.display_name || e.name_english || e.name_chinese || e.employee_code,
+        }))}
         vatRegistered={invoiceSettings?.vat_registered ?? false}
         canManage={hasPermission(user.role, 'sales:manage')}
         linkedOrders={linkedOrders.map((o) => ({
