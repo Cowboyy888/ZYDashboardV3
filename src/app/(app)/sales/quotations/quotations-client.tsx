@@ -1,6 +1,6 @@
 'use client';
 import { useActionState, useEffect, useMemo, useState, useTransition } from 'react';
-import { useRouter } from 'next/navigation';
+import { useRouter, usePathname, useSearchParams } from 'next/navigation';
 import Link from 'next/link';
 import {
   Download,
@@ -86,6 +86,7 @@ export function QuotationsClient({
   vatRegistered,
   canManage,
   linkedOrders,
+  salespersonFilter = '',
   isSearching = false,
 }: {
   quotations: QuotationRow[];
@@ -98,15 +99,29 @@ export function QuotationsClient({
   vatRegistered: boolean;
   canManage: boolean;
   linkedOrders: { quotationId: string; soId: string; soNumber: string | null }[];
+  /** Current `?salesperson=` filter value, server-derived — drives the list's own query. */
+  salespersonFilter?: string;
   isSearching?: boolean;
 }) {
   const { t } = useT();
+  const router = useRouter();
+  const pathname = usePathname();
+  const searchParams = useSearchParams();
   const [editing, setEditing] = useState<QuotationRow | null>(null);
   const [showCreate, setShowCreate] = useState(false);
   const [deleting, setDeleting] = useState<QuotationRow | null>(null);
   const [editingDepositPct, setEditingDepositPct] = useState<QuotationRow | null>(null);
 
   const employeeName = useMemo(() => new Map(employees.map((e) => [e.id, e.name])), [employees]);
+
+  function onSalespersonFilterChange(next: string) {
+    const params = new URLSearchParams(searchParams.toString());
+    if (next) params.set('salesperson', next);
+    else params.delete('salesperson');
+    params.delete('page');
+    const qs = params.toString();
+    router.push(qs ? `${pathname}?${qs}` : pathname);
+  }
 
   const itemsByQuotation = useMemo(() => {
     const map = new Map<string, QuotationItemRow[]>();
@@ -124,21 +139,39 @@ export function QuotationsClient({
 
   return (
     <div className="space-y-4">
-      <div className="flex flex-wrap justify-end gap-2">
-        <Button asChild variant="outline">
-          <a href="/api/export/quotations">
-            <Download className="h-4 w-4" /> {t('quo.downloadBalancePaid')}
-          </a>
-        </Button>
-        {canManage && (
-          <Button
-            variant={showCreate ? 'secondary' : 'default'}
-            onClick={() => setShowCreate((s) => !s)}
+      <div className="flex flex-wrap items-end justify-between gap-2">
+        <div className="space-y-1.5">
+          <Label htmlFor="quo-filter-salesperson">{t('quo.salesperson')}</Label>
+          <NativeSelect
+            id="quo-filter-salesperson"
+            value={salespersonFilter}
+            onChange={(e) => onSalespersonFilterChange(e.target.value)}
+            className="w-48"
           >
-            {showCreate ? <X className="h-4 w-4" /> : <Plus className="h-4 w-4" />}
-            {showCreate ? t('common.close') : t('quo.new')}
+            <option value="">{t('common.all')}</option>
+            {employees.map((e) => (
+              <option key={e.id} value={e.id}>
+                {e.name}
+              </option>
+            ))}
+          </NativeSelect>
+        </div>
+        <div className="flex flex-wrap justify-end gap-2">
+          <Button asChild variant="outline">
+            <a href="/api/export/quotations">
+              <Download className="h-4 w-4" /> {t('quo.downloadBalancePaid')}
+            </a>
           </Button>
-        )}
+          {canManage && (
+            <Button
+              variant={showCreate ? 'secondary' : 'default'}
+              onClick={() => setShowCreate((s) => !s)}
+            >
+              {showCreate ? <X className="h-4 w-4" /> : <Plus className="h-4 w-4" />}
+              {showCreate ? t('common.close') : t('quo.new')}
+            </Button>
+          )}
+        </div>
       </div>
 
       {canManage && showCreate && (

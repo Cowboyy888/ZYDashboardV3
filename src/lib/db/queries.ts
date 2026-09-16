@@ -1064,16 +1064,20 @@ export async function getQuotationsPage({
   page,
   pageSize = DEFAULT_PAGE_SIZE,
   search,
+  salespersonId,
 }: {
   page: number;
   pageSize?: number;
   search?: string;
+  salespersonId?: string;
 }): Promise<PageResult<QuotationRow>> {
   try {
     const supabase = await client();
     const from = (page - 1) * pageSize;
     const to = from + pageSize - 1;
     let q = supabase.from('quotations').select('*', { count: 'exact' });
+
+    if (salespersonId) q = q.eq('salesperson_id', salespersonId);
 
     const term = search ? sanitizeSearchTerm(search) : '';
     if (term) {

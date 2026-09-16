@@ -22,18 +22,19 @@ export const dynamic = 'force-dynamic';
 export default async function QuotationsPage({
   searchParams,
 }: {
-  searchParams: Promise<{ page?: string; q?: string }>;
+  searchParams: Promise<{ page?: string; q?: string; salesperson?: string }>;
 }) {
   const user = await requirePermission('sales:view');
   const locale = await getLocale();
   const t = translator(locale);
-  const { page: pageParam, q } = await searchParams;
+  const { page: pageParam, q, salesperson } = await searchParams;
   const page = Math.max(1, Number(pageParam) || 1);
 
   const { rows: quotations, total } = await getQuotationsPage({
     page,
     pageSize: DEFAULT_PAGE_SIZE,
     search: q,
+    salespersonId: salesperson,
   });
   const quotationIds = quotations.map((quo) => quo.id);
 
@@ -67,7 +68,8 @@ export default async function QuotationsPage({
           soId: o.id,
           soNumber: o.so_number,
         }))}
-        isSearching={!!q?.trim()}
+        salespersonFilter={salesperson ?? ''}
+        isSearching={!!q?.trim() || !!salesperson}
       />
       <div className="mt-4">
         <Pagination
@@ -76,7 +78,7 @@ export default async function QuotationsPage({
           pageSize={DEFAULT_PAGE_SIZE}
           total={total}
           basePath="/sales/quotations"
-          searchParams={{ q }}
+          searchParams={{ q, salesperson }}
           prevLabel={t('common.previous')}
           nextLabel={t('common.next')}
         />
