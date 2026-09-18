@@ -111,8 +111,20 @@ export function QuotationsClient({
   const [showCreate, setShowCreate] = useState(false);
   const [deleting, setDeleting] = useState<QuotationRow | null>(null);
   const [editingDepositPct, setEditingDepositPct] = useState<QuotationRow | null>(null);
+  // Date range for the "balance-paid" download only — filters by when the
+  // balance was actually paid, not the list above, which is unrelated.
+  const [downloadFrom, setDownloadFrom] = useState('');
+  const [downloadTo, setDownloadTo] = useState('');
 
   const employeeName = useMemo(() => new Map(employees.map((e) => [e.id, e.name])), [employees]);
+
+  const downloadHref = useMemo(() => {
+    const params = new URLSearchParams();
+    if (downloadFrom) params.set('from', downloadFrom);
+    if (downloadTo) params.set('to', downloadTo);
+    const qs = params.toString();
+    return qs ? `/api/export/quotations?${qs}` : '/api/export/quotations';
+  }, [downloadFrom, downloadTo]);
 
   function onSalespersonFilterChange(next: string) {
     const params = new URLSearchParams(searchParams.toString());
@@ -156,9 +168,31 @@ export function QuotationsClient({
             ))}
           </NativeSelect>
         </div>
-        <div className="flex flex-wrap justify-end gap-2">
+        <div className="flex flex-wrap items-end justify-end gap-2">
+          <div className="space-y-1.5">
+            <Label htmlFor="quo-download-from">{t('common.dateFrom')}</Label>
+            <Input
+              id="quo-download-from"
+              type="date"
+              value={downloadFrom}
+              max={downloadTo || undefined}
+              onChange={(e) => setDownloadFrom(e.target.value)}
+              className="w-36"
+            />
+          </div>
+          <div className="space-y-1.5">
+            <Label htmlFor="quo-download-to">{t('common.dateTo')}</Label>
+            <Input
+              id="quo-download-to"
+              type="date"
+              value={downloadTo}
+              min={downloadFrom || undefined}
+              onChange={(e) => setDownloadTo(e.target.value)}
+              className="w-36"
+            />
+          </div>
           <Button asChild variant="outline">
-            <a href="/api/export/quotations">
+            <a href={downloadHref}>
               <Download className="h-4 w-4" /> {t('quo.downloadBalancePaid')}
             </a>
           </Button>
