@@ -102,8 +102,14 @@ export async function saveTelegramSettings(
 
 /** Admin-only "Send now" for a report type. Bypasses idempotency (resend). */
 async function sendNow(type: ReportType): Promise<ActionState> {
-  await assertPermission('telegram:send');
+  const user = await assertPermission('telegram:send');
   const outcome = await sendReportManual(type, businessDate());
+  await writeAudit(user, {
+    action: 'telegram.send_manual',
+    entity: 'telegram_settings',
+    entityId: type,
+    newValue: { status: outcome.status },
+  });
   if (outcome.status === 'sent') return ok(`Report sent via Telegram (${type}).`);
   if (outcome.status === 'no_chat')
     return fail('No Telegram chat id configured. Set one in Settings → Telegram.');
