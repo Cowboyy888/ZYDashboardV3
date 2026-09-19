@@ -66,7 +66,9 @@ export function toPriceRecordLike(
     skuId: row.sku_id,
     customerId: row.customer_id,
     priceTypeName: priceTypeNameById.get(row.price_type_id) ?? '',
-    price: row.price,
+    // Postgres `numeric` arrives from PostgREST as a string — coerce like every
+    // other money/qty read in the app (see quotations-client, deposit-invoices).
+    price: Number(row.price),
     effectiveDate: row.effective_date,
     expiryDate: row.expiry_date,
     status: row.status,

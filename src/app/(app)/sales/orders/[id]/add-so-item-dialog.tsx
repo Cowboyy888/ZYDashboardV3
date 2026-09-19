@@ -142,7 +142,7 @@ export function AddSoItemDialog({
           </div>
           {currentPrice && (
             <p className="text-xs text-muted-foreground">
-              {t('pr.currentPriceOnFile')}: {currentPrice.price.toFixed(4)}
+              {t('pr.currentPriceOnFile')}: {Number(currentPrice.price).toFixed(4)}
             </p>
           )}
           <FormError error={state?.error} />

@@ -349,7 +349,7 @@ export function PricesClient({
                     <TableCell>{sku?.label ?? '—'}</TableCell>
                     <TableCell>{customer?.name ?? t('pr.allCustomers')}</TableCell>
                     <TableCell className="text-right tabular-nums">
-                      {r.price.toFixed(4)} {r.currency}
+                      {Number(r.price).toFixed(4)} {r.currency}
                     </TableCell>
                     <TableCell>{priceType?.name ?? '—'}</TableCell>
                     <TableCell>{formatDDMMYYYY(r.effective_date)}</TableCell>
@@ -492,7 +492,7 @@ export function PricesClient({
                 <TableRow key={r.id}>
                   <TableCell>{formatDDMMYYYY(r.effective_date)}</TableCell>
                   <TableCell className="text-right tabular-nums">
-                    {r.price.toFixed(4)} {r.currency}
+                    {Number(r.price).toFixed(4)} {r.currency}
                   </TableCell>
                   <TableCell>{priceTypeById.get(r.price_type_id)?.name ?? '—'}</TableCell>
                   <TableCell>
