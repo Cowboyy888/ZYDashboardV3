@@ -31,6 +31,18 @@ export function EmployeeDetailsForm({ employee }: { employee: EmployeeRow }) {
           <Input id="df-dept" name="department" defaultValue={employee.department ?? ''} />
         </div>
         <div className="space-y-1.5">
+          <Label htmlFor="df-location">{t('emp.workLocation')}</Label>
+          <NativeSelect
+            id="df-location"
+            name="workLocation"
+            defaultValue={employee.work_location ?? ''}
+          >
+            <option value="">{t('common.select')}</option>
+            <option value="office">{t('emp.office')}</option>
+            <option value="factory">{t('emp.factory')}</option>
+          </NativeSelect>
+        </div>
+        <div className="space-y-1.5">
           <Label htmlFor="df-start">{t('emp.startDate')}</Label>
           <Input
             id="df-start"

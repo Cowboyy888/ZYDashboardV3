@@ -19,6 +19,7 @@ const BLANK = {
   nameChinese: '',
   phone: '',
   department: '',
+  workLocation: '',
   startDate: '',
   payType: 'daily',
   notes: '',
@@ -223,6 +224,19 @@ export function CreateEmployeeForm({ groups }: { groups: AttendanceGroupRow[] })
               value={v.department}
               onChange={set('department')}
             />
+          </div>
+          <div className="space-y-1.5">
+            <Label htmlFor="ce-location">{t('emp.workLocation')}</Label>
+            <NativeSelect
+              id="ce-location"
+              name="workLocation"
+              value={v.workLocation}
+              onChange={set('workLocation')}
+            >
+              <option value="">{t('common.select')}</option>
+              <option value="office">{t('emp.office')}</option>
+              <option value="factory">{t('emp.factory')}</option>
+            </NativeSelect>
           </div>
           <div className="space-y-1.5">
             <Label htmlFor="ce-start">{t('emp.startDate')}</Label>

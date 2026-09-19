@@ -28,6 +28,7 @@ export async function createEmployee(_prev: ActionState, formData: FormData): Pr
     phone: formData.get('phone'),
     department: formData.get('department'),
     position: formData.get('position'),
+    workLocation: formData.get('workLocation'),
     startDate: formData.get('startDate') || undefined,
     payType: formData.get('payType') || 'daily',
     notes: formData.get('notes'),
@@ -54,6 +55,7 @@ export async function createEmployee(_prev: ActionState, formData: FormData): Pr
       phone: d.phone ?? null,
       department: d.department ?? null,
       position: d.position ?? null,
+      work_location: d.workLocation ?? null,
       start_date: d.startDate ?? businessDate(), // default to today
       pay_type: d.payType,
       notes: d.notes ?? null,
@@ -207,7 +209,7 @@ export async function updateEmployeeProfile(
   return ok('Profile updated');
 }
 
-/** Update an employee's core HR details (name variants, phone, department, start date, pay type, notes). */
+/** Update an employee's core HR details (name variants, phone, department, work location, start date, pay type, notes). */
 export async function updateEmployeeDetails(
   _prev: ActionState,
   formData: FormData,
@@ -220,6 +222,7 @@ export async function updateEmployeeDetails(
     nameChinese: formData.get('nameChinese'),
     phone: formData.get('phone'),
     department: formData.get('department'),
+    workLocation: formData.get('workLocation'),
     startDate: formData.get('startDate') || undefined,
     payType: formData.get('payType') || 'daily',
     notes: formData.get('notes'),
@@ -235,6 +238,7 @@ export async function updateEmployeeDetails(
       name_chinese: d.nameChinese ?? null,
       phone: d.phone ?? null,
       department: d.department ?? null,
+      work_location: d.workLocation ?? null,
       start_date: d.startDate ?? null,
       pay_type: d.payType,
       notes: d.notes ?? null,

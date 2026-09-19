@@ -4,6 +4,8 @@ import Link from 'next/link';
 import { Plus, Search } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
+import { NativeSelect } from '@/components/ui/native-select';
 import { Badge } from '@/components/ui/badge';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import {
@@ -39,26 +41,35 @@ export function EmployeesClient({
   const { t } = useT();
   const [showAdd, setShowAdd] = useState(false);
   const [query, setQuery] = useState('');
+  const [locationFilter, setLocationFilter] = useState('');
   const groupName = new Map(groups.map((g) => [g.id, g.name]));
   const privateByEmployee = new Map(privateRows.map((p) => [p.employee_id, p]));
 
   const visibleEmployees = useMemo(() => {
     const q = query.trim().toLowerCase();
-    if (!q) return employees;
-    return employees.filter((e) =>
-      [
-        e.employee_code,
-        e.display_name,
-        e.name_english,
-        e.name_chinese,
-        e.name_khmer,
-        e.job_title,
-        e.attendance_group_id ? groupName.get(e.attendance_group_id) : null,
-      ]
-        .filter(Boolean)
-        .some((v) => String(v).toLowerCase().includes(q)),
-    );
-  }, [employees, query, groupName]);
+    return employees
+      .filter((e) => !locationFilter || e.work_location === locationFilter)
+      .filter((e) => {
+        if (!q) return true;
+        return [
+          e.employee_code,
+          e.display_name,
+          e.name_english,
+          e.name_chinese,
+          e.name_khmer,
+          e.job_title,
+          e.attendance_group_id ? groupName.get(e.attendance_group_id) : null,
+        ]
+          .filter(Boolean)
+          .some((v) => String(v).toLowerCase().includes(q));
+      });
+  }, [employees, query, groupName, locationFilter]);
+
+  function locationLabel(loc: EmployeeRow['work_location']): string {
+    if (loc === 'office') return t('emp.office');
+    if (loc === 'factory') return t('emp.factory');
+    return '—';
+  }
 
   function rateLabel(e: EmployeeRow): string {
     // Postgres `numeric` columns come back from PostgREST as strings, not
@@ -77,15 +88,30 @@ export function EmployeesClient({
 
   return (
     <div className="space-y-4">
-      <div className="flex flex-wrap items-center justify-between gap-3">
-        <div className="relative">
-          <Search className="pointer-events-none absolute left-2.5 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
-          <Input
-            value={query}
-            onChange={(e) => setQuery(e.target.value)}
-            placeholder={t('emp.search')}
-            className="h-9 w-64 pl-8"
-          />
+      <div className="flex flex-wrap items-end justify-between gap-3">
+        <div className="flex flex-wrap items-end gap-3">
+          <div className="relative">
+            <Search className="pointer-events-none absolute left-2.5 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+            <Input
+              value={query}
+              onChange={(e) => setQuery(e.target.value)}
+              placeholder={t('emp.search')}
+              className="h-9 w-64 pl-8"
+            />
+          </div>
+          <div className="space-y-1.5">
+            <Label htmlFor="emp-filter-location">{t('emp.workLocation')}</Label>
+            <NativeSelect
+              id="emp-filter-location"
+              value={locationFilter}
+              onChange={(e) => setLocationFilter(e.target.value)}
+              className="h-9 w-40"
+            >
+              <option value="">{t('common.all')}</option>
+              <option value="office">{t('emp.office')}</option>
+              <option value="factory">{t('emp.factory')}</option>
+            </NativeSelect>
+          </div>
         </div>
         {canManage && (
           <Button variant={showAdd ? 'secondary' : 'default'} onClick={() => setShowAdd((s) => !s)}>
@@ -113,6 +139,7 @@ export function EmployeesClient({
                 <TableHead>{t('common.id')}</TableHead>
                 <TableHead>{t('emp.nameCol')}</TableHead>
                 <TableHead>{t('emp.groupCol')}</TableHead>
+                <TableHead>{t('emp.workLocation')}</TableHead>
                 <TableHead>{t('emp.payType')}</TableHead>
                 {canSensitive && <TableHead>{t('emp.rateCol')}</TableHead>}
                 <TableHead>{t('common.status')}</TableHead>
@@ -153,6 +180,9 @@ export function EmployeesClient({
                   <TableCell className="text-sm text-muted-foreground">
                     {(e.attendance_group_id && groupName.get(e.attendance_group_id)) || '—'}
                   </TableCell>
+                  <TableCell className="text-sm text-muted-foreground">
+                    {locationLabel(e.work_location)}
+                  </TableCell>
                   <TableCell>
                     <Badge variant="outline">
                       {e.pay_type === 'monthly' ? t('emp.monthly') : t('emp.daily')}
@@ -182,7 +212,7 @@ export function EmployeesClient({
               {visibleEmployees.length === 0 && (
                 <TableRow>
                   <TableCell
-                    colSpan={5 + (canSensitive ? 1 : 0) + (canManage ? 1 : 0)}
+                    colSpan={6 + (canSensitive ? 1 : 0) + (canManage ? 1 : 0)}
                     className="text-center text-muted-foreground"
                   >
                     {employees.length === 0 ? t('emp.noEmployees') : t('emp.noEmployeesMatch')}

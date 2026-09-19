@@ -9,3 +9,7 @@
 export function formatEmployeeCode(seqNo: number): string {
   return `ZY-${String(seqNo).padStart(4, '0')}`;
 }
+
+/** Coarse classification of where an employee works — see 0049_employee_work_location.sql. */
+export const WORK_LOCATIONS = ['office', 'factory'] as const;
+export type WorkLocation = (typeof WORK_LOCATIONS)[number];

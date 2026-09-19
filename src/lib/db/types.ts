@@ -99,6 +99,7 @@ export interface EmployeeRow {
   phone: string | null;
   department: string | null;
   position: string | null;
+  work_location: 'office' | 'factory' | null;
   start_date: string | null;
   is_active: boolean;
   pay_type: 'monthly' | 'daily';

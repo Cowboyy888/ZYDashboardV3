@@ -5,6 +5,7 @@ import { SHIFTS, ATTENDANCE_STATUSES } from '@/lib/domain/attendance';
 import { ROLES } from '@/lib/domain/rbac';
 import { CURRENCIES } from '@/lib/domain/purchasing';
 import { DEDUCTION_KINDS } from '@/lib/domain/payroll';
+import { WORK_LOCATIONS } from '@/lib/domain/employees';
 
 /** Reusable primitives. */
 const nonEmpty = z.string().trim().min(1, 'Required');
@@ -31,6 +32,11 @@ const optionalUuid = z.preprocess(
 const optionalNumber = z.preprocess(
   (v) => (v === '' || v == null ? undefined : v),
   z.coerce.number().optional(),
+);
+// Empty/missing select value ('') -> undefined, same shape as optionalUuid.
+const optionalWorkLocation = z.preprocess(
+  (v) => (v === '' || v == null ? undefined : v),
+  z.enum(WORK_LOCATIONS).optional(),
 );
 
 // --- Master data -------------------------------------------------------------
@@ -163,6 +169,7 @@ export const employeeSchema = z.object({
   phone: optionalText,
   department: optionalText,
   position: optionalText,
+  workLocation: optionalWorkLocation,
   startDate: isoDate.optional(),
   payType: payTypeSchema.default('daily'),
   notes: optionalText,
@@ -190,6 +197,7 @@ export const employeeDetailsSchema = z.object({
   nameChinese: optionalText,
   phone: optionalText,
   department: optionalText,
+  workLocation: optionalWorkLocation,
   startDate: isoDate.optional(),
   payType: payTypeSchema.default('daily'),
   notes: optionalText,

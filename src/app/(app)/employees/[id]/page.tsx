@@ -85,6 +85,14 @@ export default async function EmployeeDetailPage({ params }: { params: Promise<{
               <dd>{employee.phone || '—'}</dd>
               <dt className="text-muted-foreground">{t('emp.department')}</dt>
               <dd>{employee.department || '—'}</dd>
+              <dt className="text-muted-foreground">{t('emp.workLocation')}</dt>
+              <dd>
+                {employee.work_location === 'office'
+                  ? t('emp.office')
+                  : employee.work_location === 'factory'
+                    ? t('emp.factory')
+                    : '—'}
+              </dd>
               <dt className="text-muted-foreground">{t('emp.startDate')}</dt>
               <dd>{employee.start_date ? formatDDMMYYYY(employee.start_date) : '—'}</dd>
               <dt className="text-muted-foreground">{t('emp.payType')}</dt>
