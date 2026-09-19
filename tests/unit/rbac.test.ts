@@ -186,3 +186,19 @@ describe('acceptance — payroll figures visible only to Owner/System Admin/Payr
     }
   });
 });
+
+describe('equipment maintenance — factory-floor operational data, same posture as Purchasing', () => {
+  it('warehouse admin runs it day to day; system admin oversees read-only', () => {
+    expect(hasPermission('warehouse_admin', 'maintenance:view')).toBe(true);
+    expect(hasPermission('warehouse_admin', 'maintenance:manage')).toBe(true);
+    expect(hasPermission('system_admin', 'maintenance:view')).toBe(true);
+    expect(hasPermission('system_admin', 'maintenance:manage')).toBe(false);
+  });
+
+  it('attendance/sales/payroll/viewer have no maintenance access', () => {
+    for (const role of ['attendance_admin', 'sales_admin', 'payroll_admin', 'viewer'] as Role[]) {
+      expect(hasPermission(role, 'maintenance:view')).toBe(false);
+      expect(hasPermission(role, 'maintenance:manage')).toBe(false);
+    }
+  });
+});

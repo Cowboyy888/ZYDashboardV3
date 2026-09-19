@@ -692,3 +692,19 @@ export type PriceRecordInput = z.infer<typeof priceRecordSchema>;
 
 export const priceTypeSchema = z.object({ name: nonEmpty.max(80) });
 export type PriceTypeInput = z.infer<typeof priceTypeSchema>;
+
+// --- Equipment maintenance ---------------------------------------------------
+
+export const equipmentMaintenanceSchema = z
+  .object({
+    machineName: nonEmpty.max(120),
+    performedOn: isoDate,
+    technicianId: optionalUuid,
+    nextDueDate: z.preprocess((v) => (v === '' || v == null ? undefined : v), isoDate.optional()),
+    notes: optionalText,
+  })
+  .refine((d) => !d.nextDueDate || d.nextDueDate >= d.performedOn, {
+    message: 'Next due date cannot be before the date performed',
+    path: ['nextDueDate'],
+  });
+export type EquipmentMaintenanceInput = z.infer<typeof equipmentMaintenanceSchema>;

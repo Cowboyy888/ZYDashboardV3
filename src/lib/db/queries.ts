@@ -11,6 +11,7 @@ import type {
   DepositInvoiceRow,
   PaymentReceiptRow,
   EmployeeRow,
+  EquipmentMaintenanceRow,
   EmployeePrivateRow,
   InquiryCustomerTypeRow,
   InquiryFollowupRow,
@@ -457,6 +458,23 @@ export async function getPurchaseOrders(): Promise<PurchaseOrderRow[]> {
     return (data as PurchaseOrderRow[]) ?? [];
   } catch (e) {
     console.error('[queries] getPurchaseOrders', e);
+    return [];
+  }
+}
+
+/** Every maintenance record — soonest next-due date first (nulls last), so the
+ * most urgent machines surface at the top without any client-side sorting. */
+export async function getEquipmentMaintenance(): Promise<EquipmentMaintenanceRow[]> {
+  try {
+    const supabase = await client();
+    const { data } = await supabase
+      .from('equipment_maintenance')
+      .select('*')
+      .order('next_due_date', { ascending: true, nullsFirst: false })
+      .order('performed_on', { ascending: false });
+    return (data as EquipmentMaintenanceRow[]) ?? [];
+  } catch (e) {
+    console.error('[queries] getEquipmentMaintenance', e);
     return [];
   }
 }

@@ -78,7 +78,9 @@ export type Permission =
   | 'kpi:manage'
   | 'invoice:manage' // company VAT/tax config (settings/invoice) — sensitive, owner/system_admin only
   | 'price_records:view'
-  | 'price_records:manage';
+  | 'price_records:manage'
+  | 'maintenance:view'
+  | 'maintenance:manage';
 
 const EVERYONE: Permission[] = ['dashboard:view', 'reports:view'];
 
@@ -108,6 +110,7 @@ const ROLE_PERMISSIONS: Record<Role, Permission[]> = {
     'locations:manage',
     'inventory:view',
     'purchasing:view',
+    'maintenance:view',
     'sales:view',
     'inquiries:view',
     'inquiries:manage',
@@ -139,6 +142,8 @@ const ROLE_PERMISSIONS: Record<Role, Permission[]> = {
     'stock:transfer',
     'purchasing:view',
     'purchasing:manage',
+    'maintenance:view',
+    'maintenance:manage',
     'telegram:send',
   ],
   sales_admin: [

@@ -162,6 +162,18 @@ export interface LoginEventRow {
   created_at: string;
 }
 
+export interface EquipmentMaintenanceRow {
+  id: string;
+  machine_name: string;
+  performed_on: string;
+  technician_id: string | null;
+  next_due_date: string | null;
+  notes: string | null;
+  created_by: string | null;
+  created_at: string;
+  updated_at: string;
+}
+
 export interface SentReportRow {
   id: string;
   report_key: string; // idempotency key, e.g. attendance:morning:2026-07-24

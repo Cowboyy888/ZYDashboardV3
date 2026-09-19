@@ -34,6 +34,7 @@ export const dictionary = {
   'nav.employees': { en: 'Employees', zh: '员工' },
   'nav.inventory': { en: 'Inventory', zh: '库存' },
   'nav.purchasing': { en: 'Purchasing', zh: '采购' },
+  'nav.maintenance': { en: 'Maintenance', zh: '设备维护' },
   'nav.sales': { en: 'Sales', zh: '销售' },
   'nav.payroll': { en: 'Payroll', zh: '工资' },
   'nav.reports': { en: 'Reports', zh: '报表' },
@@ -1117,6 +1118,31 @@ export const dictionary = {
   },
   'pr.noPriceTypes': { en: 'No price types yet', zh: '暂无价格类型' },
   'pr.currentPriceOnFile': { en: 'Current price on file', zh: '当前存档价格' },
+
+  // --- Equipment maintenance --------------------------------------------------
+  'maint.title': { en: 'Equipment Maintenance', zh: '设备维护' },
+  'maint.desc': {
+    en: 'Log factory machine maintenance and track what’s overdue or coming due.',
+    zh: '记录工厂机器维护情况，并跟踪逾期或即将到期的维护项目。',
+  },
+  'maint.new': { en: 'New record', zh: '新增记录' },
+  'maint.edit': { en: 'Edit record', zh: '编辑记录' },
+  'maint.search': { en: 'Search machine or technician', zh: '搜索机器或技术员' },
+  'maint.machine': { en: 'Machine', zh: '机器' },
+  'maint.performedOn': { en: 'Date performed', zh: '维护日期' },
+  'maint.technician': { en: 'Technician', zh: '技术员' },
+  'maint.nextDueDate': { en: 'Next due', zh: '下次到期' },
+  'maint.noNextDue': { en: 'No schedule set', zh: '未设置计划' },
+  'maint.status': { en: 'Status', zh: '状态' },
+  'maint.status.overdue': { en: 'Overdue', zh: '已逾期' },
+  'maint.status.dueSoon': { en: 'Due soon', zh: '即将到期' },
+  'maint.status.ok': { en: 'OK', zh: '正常' },
+  'maint.status.none': { en: 'No schedule', zh: '无计划' },
+  'maint.statusFilter': { en: 'Status', zh: '状态筛选' },
+  'maint.none': { en: 'No maintenance records yet.', zh: '暂无维护记录。' },
+  'maint.noneMatch': { en: 'No records match your search.', zh: '没有符合搜索条件的记录。' },
+  'maint.deleteTitle': { en: 'Delete this maintenance record?', zh: '删除该维护记录？' },
+  'maint.deleteBody': { en: 'This cannot be undone. Record for', zh: '此操作无法撤销。记录对象：' },
 } satisfies Record<string, Entry>;
 
 export type MessageKey = keyof typeof dictionary;
@@ -1368,6 +1394,12 @@ const PHRASES: Record<string, string> = {
   'Product is required': '产品为必填',
   'Price type is required': '价格类型为必填',
   'Expiry date cannot be before the effective date': '失效日期不能早于生效日期',
+  // Equipment maintenance
+  'Maintenance record added': '已添加维护记录',
+  'Maintenance record updated': '已更新维护记录',
+  'Maintenance record deleted': '已删除维护记录',
+  'Missing maintenance record': '缺少维护记录',
+  'Next due date cannot be before the date performed': '下次到期日期不能早于维护日期',
 };
 
 /** Localise an action/validation message for display. */
