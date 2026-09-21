@@ -115,6 +115,9 @@ export default async function PricesPage({
         customers={customers.map((c) => ({ id: c.id, name: c.name }))}
         profileName={Object.fromEntries(profiles.map((p) => [p.id, p.full_name || p.email]))}
         canManage={hasPermission(user.role, 'price_records:manage')}
+        canCreateSpec={hasPermission(user.role, 'products:create')}
+        families={families}
+        skus={skus}
         filters={{
           q: sp.q ?? '',
           skuId: sp.skuId ?? '',

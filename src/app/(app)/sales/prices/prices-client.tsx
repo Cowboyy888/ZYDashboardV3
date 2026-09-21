@@ -34,9 +34,10 @@ import {
 } from '@/lib/actions/price-records';
 import { CURRENCIES, CURRENCY_LABELS } from '@/lib/domain/purchasing';
 import { PRICE_STATUSES } from '@/lib/domain/price-records';
+import { CONDITIONS, CONDITION_LABELS, selectableFamilies } from '@/lib/domain/products';
 import { formatDDMMYYYY } from '@/lib/domain/datetime';
 import type { ActionState } from '@/lib/actions/types';
-import type { PriceRecordRow, PriceTypeRow } from '@/lib/db/types';
+import type { PriceRecordRow, PriceTypeRow, ProductFamilyRow, SkuRow } from '@/lib/db/types';
 import type { PriceRecordCounts } from '@/lib/db/queries';
 
 type Opt = { id: string; name: string };
@@ -68,6 +69,9 @@ export function PricesClient({
   customers,
   profileName,
   canManage,
+  canCreateSpec,
+  families,
+  skus,
   filters,
 }: {
   records: PriceRecordRow[];
@@ -79,6 +83,10 @@ export function PricesClient({
   customers: Opt[];
   profileName: Record<string, string>;
   canManage: boolean;
+  /** Narrow grant — can add a brand-new spec inline, even without full 'products:manage'. */
+  canCreateSpec: boolean;
+  families: ProductFamilyRow[];
+  skus: SkuRow[];
   filters: PriceFilterValues;
 }) {
   const { t } = useT();
@@ -317,6 +325,9 @@ export function PricesClient({
               skuOptions={skuOptions}
               customers={customers}
               priceTypes={activePriceTypes}
+              canCreateSpec={canCreateSpec}
+              families={families}
+              skus={skus}
               onDone={() => setShowCreate(false)}
             />
           </CardContent>
@@ -457,6 +468,9 @@ export function PricesClient({
                 skuOptions={skuOptions}
                 customers={customers}
                 priceTypes={activePriceTypes}
+                canCreateSpec={canCreateSpec}
+                families={families}
+                skus={skus}
                 onDone={() => setDuplicating(null)}
               />
             )}
@@ -530,6 +544,9 @@ function PriceRecordForm({
   skuOptions,
   customers,
   priceTypes,
+  canCreateSpec = false,
+  families = [],
+  skus = [],
   onDone,
 }: {
   action: (s: ActionState, f: FormData) => Promise<ActionState>;
@@ -539,6 +556,10 @@ function PriceRecordForm({
   skuOptions: SkuOpt[];
   customers: Opt[];
   priceTypes: PriceTypeRow[];
+  /** Narrow grant — can add a brand-new spec inline, even without full 'products:manage'. Never offered while editing. */
+  canCreateSpec?: boolean;
+  families?: ProductFamilyRow[];
+  skus?: SkuRow[];
   onDone: () => void;
 }) {
   const { t, m, locale } = useT();
@@ -546,6 +567,26 @@ function PriceRecordForm({
 
   const [skuId, setSkuId] = useState(seed?.sku_id ?? '');
   const [unit, setUnit] = useState(seed?.unit ?? '');
+  const [specMode, setSpecMode] = useState<'existing' | 'new'>('existing');
+  const [newFamilyId, setNewFamilyId] = useState('');
+
+  const activeFamilies = useMemo(() => selectableFamilies(families), [families]);
+
+  // Same autocomplete as Settings > Products > Add Specification, scoped to
+  // the selected family (falls back to every family's values before one is
+  // picked) — so common values are one click away instead of retyped.
+  const specSuggestions = useMemo(() => {
+    const scoped = newFamilyId ? skus.filter((s) => s.family_id === newFamilyId) : skus;
+    const distinct = (values: (string | null)[]) =>
+      [...new Set(values.filter((v): v is string => !!v))].sort();
+    return {
+      diameter: distinct(scoped.map((s) => s.diameter)),
+      size: distinct(scoped.map((s) => s.size)),
+      hole: distinct(scoped.map((s) => s.hole)),
+      rodCount: distinct(scoped.map((s) => s.rod_count)),
+      extra: distinct(scoped.map((s) => s.extra)),
+    };
+  }, [skus, newFamilyId]);
 
   useEffect(() => {
     if (state?.ok) onDone();
@@ -568,28 +609,134 @@ function PriceRecordForm({
   return (
     <form action={formAction} className="space-y-4">
       {editingId && <input type="hidden" name="id" value={editingId} />}
+      {!editingId && canCreateSpec && <input type="hidden" name="specMode" value={specMode} />}
+
+      {!editingId && canCreateSpec && (
+        <div className="flex gap-2">
+          <Button
+            type="button"
+            size="sm"
+            variant={specMode === 'existing' ? 'default' : 'outline'}
+            onClick={() => setSpecMode('existing')}
+          >
+            {t('pr.existingSpec')}
+          </Button>
+          <Button
+            type="button"
+            size="sm"
+            variant={specMode === 'new' ? 'default' : 'outline'}
+            onClick={() => setSpecMode('new')}
+          >
+            <Plus className="h-4 w-4" /> {t('pr.newSpec')}
+          </Button>
+        </div>
+      )}
 
       <div className="grid gap-3 sm:grid-cols-2">
-        <div className="space-y-1.5">
-          <Label htmlFor="prf-sku">
-            {t('pr.product')} <span className="text-destructive">*</span>
-          </Label>
-          <NativeSelect
-            id="prf-sku"
-            name="skuId"
-            value={skuId}
-            onChange={(e) => onSkuChange(e.target.value)}
-            className={state?.fieldErrors?.skuId ? 'border-destructive' : ''}
-          >
-            <option value="">{t('common.select')}</option>
-            {skuOptions.map((s) => (
-              <option key={s.id} value={s.id}>
-                {s.label}
-              </option>
-            ))}
-          </NativeSelect>
-          {err('skuId')}
-        </div>
+        {specMode === 'existing' ? (
+          <div className="space-y-1.5">
+            <Label htmlFor="prf-sku">
+              {t('pr.product')} <span className="text-destructive">*</span>
+            </Label>
+            <NativeSelect
+              id="prf-sku"
+              name="skuId"
+              value={skuId}
+              onChange={(e) => onSkuChange(e.target.value)}
+              className={state?.fieldErrors?.skuId ? 'border-destructive' : ''}
+            >
+              <option value="">{t('common.select')}</option>
+              {skuOptions.map((s) => (
+                <option key={s.id} value={s.id}>
+                  {s.label}
+                </option>
+              ))}
+            </NativeSelect>
+            {err('skuId')}
+          </div>
+        ) : (
+          <div className="space-y-3 rounded-md border p-3 sm:col-span-2">
+            <p className="text-xs text-muted-foreground">{t('pr.newSpecHint')}</p>
+            <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+              <div className="space-y-1.5">
+                <Label htmlFor="prf-family">
+                  {t('set.family')} <span className="text-destructive">*</span>
+                </Label>
+                <NativeSelect
+                  id="prf-family"
+                  name="familyId"
+                  value={newFamilyId}
+                  onChange={(e) => setNewFamilyId(e.target.value)}
+                  className={state?.fieldErrors?.familyId ? 'border-destructive' : ''}
+                >
+                  <option value="">{t('common.select')}</option>
+                  {activeFamilies.map((f) => (
+                    <option key={f.id} value={f.id}>
+                      {f.name}
+                      {f.name_english ? ` · ${f.name_english}` : ''}
+                    </option>
+                  ))}
+                </NativeSelect>
+                {err('familyId')}
+              </div>
+              <div className="space-y-1.5">
+                <Label htmlFor="prf-condition">{t('common.condition')}</Label>
+                <NativeSelect id="prf-condition" name="condition" defaultValue="normal">
+                  {CONDITIONS.map((c) => (
+                    <option key={c} value={c}>
+                      {CONDITION_LABELS[c][locale]}
+                    </option>
+                  ))}
+                </NativeSelect>
+              </div>
+              <div className="space-y-1.5">
+                <Label htmlFor="prf-dia">{t('set.diameter')}</Label>
+                <Input id="prf-dia" name="diameter" placeholder="9厘" list="prf-dia-options" />
+                <datalist id="prf-dia-options">
+                  {specSuggestions.diameter.map((v) => (
+                    <option key={v} value={v} />
+                  ))}
+                </datalist>
+              </div>
+              <div className="space-y-1.5">
+                <Label htmlFor="prf-size">{t('set.size')}</Label>
+                <Input id="prf-size" name="size" placeholder="3×6" list="prf-size-options" />
+                <datalist id="prf-size-options">
+                  {specSuggestions.size.map((v) => (
+                    <option key={v} value={v} />
+                  ))}
+                </datalist>
+              </div>
+              <div className="space-y-1.5">
+                <Label htmlFor="prf-hole">{t('set.hole')}</Label>
+                <Input id="prf-hole" name="hole" placeholder="20孔" list="prf-hole-options" />
+                <datalist id="prf-hole-options">
+                  {specSuggestions.hole.map((v) => (
+                    <option key={v} value={v} />
+                  ))}
+                </datalist>
+              </div>
+              <div className="space-y-1.5">
+                <Label htmlFor="prf-rod">{t('set.rod')}</Label>
+                <Input id="prf-rod" name="rodCount" placeholder="15根" list="prf-rod-options" />
+                <datalist id="prf-rod-options">
+                  {specSuggestions.rodCount.map((v) => (
+                    <option key={v} value={v} />
+                  ))}
+                </datalist>
+              </div>
+            </div>
+            <div className="space-y-1.5">
+              <Label htmlFor="prf-extra">{t('set.extra')}</Label>
+              <Input id="prf-extra" name="extra" placeholder="free-form" list="prf-extra-options" />
+              <datalist id="prf-extra-options">
+                {specSuggestions.extra.map((v) => (
+                  <option key={v} value={v} />
+                ))}
+              </datalist>
+            </div>
+          </div>
+        )}
         <div className="space-y-1.5">
           <Label htmlFor="prf-customer">{t('pr.customer')}</Label>
           <NativeSelect id="prf-customer" name="customerId" defaultValue={seed?.customer_id ?? ''}>

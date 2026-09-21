@@ -187,6 +187,30 @@ describe('acceptance — payroll figures visible only to Owner/System Admin/Payr
   });
 });
 
+describe('products:create — narrow ADD-only grant for whoever manages prices', () => {
+  it('owner, system admin, and sales admin can add a new spec', () => {
+    for (const role of ['owner', 'system_admin', 'sales_admin'] as Role[]) {
+      expect(hasPermission(role, 'products:create')).toBe(true);
+    }
+  });
+
+  it('sales admin can add specs but still cannot edit/archive/delete them', () => {
+    expect(hasPermission('sales_admin', 'products:create')).toBe(true);
+    expect(hasPermission('sales_admin', 'products:manage')).toBe(false);
+  });
+
+  it('warehouse/attendance/payroll/viewer cannot add specs', () => {
+    for (const role of [
+      'warehouse_admin',
+      'attendance_admin',
+      'payroll_admin',
+      'viewer',
+    ] as Role[]) {
+      expect(hasPermission(role, 'products:create')).toBe(false);
+    }
+  });
+});
+
 describe('equipment maintenance — factory-floor operational data, same posture as Purchasing', () => {
   it('warehouse admin runs it day to day; system admin oversees read-only', () => {
     expect(hasPermission('warehouse_admin', 'maintenance:view')).toBe(true);

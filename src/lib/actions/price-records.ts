@@ -1,9 +1,10 @@
 'use server';
 import { revalidatePath } from 'next/cache';
 import { createSupabaseServerClient } from '@/lib/supabase/server';
-import { assertPermission } from '@/lib/auth';
+import { assertPermission, type CurrentUser } from '@/lib/auth';
+import { hasPermission } from '@/lib/domain/rbac';
 import { writeAudit } from '@/lib/audit';
-import { priceRecordSchema, priceTypeSchema } from '@/lib/validation/schemas';
+import { priceRecordSchema, priceTypeSchema, skuSchema } from '@/lib/validation/schemas';
 import { fail, ok, zodFieldErrors, type ActionState } from './types';
 
 const LIST_PATH = '/sales/prices';
@@ -108,17 +109,95 @@ async function supersedeActivePrice(
   await q;
 }
 
+/**
+ * When the Price form's "+ New spec" toggle is used, create the SKU first
+ * (same insert `createSku` in actions/settings.ts does, minus its opening-
+ * balance side quest, which doesn't belong on a pricing screen) and return
+ * its id — so a brand-new item can get a price without a detour through
+ * Settings > Products. Gated on 'products:create', a narrower grant than the
+ * 'products:manage' that page itself requires (see 0051_sales_admin_sku_insert.sql).
+ */
+async function resolveOrCreateSku(
+  supabase: Awaited<ReturnType<typeof createSupabaseServerClient>>,
+  user: CurrentUser,
+  formData: FormData,
+): Promise<{ skuId: string } | { fail: ActionState }> {
+  if (formData.get('specMode') !== 'new') {
+    return { skuId: String(formData.get('skuId') ?? '') };
+  }
+  if (!hasPermission(user.role, 'products:create')) {
+    return { fail: fail('You do not have permission to add a new product spec.') };
+  }
+  const parsed = skuSchema.safeParse({
+    familyId: formData.get('familyId'),
+    diameter: formData.get('diameter'),
+    size: formData.get('size'),
+    hole: formData.get('hole'),
+    rodCount: formData.get('rodCount'),
+    extra: formData.get('extra'),
+    condition: formData.get('condition') || 'normal',
+    unit: formData.get('unit'),
+    minimumLevel: 0,
+  });
+  if (!parsed.success)
+    return {
+      fail: fail('Please check the highlighted fields', zodFieldErrors(parsed.error.issues)),
+    };
+  const sd = parsed.data;
+
+  const { data, error } = await supabase
+    .from('skus')
+    .insert({
+      family_id: sd.familyId,
+      diameter: sd.diameter ?? null,
+      size: sd.size ?? null,
+      hole: sd.hole ?? null,
+      rod_count: sd.rodCount ?? null,
+      extra: sd.extra ?? null,
+      condition: sd.condition,
+      unit: sd.unit,
+      minimum_level: sd.minimumLevel,
+      is_active: true,
+    })
+    .select('id')
+    .single();
+  if (error) {
+    if (error.code === '23505')
+      return {
+        fail: fail(
+          'A spec with these exact attributes already exists — pick it from Product instead.',
+        ),
+      };
+    return { fail: fail(error.message) };
+  }
+
+  await writeAudit(user, {
+    action: 'sku.create',
+    entity: 'skus',
+    entityId: data.id,
+    newValue: sd,
+  });
+  return { skuId: data.id as string };
+}
+
 export async function createPriceRecord(
   _prev: ActionState,
   formData: FormData,
 ): Promise<ActionState> {
   const user = await assertPermission('price_records:manage');
-  const parsed = priceRecordSchema.safeParse(priceRecordForm(formData));
+  const supabase = await createSupabaseServerClient();
+
+  const skuResult = await resolveOrCreateSku(supabase, user, formData);
+  if ('fail' in skuResult) return skuResult.fail;
+
+  const parsed = priceRecordSchema.safeParse({
+    ...priceRecordForm(formData),
+    skuId: skuResult.skuId,
+  });
   if (!parsed.success)
     return fail('Please check the highlighted fields', zodFieldErrors(parsed.error.issues));
   const d = parsed.data;
 
-  const supabase = await createSupabaseServerClient();
   await supersedeActivePrice(supabase, {
     skuId: d.skuId,
     customerId: d.customerId ?? null,

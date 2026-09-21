@@ -1118,6 +1118,12 @@ export const dictionary = {
   },
   'pr.noPriceTypes': { en: 'No price types yet', zh: '暂无价格类型' },
   'pr.currentPriceOnFile': { en: 'Current price on file', zh: '当前存档价格' },
+  'pr.existingSpec': { en: 'Pick existing', zh: '选择已有规格' },
+  'pr.newSpec': { en: 'Add new spec', zh: '新增规格' },
+  'pr.newSpecHint': {
+    en: 'Creates this as a new product spec, then attaches this price to it.',
+    zh: '将新增此产品规格，并同时为其录入此价格。',
+  },
 
   // --- Equipment maintenance --------------------------------------------------
   'maint.title': { en: 'Equipment Maintenance', zh: '设备维护' },
@@ -1400,6 +1406,10 @@ const PHRASES: Record<string, string> = {
   'Maintenance record deleted': '已删除维护记录',
   'Missing maintenance record': '缺少维护记录',
   'Next due date cannot be before the date performed': '下次到期日期不能早于维护日期',
+  // Inline "+ New spec" on the Price Records form
+  'You do not have permission to add a new product spec.': '您没有权限新增产品规格。',
+  'A spec with these exact attributes already exists — pick it from Product instead.':
+    '已存在完全相同属性的规格，请改为从产品列表中选择。',
 };
 
 /** Localise an action/validation message for display. */

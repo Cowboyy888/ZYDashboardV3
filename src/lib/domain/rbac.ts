@@ -80,7 +80,11 @@ export type Permission =
   | 'price_records:view'
   | 'price_records:manage'
   | 'maintenance:view'
-  | 'maintenance:manage';
+  | 'maintenance:manage'
+  // Narrow: ADD a new product spec only — not edit/archive/delete (that stays
+  // under 'products:manage'). Lets whoever manages prices add a brand-new
+  // spec inline on the Price Records form without a detour through Settings.
+  | 'products:create';
 
 const EVERYONE: Permission[] = ['dashboard:view', 'reports:view'];
 
@@ -107,6 +111,7 @@ const ROLE_PERMISSIONS: Record<Role, Permission[]> = {
     'overtime:manage',
     'products:view',
     'products:manage',
+    'products:create',
     'locations:manage',
     'inventory:view',
     'purchasing:view',
@@ -149,6 +154,7 @@ const ROLE_PERMISSIONS: Record<Role, Permission[]> = {
   sales_admin: [
     ...EVERYONE,
     'products:view',
+    'products:create',
     'inventory:view',
     'sales:view',
     'sales:manage',
