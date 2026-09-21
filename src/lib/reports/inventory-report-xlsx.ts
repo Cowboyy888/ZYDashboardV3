@@ -169,7 +169,11 @@ export async function buildInventoryReportXlsx(data: InventoryReportData): Promi
 
   const standardRows = data.rows.filter((row) => row.specType === 'standard');
   const specialRows = data.rows.filter((row) => row.specType === 'special');
-  renderSection('STANDARD SPECIFICATION · 标准规格 (3×6m | 2.4×6m)', standardRows, 'standard');
+  renderSection(
+    'STANDARD SPECIFICATION · 标准规格 (3×6m | 2.4×6m | 14×28m | 15×30m | 11×28m | 10×20m)',
+    standardRows,
+    'standard',
+  );
   renderSection(
     'SPECIAL SPECIFICATION · 特殊规格 (All other sizes 其他所有尺寸)',
     specialRows,

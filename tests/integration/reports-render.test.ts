@@ -78,7 +78,9 @@ describe('inventory report rendering', () => {
 
     // Date + title on the first line, then the Standard section header.
     expect(lines[0]).toBe('24/07/2026 库存报告 / Inventory Report');
-    expect(text).toContain('标准规格 / Standard Specification (3×6 · 2.4×6)');
+    expect(text).toContain(
+      '标准规格 / Standard Specification (3×6 · 2.4×6 · 14×28 · 15×30 · 11×28 · 10×20)',
+    );
     expect(text).toContain('特殊规格 / Special Specification');
     expect(text.indexOf('标准规格')).toBeLessThan(text.indexOf('特殊规格'));
 

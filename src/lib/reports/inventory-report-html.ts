@@ -4,9 +4,10 @@
  * identical: the server .xlsx builder (inventory-report-xlsx.ts) and the
  * server-rendered PDF (see /api/export/inventory/pdf).
  *
- * Standard = size "3×6" or "2.4×6" (computed by `classifySpecification`,
- * never a stored category); every other SKU is Special. The two are always
- * rendered as separate, clearly labelled sections — Standard first.
+ * Standard = one of the sizes in STANDARD_SIZES (computed by
+ * `classifySpecification`, never a stored category); every other SKU is
+ * Special. The two are always rendered as separate, clearly labelled
+ * sections — Standard first.
  */
 import {
   totalsBySpecTypeUnit,
@@ -273,12 +274,12 @@ ${KHMER_FONT_FACE_CSS}
     <div class="meta-l">
       <div class="lbl">REPORT:</div>
       <div class="val">Standard vs Special Specification 标准与特殊规格</div>
-      <div class="small">Standard = 3×6 m / 2.4×6 m 标准 = 3×6米 / 2.4×6米</div>
+      <div class="small">Standard = 3×6m / 2.4×6m / 14×28m / 15×30m / 11×28m / 10×20m 标准 = 3×6米 / 2.4×6米 / 14×28米 / 15×30米 / 11×28米 / 10×20米</div>
     </div>
     <table class="meta-r">${metaRightHtml}</table>
   </div>
 
-  ${sectionTable('STANDARD SPECIFICATION · 标准规格 (3×6m | 2.4×6m)', standardRows, 'standard')}
+  ${sectionTable('STANDARD SPECIFICATION · 标准规格 (3×6m | 2.4×6m | 14×28m | 15×30m | 11×28m | 10×20m)', standardRows, 'standard')}
   <div class="section-totals">Standard total 标准合计: <b>${unitChips(standardTotals)}</b></div>
 
   ${sectionTable('SPECIAL SPECIFICATION · 特殊规格 (All other sizes 其他所有尺寸)', specialRows, 'special')}

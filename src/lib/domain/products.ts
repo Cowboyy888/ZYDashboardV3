@@ -111,8 +111,8 @@ export function leadingSpecNumber(value: string | null): number {
 
 export type SpecificationType = 'standard' | 'special';
 
-/** The two bulk sheet sizes 钢筋网 ships as standard stock — everything else is Special. */
-const STANDARD_SIZES = ['3×6', '2.4×6'];
+/** The bulk sheet sizes 钢筋网 ships as standard stock — everything else is Special. */
+const STANDARD_SIZES = ['3×6', '2.4×6', '14×28', '15×30', '11×28', '10×20'];
 
 /**
  * `size`/`rod_count` are typed by hand (often on a phone, sometimes via a
@@ -169,12 +169,12 @@ const STANDARD_HOLE = normalizeHoleForClassification('20孔');
 /**
  * Standard vs Special specification, computed from the SKU's `size` (and, as
  * exceptions, `rodCount`/`hole`) — never a manually entered/stored category,
- * so it can't drift out of sync with the SKU's own attributes. Only "3×6"
- * and "2.4×6" are Standard; every other size (customer-customised
- * dimensions, project specs, or no size at all — e.g. 拔丝料/螺纹盘圆 SKUs)
- * is Special.
+ * so it can't drift out of sync with the SKU's own attributes. Only the sizes
+ * in `STANDARD_SIZES` ("3×6", "2.4×6", "14×28", "15×30", "11×28", "10×20")
+ * are Standard; every other size (customer-customised dimensions, project
+ * specs, or no size at all — e.g. 拔丝料/螺纹盘圆 SKUs) is Special.
  * Exceptions (checked before the size rule, either forces Special even on an
- * otherwise-Standard 3×6/2.4×6 sheet):
+ * otherwise-Standard sheet):
  *   - a rod count of "15根" — a reinforced/custom order regardless of size.
  *   - any hole count OTHER than "20孔" — a non-standard hole pattern is a
  *     custom order too. A sheet with no hole recorded at all is unaffected

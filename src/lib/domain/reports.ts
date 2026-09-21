@@ -32,9 +32,10 @@ export interface InventoryReportRow {
   hole: string | null;
   rodCount: string | null;
   extra: string | null;
-  /** Standard (3×6 / 2.4×6) vs Special — computed by `classifySpecification`
-   * from `size`, never a manually entered category. Splits the report into
-   * its two top-level sections, same split as the Inventory Report page. */
+  /** Standard vs Special — computed by `classifySpecification` from `size`
+   * (see STANDARD_SIZES for the full list), never a manually entered
+   * category. Splits the report into its two top-level sections, same split
+   * as the Inventory Report page. */
   specType: SpecificationType;
 }
 
@@ -118,11 +119,11 @@ function renderSpecGroup(rows: InventoryReportRow[]): string[] {
 
 /**
  * Build the daily inventory report: a plain-language stock list split into
- * its two Standard (3×6 / 2.4×6) and Special specification sections — same
- * split as the Inventory Report page, computed from `size` via
- * `classifySpecification`, never a manually entered category. Each section
- * keeps the existing family grouping (网片/盘圆/拔丝料, diameter descending),
- * followed by the low-stock warning section across both.
+ * its two Standard and Special specification sections — same split as the
+ * Inventory Report page, computed from `size` via `classifySpecification`
+ * (see STANDARD_SIZES for the full list), never a manually entered category.
+ * Each section keeps the existing family grouping (网片/盘圆/拔丝料, diameter
+ * descending), followed by the low-stock warning section across both.
  */
 export function renderInventoryReport(
   rows: InventoryReportRow[],
@@ -134,7 +135,7 @@ export function renderInventoryReport(
   lines.push(`${dateStr} 库存报告 / Inventory Report`);
   lines.push('');
 
-  lines.push('标准规格 / Standard Specification (3×6 · 2.4×6)');
+  lines.push('标准规格 / Standard Specification (3×6 · 2.4×6 · 14×28 · 15×30 · 11×28 · 10×20)');
   lines.push('');
   lines.push(...renderSpecGroup(rows.filter((r) => r.specType === 'standard')));
 
