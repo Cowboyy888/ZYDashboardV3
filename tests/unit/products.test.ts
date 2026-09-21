@@ -127,4 +127,24 @@ describe('classifySpecification — Standard vs Special, computed from size', ()
     const fullwidthRodCount = [0xff11, 0xff15].map((c) => String.fromCharCode(c)).join('') + '根';
     expect(classifySpecification('3×6', fullwidthRodCount)).toBe('special');
   });
+
+  it('any hole count other than "20孔" always forces Special, even on an otherwise-Standard sheet', () => {
+    expect(classifySpecification('3×6', null, '16孔')).toBe('special');
+    expect(classifySpecification('2.4×6', null, '24孔')).toBe('special');
+    // "20孔" itself doesn't trigger the exception — the size rule still applies.
+    expect(classifySpecification('3×6', null, '20孔')).toBe('standard');
+    expect(classifySpecification('4×8', null, '20孔')).toBe('special'); // size rule still wins here
+    // No hole recorded at all — unaffected (not every family has one).
+    expect(classifySpecification('3×6', null, null)).toBe('standard');
+    expect(classifySpecification('3×6', null, '')).toBe('standard');
+    expect(classifySpecification('3×6')).toBe('standard');
+    // Stacks with the rod-count exception — either one alone is enough.
+    expect(classifySpecification('3×6', '15根', '20孔')).toBe('special');
+    // The exception still applies even with a hand-typed variant of "20孔".
+    const fullwidthHole = [0xff12, 0xff10].map((c) => String.fromCharCode(c)).join('') + '孔';
+    expect(classifySpecification('3×6', null, fullwidthHole)).toBe('standard');
+    const fullwidthNonStandardHole =
+      [0xff12, 0xff14].map((c) => String.fromCharCode(c)).join('') + '孔';
+    expect(classifySpecification('3×6', null, fullwidthNonStandardHole)).toBe('special');
+  });
 });

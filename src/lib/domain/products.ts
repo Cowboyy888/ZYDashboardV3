@@ -153,30 +153,48 @@ function normalizeRodCountForClassification(value: string | null | undefined): s
   return stripInvisibleAndFullwidth(value).replace(/\s+/g, '');
 }
 
+/** Same free-text tolerance as size/rod count — hole is hand-typed too. */
+function normalizeHoleForClassification(value: string | null | undefined): string {
+  return stripInvisibleAndFullwidth(value).replace(/\s+/g, '');
+}
+
 const NORMALIZED_STANDARD_SIZES = new Set(STANDARD_SIZES.map(normalizeSizeForClassification));
 
 /** Rod counts that force Special regardless of size — a business exception, not a size rule. */
 const SPECIAL_ROD_COUNTS = new Set(['15根'].map(normalizeRodCountForClassification));
 
+/** The only hole count that keeps an otherwise-Standard sheet Standard. */
+const STANDARD_HOLE = normalizeHoleForClassification('20孔');
+
 /**
  * Standard vs Special specification, computed from the SKU's `size` (and, as
- * an exception, `rodCount`) — never a manually entered/stored category, so
- * it can't drift out of sync with the SKU's own attributes. Only "3×6" and
- * "2.4×6" are Standard; every other size (customer-customised dimensions,
- * project specs, or no size at all — e.g. 拔丝料/螺纹盘圆 SKUs) is Special.
- * Exception: a rod count of "15根" always forces Special, even on an
- * otherwise-Standard 3×6/2.4×6 size — a 15-rod sheet is a reinforced/custom
- * order in this business, regardless of its sheet size. Normalization is
- * tolerant of "x"/"×"/"X" variants, stray whitespace, and a trailing
- * "m"/"米" unit suffix, since these fields are free-text and have been
- * entered inconsistently. Drives the Inventory Report's Standard/Special
- * split (dashboard, PDF/Excel exports, and the Telegram report).
+ * exceptions, `rodCount`/`hole`) — never a manually entered/stored category,
+ * so it can't drift out of sync with the SKU's own attributes. Only "3×6"
+ * and "2.4×6" are Standard; every other size (customer-customised
+ * dimensions, project specs, or no size at all — e.g. 拔丝料/螺纹盘圆 SKUs)
+ * is Special.
+ * Exceptions (checked before the size rule, either forces Special even on an
+ * otherwise-Standard 3×6/2.4×6 sheet):
+ *   - a rod count of "15根" — a reinforced/custom order regardless of size.
+ *   - any hole count OTHER than "20孔" — a non-standard hole pattern is a
+ *     custom order too. A sheet with no hole recorded at all is unaffected
+ *     (not every family has one — this only ever narrows an otherwise-
+ *     Standard 钢筋网 sheet, never widens a non-mesh SKU into Standard).
+ * Normalization is tolerant of "x"/"×"/"X" variants, stray whitespace, and a
+ * trailing "m"/"米" unit suffix, since these fields are free-text and have
+ * been entered inconsistently. Drives the Inventory Report's
+ * Standard/Special split (dashboard, PDF/Excel exports, and the Telegram
+ * report) — deliberately the same everywhere so the sections never drift
+ * apart between views.
  */
 export function classifySpecification(
   size: string | null | undefined,
   rodCount?: string | null,
+  hole?: string | null,
 ): SpecificationType {
   if (SPECIAL_ROD_COUNTS.has(normalizeRodCountForClassification(rodCount))) return 'special';
+  const normalizedHole = normalizeHoleForClassification(hole);
+  if (normalizedHole.length > 0 && normalizedHole !== STANDARD_HOLE) return 'special';
   const normalized = normalizeSizeForClassification(size);
   return normalized.length > 0 && NORMALIZED_STANDARD_SIZES.has(normalized)
     ? 'standard'
