@@ -1,6 +1,17 @@
 'use client';
 import { useActionState, useEffect, useMemo, useRef, useState } from 'react';
-import { Download, FileText, Loader2, Pencil, Plus, Search, Trash2, X } from 'lucide-react';
+import Link from 'next/link';
+import {
+  Download,
+  FileText,
+  Loader2,
+  Pencil,
+  Plus,
+  Search,
+  Settings,
+  Trash2,
+  X,
+} from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -34,8 +45,6 @@ import {
   updateInquiry,
   deleteInquiry,
   addFollowup,
-  createInquiryCustomerType,
-  toggleInquiryCustomerType,
   createInquiryStatus,
   toggleInquiryStatus,
 } from '@/lib/actions/sales-inquiries';
@@ -560,12 +569,19 @@ export function InquiriesClient({
       {canManage && (
         <TabsContent value="lists" className="space-y-4">
           <div className="grid gap-4 lg:grid-cols-2">
-            <ListManager
-              title={t('inq.customerTypes')}
-              rows={customerTypes}
-              addAction={createInquiryCustomerType}
-              toggleAction={toggleInquiryCustomerType}
-            />
+            <Card>
+              <CardHeader>
+                <CardTitle className="text-base">{t('inq.customerTypes')}</CardTitle>
+              </CardHeader>
+              <CardContent>
+                <Link
+                  href="/settings/customer-types"
+                  className="inline-flex items-center gap-1.5 text-sm text-primary underline underline-offset-2"
+                >
+                  <Settings className="h-4 w-4" /> {t('inq.manageInSettings')}
+                </Link>
+              </CardContent>
+            </Card>
             <StatusManager statuses={statuses} />
           </div>
         </TabsContent>
@@ -617,51 +633,6 @@ export function InquiriesClient({
       )}
     </Tabs>
   );
-
-  function ListManager({
-    title,
-    rows,
-    addAction,
-    toggleAction,
-  }: {
-    title: string;
-    rows: InquiryCustomerTypeRow[];
-    addAction: (s: ActionState, f: FormData) => Promise<ActionState>;
-    toggleAction: (s: ActionState, f: FormData) => Promise<ActionState>;
-  }) {
-    return (
-      <Card>
-        <CardHeader>
-          <CardTitle className="text-base">{title}</CardTitle>
-        </CardHeader>
-        <CardContent className="space-y-3">
-          <ActionForm action={addAction} className="flex items-end gap-2">
-            <div className="flex-1 space-y-1.5">
-              <Label htmlFor={`add-${title}`}>{t('common.name')}</Label>
-              <Input id={`add-${title}`} name="name" required />
-            </div>
-            <SubmitButton>{t('common.add')}</SubmitButton>
-          </ActionForm>
-          <div className="divide-y rounded-md border">
-            {rows.map((r) => (
-              <div key={r.id} className="flex items-center justify-between px-3 py-2 text-sm">
-                <span className={r.is_active ? '' : 'text-muted-foreground line-through'}>
-                  {r.name}
-                </span>
-                <ActionForm action={toggleAction} className="space-y-0">
-                  <input type="hidden" name="id" value={r.id} />
-                  <input type="hidden" name="isActive" value={String(r.is_active)} />
-                  <SubmitButton variant="ghost" size="sm">
-                    {r.is_active ? t('common.archive') : t('common.reactivate')}
-                  </SubmitButton>
-                </ActionForm>
-              </div>
-            ))}
-          </div>
-        </CardContent>
-      </Card>
-    );
-  }
 
   function StatusManager({ statuses: rows }: { statuses: InquiryStatusRow[] }) {
     return (

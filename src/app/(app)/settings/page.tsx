@@ -9,6 +9,7 @@ import {
   Globe,
   Receipt,
   Tags,
+  Building2,
 } from 'lucide-react';
 import { requirePermission } from '@/lib/auth';
 import { getLocale } from '@/lib/i18n/locale';
@@ -60,6 +61,12 @@ export default async function SettingsPage() {
       icon: Tags,
       label: t('pr.priceTypes'),
       show: hasPermission(user.role, 'price_records:manage'),
+    },
+    {
+      href: '/settings/customer-types',
+      icon: Building2,
+      label: t('set.customerTypes'),
+      show: hasPermission(user.role, 'inquiries:manage'),
     },
     {
       href: '/settings/users',

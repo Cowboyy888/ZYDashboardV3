@@ -15,6 +15,15 @@ import {
 import { fail, ok, zodFieldErrors, type ActionState } from './types';
 
 const INQUIRIES_PATH = '/sales/inquiries';
+const CUSTOMER_TYPES_SETTINGS_PATH = '/settings/customer-types';
+const CUSTOMERS_PATH = '/sales/customers';
+
+/** Customer type names are shown/used on Inquiries, Customers, and their own Settings page. */
+function revalidateCustomerTypeConsumers() {
+  revalidatePath(INQUIRIES_PATH);
+  revalidatePath(CUSTOMERS_PATH);
+  revalidatePath(CUSTOMER_TYPES_SETTINGS_PATH);
+}
 
 /** Map validated inquiry fields to DB columns (undefined → null). */
 function inquiryColumns(d: InquiryInput) {
@@ -221,8 +230,37 @@ export async function createInquiryCustomerType(
     entityId: data.id,
     newValue: parsed.data,
   });
-  revalidatePath(INQUIRIES_PATH);
+  revalidateCustomerTypeConsumers();
   return ok('Customer type added');
+}
+
+export async function renameInquiryCustomerType(
+  _prev: ActionState,
+  formData: FormData,
+): Promise<ActionState> {
+  const user = await assertPermission('inquiries:manage');
+  const id = String(formData.get('id') ?? '');
+  const parsed = inquiryCustomerTypeSchema.safeParse({ name: formData.get('name') });
+  if (!id) return fail('Missing customer type');
+  if (!parsed.success) return fail('Validation failed', zodFieldErrors(parsed.error.issues));
+
+  const supabase = await createSupabaseServerClient();
+  const { error } = await supabase
+    .from('inquiry_customer_types')
+    .update({ name: parsed.data.name })
+    .eq('id', id);
+  if (error) {
+    if (error.code === '23505') return fail('That customer type already exists.');
+    return fail(error.message);
+  }
+  await writeAudit(user, {
+    action: 'inquiry_customer_type.rename',
+    entity: 'inquiry_customer_types',
+    entityId: id,
+    newValue: parsed.data,
+  });
+  revalidateCustomerTypeConsumers();
+  return ok('Customer type renamed');
 }
 
 export async function toggleInquiryCustomerType(
@@ -244,7 +282,7 @@ export async function toggleInquiryCustomerType(
     entity: 'inquiry_customer_types',
     entityId: id,
   });
-  revalidatePath(INQUIRIES_PATH);
+  revalidateCustomerTypeConsumers();
   return ok(isActive ? 'Customer type archived' : 'Customer type reactivated');
 }
 

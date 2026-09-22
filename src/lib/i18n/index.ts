@@ -315,6 +315,7 @@ export const dictionary = {
   'set.locations': { en: 'Locations', zh: '库存地点' },
   'set.products': { en: 'Products & Specs', zh: '产品与规格' },
   'set.groups': { en: 'Attendance Groups', zh: '考勤分组' },
+  'set.customerTypes': { en: 'Customer Types', zh: '客户类型' },
   'set.telegram': { en: 'Telegram', zh: 'Telegram 设置' },
   'set.invoice': { en: 'Invoice Settings', zh: '发票设置' },
   'set.users': { en: 'Users & Roles', zh: '用户与角色' },
@@ -401,6 +402,13 @@ export const dictionary = {
   'set.groupsTable': { en: 'Attendance groups (report order)', zh: '考勤分组（报告顺序）' },
   'set.order': { en: 'Order', zh: '顺序' },
   'set.noGroups': { en: 'No groups yet.', zh: '暂无分组。' },
+  'set.customerTypesDesc': {
+    en: 'Used to classify customers and price inquiries (e.g. Construction, Distributor). Archive a type to hide it from new records without touching ones that already use it.',
+    zh: '用于对客户和询价进行分类（如工地、经销商）。归档某一类型后，新记录将不再显示它，但不会影响已使用该类型的记录。',
+  },
+  'set.addCustomerType': { en: 'Add customer type', zh: '新增客户类型' },
+  'set.customerTypesTable': { en: 'Customer types', zh: '客户类型' },
+  'set.noCustomerTypes': { en: 'No customer types yet.', zh: '暂无客户类型。' },
   'set.usersDesc': {
     en: 'Assign roles. New signups start as Viewer; the first account is the Owner.',
     zh: '分配角色。新注册默认为查看者；第一个账户为老板。',
@@ -784,6 +792,7 @@ export const dictionary = {
   'inq.customerResponse': { en: 'Customer response', zh: '客户回复' },
   // Lists
   'inq.customerTypes': { en: 'Customer types', zh: '客户类型' },
+  'inq.manageInSettings': { en: 'Manage in Settings', zh: '前往设置管理' },
   'inq.statuses': { en: 'Statuses', zh: '状态' },
   'inq.category': { en: 'Category', zh: '类别' },
   'inq.catOpen': { en: 'Open', zh: '进行中' },
@@ -1201,6 +1210,7 @@ const PHRASES: Record<string, string> = {
   'Inquiry deleted': '已删除询价',
   'Follow-up recorded': '已记录跟进',
   'Customer type added': '已新增客户类型',
+  'Customer type renamed': '已重命名客户类型',
   'Customer type archived': '已归档客户类型',
   'Customer type reactivated': '已重新启用客户类型',
   'That customer type already exists.': '该客户类型已存在。',
