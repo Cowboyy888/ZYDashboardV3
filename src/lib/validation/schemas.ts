@@ -355,6 +355,7 @@ export const customerSchema = z.object({
   name: nonEmpty,
   nameChinese: optionalText,
   nameEnglish: optionalText,
+  customerTypeId: optionalUuid,
   contactPerson: optionalText,
   phone: optionalText,
   address: optionalText,

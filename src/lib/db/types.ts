@@ -410,6 +410,7 @@ export interface CustomerRow {
   name: string;
   name_chinese: string | null;
   name_english: string | null;
+  customer_type_id: string | null;
   contact_person: string | null;
   phone: string | null;
   address: string | null;

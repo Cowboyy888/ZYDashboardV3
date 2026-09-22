@@ -31,7 +31,15 @@ import { CURRENCIES } from '@/lib/domain/sales';
 import type { ActionState } from '@/lib/actions/types';
 import type { CustomerRow } from '@/lib/db/types';
 
-function CustomerFields({ defaults }: { defaults?: CustomerRow }) {
+type CustomerTypeOpt = { id: string; name: string };
+
+function CustomerFields({
+  defaults,
+  customerTypes,
+}: {
+  defaults?: CustomerRow;
+  customerTypes: CustomerTypeOpt[];
+}) {
   const { t } = useT();
   return (
     <>
@@ -61,6 +69,21 @@ function CustomerFields({ defaults }: { defaults?: CustomerRow }) {
         <div className="space-y-1.5">
           <Label htmlFor="nameEnglish">{t('sal.nameEnglish')}</Label>
           <Input id="nameEnglish" name="nameEnglish" defaultValue={defaults?.name_english ?? ''} />
+        </div>
+        <div className="space-y-1.5">
+          <Label htmlFor="customerTypeId">{t('sal.customerType')}</Label>
+          <NativeSelect
+            id="customerTypeId"
+            name="customerTypeId"
+            defaultValue={defaults?.customer_type_id ?? ''}
+          >
+            <option value="">{t('common.select')}</option>
+            {customerTypes.map((ct) => (
+              <option key={ct.id} value={ct.id}>
+                {ct.name}
+              </option>
+            ))}
+          </NativeSelect>
         </div>
         <div className="space-y-1.5">
           <Label htmlFor="contactPerson">{t('sal.contactPerson')}</Label>
@@ -99,7 +122,15 @@ function CustomerFields({ defaults }: { defaults?: CustomerRow }) {
   );
 }
 
-function EditCustomerRow({ customer, onDone }: { customer: CustomerRow; onDone: () => void }) {
+function EditCustomerRow({
+  customer,
+  customerTypes,
+  onDone,
+}: {
+  customer: CustomerRow;
+  customerTypes: CustomerTypeOpt[];
+  onDone: () => void;
+}) {
   const { t } = useT();
   const [state, formAction, pending] = useActionState<ActionState, FormData>(updateCustomer, null);
 
@@ -109,10 +140,10 @@ function EditCustomerRow({ customer, onDone }: { customer: CustomerRow; onDone: 
 
   return (
     <TableRow>
-      <TableCell colSpan={7} className="bg-muted/30">
+      <TableCell colSpan={8} className="bg-muted/30">
         <form action={formAction} className="space-y-3 py-2">
           <input type="hidden" name="id" value={customer.id} />
-          <CustomerFields defaults={customer} />
+          <CustomerFields defaults={customer} customerTypes={customerTypes} />
           <FormError error={state?.error} />
           <div className="flex gap-2">
             <SubmitButton>{t('common.save')}</SubmitButton>
@@ -131,14 +162,30 @@ function EditCustomerRow({ customer, onDone }: { customer: CustomerRow; onDone: 
   );
 }
 
-function CustomerRowItem({ customer, canManage }: { customer: CustomerRow; canManage: boolean }) {
+function CustomerRowItem({
+  customer,
+  customerTypes,
+  canManage,
+}: {
+  customer: CustomerRow;
+  customerTypes: CustomerTypeOpt[];
+  canManage: boolean;
+}) {
   const { t } = useT();
   const router = useRouter();
   const [editing, setEditing] = useState(false);
 
   if (editing) {
-    return <EditCustomerRow customer={customer} onDone={() => setEditing(false)} />;
+    return (
+      <EditCustomerRow
+        customer={customer}
+        customerTypes={customerTypes}
+        onDone={() => setEditing(false)}
+      />
+    );
   }
+
+  const customerTypeName = customerTypes.find((ct) => ct.id === customer.customer_type_id)?.name;
 
   return (
     <TableRow>
@@ -151,6 +198,7 @@ function CustomerRowItem({ customer, canManage }: { customer: CustomerRow; canMa
           <span className="ml-2 text-muted-foreground">{customer.name_chinese}</span>
         )}
       </TableCell>
+      <TableCell>{customerTypeName || '—'}</TableCell>
       <TableCell>{customer.contact_person || '—'}</TableCell>
       <TableCell>{customer.phone || '—'}</TableCell>
       <TableCell>{customer.default_currency}</TableCell>
@@ -196,9 +244,11 @@ function CustomerRowItem({ customer, canManage }: { customer: CustomerRow; canMa
 
 export function CustomersManager({
   customers,
+  customerTypes,
   canManage,
 }: {
   customers: CustomerRow[];
+  customerTypes: CustomerTypeOpt[];
   canManage: boolean;
 }) {
   const { t } = useT();
@@ -224,7 +274,7 @@ export function CustomersManager({
           </CardHeader>
           <CardContent>
             <ActionForm action={createCustomer}>
-              <CustomerFields />
+              <CustomerFields customerTypes={customerTypes} />
               <SubmitButton>{t('sal.addCustomer')}</SubmitButton>
             </ActionForm>
           </CardContent>
@@ -238,6 +288,7 @@ export function CustomersManager({
               <TableRow>
                 <TableHead>{t('common.id')}</TableHead>
                 <TableHead>{t('sal.customerName')}</TableHead>
+                <TableHead>{t('sal.customerType')}</TableHead>
                 <TableHead>{t('sal.contactPerson')}</TableHead>
                 <TableHead>{t('sal.phone')}</TableHead>
                 <TableHead>{t('sal.defaultCurrency')}</TableHead>
@@ -247,11 +298,16 @@ export function CustomersManager({
             </TableHeader>
             <TableBody>
               {customers.map((c) => (
-                <CustomerRowItem key={c.id} customer={c} canManage={canManage} />
+                <CustomerRowItem
+                  key={c.id}
+                  customer={c}
+                  customerTypes={customerTypes}
+                  canManage={canManage}
+                />
               ))}
               {customers.length === 0 && (
                 <TableRow>
-                  <TableCell colSpan={7} className="text-center text-muted-foreground">
+                  <TableCell colSpan={8} className="text-center text-muted-foreground">
                     {t('sal.noCustomers')}
                   </TableCell>
                 </TableRow>

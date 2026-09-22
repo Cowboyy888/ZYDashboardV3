@@ -827,6 +827,7 @@ export const dictionary = {
   'sal.customersDesc': { en: 'Editable customer list.', zh: '可编辑的客户列表。' },
   'sal.addCustomer': { en: 'Add customer', zh: '新增客户' },
   'sal.customerName': { en: 'Customer name', zh: '客户名称' },
+  'sal.customerType': { en: 'Customer type', zh: '客户类型' },
   'sal.nameChinese': { en: 'Chinese name', zh: '中文名称' },
   'sal.nameEnglish': { en: 'English name', zh: '英文名称' },
   'sal.contactPerson': { en: 'Contact person', zh: '联系人' },
