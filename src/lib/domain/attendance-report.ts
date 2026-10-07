@@ -122,12 +122,19 @@ export function buildGroupedAttendanceReport(params: {
   for (const r of records) statusByEmployee.set(r.employeeId, r.status);
   const resolvedStatus = (id: string): AttendanceStatus => statusByEmployee.get(id) ?? 'unmarked';
 
-  // Group lines in configured order.
-  const groupLines: GroupLine[] = groups.map((g) => {
-    const members = employees.filter((e) => e.groupId === g.id);
-    const actual = members.filter((m) => isActualPresent(resolvedStatus(m.id))).length;
-    return { groupId: g.id, name: g.name, actual, scheduled: members.length };
-  });
+  // Group lines in configured order. A group with nobody in this report's
+  // employee set (0 scheduled) is omitted entirely — most visible when a
+  // shift is split by location (see `locationLabel`) and a group has no
+  // members at that location, e.g. Office showing "工厂主管 0/0". A group
+  // where everyone is absent (0 actual, but scheduled > 0) still shows, since
+  // that's real signal ("nobody from this group came in today").
+  const groupLines: GroupLine[] = groups
+    .map((g) => {
+      const members = employees.filter((e) => e.groupId === g.id);
+      const actual = members.filter((m) => isActualPresent(resolvedStatus(m.id))).length;
+      return { groupId: g.id, name: g.name, actual, scheduled: members.length };
+    })
+    .filter((gl) => gl.scheduled > 0);
 
   // Exception sections — deterministic ordering by group order then name.
   const groupOrder = new Map(groups.map((g, i) => [g.id, i]));

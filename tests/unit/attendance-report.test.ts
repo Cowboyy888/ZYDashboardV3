@@ -179,6 +179,50 @@ describe('grouped attendance report — group totals', () => {
     expect(report.groupLines[0]).toMatchObject({ actual: 2, scheduled: 4 });
     expect(report.actualPresent).toBe(2);
   });
+
+  it('omits a group with nobody in it (0 scheduled) — e.g. Office vs Factory after a location split', () => {
+    const groups: ReportGroup[] = [
+      { id: 'g1', name: '老板助理' }, // has a member
+      { id: 'g2', name: '工厂主管' }, // nobody in this report's employee set
+    ];
+    const employees: ReportEmployee[] = [
+      { id: 'a', groupId: 'g1', displayName: 'A', jobTitle: null, label: null },
+    ];
+    const records: ReportAttendance[] = [{ employeeId: 'a', status: 'present' }];
+    const report = buildGroupedAttendanceReport({
+      date: '2026-07-24',
+      shift: 'morning',
+      groups,
+      employees,
+      records,
+    });
+    expect(report.groupLines.map((g) => g.name)).toEqual(['老板助理']);
+    expect(report.text).not.toContain('工厂主管');
+    expect(report.text).toContain('老板助理 1/1');
+  });
+
+  it('still shows a group where everyone scheduled is absent (0 actual, scheduled > 0) — real signal, not noise', () => {
+    const groups: ReportGroup[] = [{ id: 'g1', name: '老板助理' }];
+    const employees: ReportEmployee[] = [
+      { id: 'a', groupId: 'g1', displayName: 'A', jobTitle: null, label: null },
+      { id: 'b', groupId: 'g1', displayName: 'B', jobTitle: null, label: null },
+    ];
+    const records: ReportAttendance[] = [
+      { employeeId: 'a', status: 'leave' },
+      { employeeId: 'b', status: 'absent' },
+    ];
+    const report = buildGroupedAttendanceReport({
+      date: '2026-07-24',
+      shift: 'morning',
+      groups,
+      employees,
+      records,
+    });
+    expect(report.groupLines).toEqual([
+      { groupId: 'g1', name: '老板助理', actual: 0, scheduled: 2 },
+    ]);
+    expect(report.text).toContain('老板助理 0/2');
+  });
 });
 
 describe('grouped attendance report — leave details & totals', () => {
