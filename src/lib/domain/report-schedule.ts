@@ -29,25 +29,24 @@ export const SCHEDULED_REPORT_TYPES: readonly ScheduledReportType[] = [
 ] as const;
 
 /**
- * Attendance is split into three independent audiences, each with its own
- * Telegram destination (see 0054_attendance_location_destinations.sql) —
- * driven by employees.work_location (0049_employee_work_location.sql).
- * "unclassified" covers an employee with no Location set yet, so nobody
- * silently vanishes from every report while the business finishes
- * classifying staff.
+ * Attendance is split into two independent audiences, each with its own
+ * Telegram destination (see 0054_attendance_location_destinations.sql,
+ * 0055_remove_unclassified_attendance_destination.sql) — driven by
+ * employees.work_location (0049_employee_work_location.sql). Every employee
+ * is expected to have a Location set; one that doesn't falls back to
+ * `factory` (see `bucketFor` in reports/service.ts and reports/preview.ts)
+ * rather than being dropped from attendance reporting.
  */
-export const ATTENDANCE_LOCATIONS = ['office', 'factory', 'unclassified'] as const;
+export const ATTENDANCE_LOCATIONS = ['office', 'factory'] as const;
 export type AttendanceLocation = (typeof ATTENDANCE_LOCATIONS)[number];
 
 export const ATTENDANCE_LOCATION_LABEL: Record<AttendanceLocation, { en: string; zh: string }> = {
   office: { en: 'Office', zh: '办公室' },
   factory: { en: 'Factory', zh: '工厂' },
-  unclassified: { en: 'Unclassified', zh: '未分类' },
 };
 
 /** Logical destination each report is routed to — one per attendance location, plus inventory. */
-export type ReportGroup =
-  'attendance_office' | 'attendance_factory' | 'attendance_unclassified' | 'inventory';
+export type ReportGroup = 'attendance_office' | 'attendance_factory' | 'inventory';
 
 /** The `ReportGroup` for a given attendance location — column names in
  * telegram_settings follow this same `attendance_{location}_*` pattern. */
@@ -66,8 +65,6 @@ export interface TelegramDestinations {
   attendanceOfficeEnabled: boolean;
   attendanceFactoryChatId: string | null;
   attendanceFactoryEnabled: boolean;
-  attendanceUnclassifiedChatId: string | null;
-  attendanceUnclassifiedEnabled: boolean;
   inventoryChatId: string | null;
   inventoryGroupEnabled: boolean;
 }
@@ -79,9 +76,7 @@ export function attendanceChatIdFor(
 ): string | null {
   if (location === 'office')
     return d.attendanceOfficeEnabled ? (d.attendanceOfficeChatId ?? null) : null;
-  if (location === 'factory')
-    return d.attendanceFactoryEnabled ? (d.attendanceFactoryChatId ?? null) : null;
-  return d.attendanceUnclassifiedEnabled ? (d.attendanceUnclassifiedChatId ?? null) : null;
+  return d.attendanceFactoryEnabled ? (d.attendanceFactoryChatId ?? null) : null;
 }
 
 /** Resolve the inventory destination chat id (null if disabled/unconfigured). */

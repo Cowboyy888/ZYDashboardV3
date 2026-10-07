@@ -111,8 +111,8 @@ export function buildGroupedAttendanceReport(params: {
   employees: ReportEmployee[]; // active employees
   records: ReportAttendance[];
   /** Appended to the title line, e.g. "办公室 Office" — used to split one
-   * shift's report into separate Office/Factory/Unclassified messages. Omit
-   * for the original single combined-report title. */
+   * shift's report into separate Office/Factory messages. Omit for the
+   * original single combined-report title. */
   locationLabel?: string;
 }): GroupedAttendanceReport {
   const { date, shift, groups, employees, records, locationLabel } = params;

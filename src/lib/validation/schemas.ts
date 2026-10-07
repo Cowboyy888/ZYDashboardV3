@@ -265,9 +265,6 @@ export const telegramSettingsSchema = z.object({
   attendanceFactoryChatId: chatIdText,
   attendanceFactoryChatIdClear: z.boolean().default(false),
   attendanceFactoryEnabled: z.boolean().default(true),
-  attendanceUnclassifiedChatId: chatIdText,
-  attendanceUnclassifiedChatIdClear: z.boolean().default(false),
-  attendanceUnclassifiedEnabled: z.boolean().default(true),
 
   // --- Inventory Group destination (daily inventory report) ----------------
   inventoryChatId: chatIdText,

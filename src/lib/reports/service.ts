@@ -41,7 +41,7 @@ async function resolveDestinations(): Promise<TelegramDestinations> {
   const { data } = await admin
     .from('telegram_settings')
     .select(
-      'attendance_office_chat_id, attendance_office_enabled, attendance_factory_chat_id, attendance_factory_enabled, attendance_unclassified_chat_id, attendance_unclassified_enabled, inventory_chat_id, inventory_group_enabled',
+      'attendance_office_chat_id, attendance_office_enabled, attendance_factory_chat_id, attendance_factory_enabled, inventory_chat_id, inventory_group_enabled',
     )
     .eq('id', 1)
     .maybeSingle();
@@ -50,8 +50,6 @@ async function resolveDestinations(): Promise<TelegramDestinations> {
     attendanceOfficeEnabled: data?.attendance_office_enabled ?? true,
     attendanceFactoryChatId: (data?.attendance_factory_chat_id as string | null) ?? null,
     attendanceFactoryEnabled: data?.attendance_factory_enabled ?? true,
-    attendanceUnclassifiedChatId: (data?.attendance_unclassified_chat_id as string | null) ?? null,
-    attendanceUnclassifiedEnabled: data?.attendance_unclassified_enabled ?? true,
     inventoryChatId: (data?.inventory_chat_id as string | null) ?? null,
     inventoryGroupEnabled: data?.inventory_group_enabled ?? true,
   };
@@ -79,15 +77,16 @@ async function recordDestinationHealth(
     .eq('id', 1);
 }
 
-/** Which location bucket an employee's work_location falls into for report routing. */
+/** Which location bucket an employee's work_location falls into for report
+ * routing. Every employee is expected to have one set; a missing/unexpected
+ * value falls back to Factory rather than dropping the employee from
+ * attendance reporting entirely (see 0055_remove_unclassified_attendance_destination.sql). */
 function bucketFor(workLocation: string | null): AttendanceLocation {
-  if (workLocation === 'office') return 'office';
-  if (workLocation === 'factory') return 'factory';
-  return 'unclassified';
+  return workLocation === 'office' ? 'office' : 'factory';
 }
 
 /** Build the grouped attendance report body for a shift + date, split by
- * employees.work_location into Office / Factory / Unclassified. */
+ * employees.work_location into Office / Factory. */
 async function buildAttendanceTexts(
   shift: Shift,
   date: string,
@@ -121,7 +120,6 @@ async function buildAttendanceTexts(
   const employeesByLocation: Record<AttendanceLocation, ReportEmployee[]> = {
     office: [],
     factory: [],
-    unclassified: [],
   };
   for (const e of employees ?? []) {
     const reportEmployee: ReportEmployee = {
@@ -219,11 +217,11 @@ function rollUpOutcomes(reportKey: string, outcomes: SendReportOutcome[]): SendR
 }
 
 /**
- * Send one attendance shift's report, fanned out to its three location
- * destinations (Office / Factory / Unclassified) — each independently
- * idempotent via its own `${type}:${date}:${location}` key, so a partial
- * failure (e.g. Factory's chat id is wrong) can retry just that location
- * without resending to Office/Unclassified, which already succeeded.
+ * Send one attendance shift's report, fanned out to its two location
+ * destinations (Office / Factory) — each independently idempotent via its
+ * own `${type}:${date}:${location}` key, so a partial failure (e.g.
+ * Factory's chat id is wrong) can retry just that location without
+ * resending to Office, which already succeeded.
  */
 async function sendAttendanceReport(
   type: 'attendance_morning' | 'attendance_afternoon',
@@ -429,10 +427,10 @@ export async function sendAttendanceReportManual(
 }
 
 /**
- * Manual "Send now" for ONE attendance shift + ONE location (Office / Factory
- * / Unclassified) — e.g. resend just to Factory because their chat didn't
- * receive it, without re-sending to Office/Unclassified who already got it
- * fine. Bypasses the idempotency guard; still logs the send to sent_reports.
+ * Manual "Send now" for ONE attendance shift + ONE location (Office /
+ * Factory) — e.g. resend just to Factory because their chat didn't receive
+ * it, without re-sending to Office who already got it fine. Bypasses the
+ * idempotency guard; still logs the send to sent_reports.
  */
 export async function sendAttendanceReportManualForLocation(
   type: 'attendance_morning' | 'attendance_afternoon',
@@ -465,7 +463,6 @@ export async function sendAttendanceReportManualForLocation(
 const TEST_DESTINATION_LABEL: Record<ReportGroup, string> = {
   attendance_office: 'Attendance — Office',
   attendance_factory: 'Attendance — Factory',
-  attendance_unclassified: 'Attendance — Unclassified',
   inventory: 'Inventory Group',
 };
 
@@ -481,12 +478,7 @@ export async function testTelegramDestination(
     if (group === 'inventory') {
       chatId = inventoryChatId(destinations);
     } else {
-      const location: AttendanceLocation =
-        group === 'attendance_office'
-          ? 'office'
-          : group === 'attendance_factory'
-            ? 'factory'
-            : 'unclassified';
+      const location: AttendanceLocation = group === 'attendance_office' ? 'office' : 'factory';
       chatId = attendanceChatIdFor(location, destinations);
     }
   }

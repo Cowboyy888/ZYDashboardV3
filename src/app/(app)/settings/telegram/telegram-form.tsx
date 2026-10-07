@@ -24,14 +24,11 @@ import {
   sendAfternoonNow,
   sendMorningOfficeNow,
   sendMorningFactoryNow,
-  sendMorningUnclassifiedNow,
   sendAfternoonOfficeNow,
   sendAfternoonFactoryNow,
-  sendAfternoonUnclassifiedNow,
   sendInventoryNow,
   testAttendanceOfficeConnection,
   testAttendanceFactoryConnection,
-  testAttendanceUnclassifiedConnection,
   testInventoryConnection,
 } from '@/lib/actions/telegram';
 import { formatDateTime } from '@/lib/domain/datetime';
@@ -59,7 +56,6 @@ export interface TelegramSettingsView {
   reportLanguage: 'en' | 'zh';
   attendanceOffice: TelegramDestinationView;
   attendanceFactory: TelegramDestinationView;
-  attendanceUnclassified: TelegramDestinationView;
   inventory: TelegramDestinationView;
 }
 
@@ -289,7 +285,7 @@ export function TelegramForm({
         </CardContent>
       </Card>
 
-      <div className="grid gap-4 lg:grid-cols-3">
+      <div className="grid gap-4 lg:grid-cols-2">
         <DestinationCard
           title={t('tg.attendanceOffice')}
           dest={settings.attendanceOffice}
@@ -309,16 +305,6 @@ export function TelegramForm({
           placeholder="-1001234567891"
           testAction={testAttendanceFactoryConnection}
           fieldError={state?.fieldErrors?.attendanceFactoryChatId}
-        />
-        <DestinationCard
-          title={t('tg.attendanceUnclassified')}
-          dest={settings.attendanceUnclassified}
-          chatIdFieldName="attendanceUnclassifiedChatId"
-          chatIdClearFieldName="attendanceUnclassifiedChatIdClear"
-          groupEnabledFieldName="attendanceUnclassifiedEnabled"
-          placeholder="-1001234567892"
-          testAction={testAttendanceUnclassifiedConnection}
-          fieldError={state?.fieldErrors?.attendanceUnclassifiedChatId}
         />
       </div>
 
@@ -410,11 +396,6 @@ export function TelegramForm({
                 label={t('emp.factory')}
                 confirmText={t('common.confirmSendReport')}
               />
-              <SendNowButton
-                action={sendMorningUnclassifiedNow}
-                label={t('tg.unclassified')}
-                confirmText={t('common.confirmSendReport')}
-              />
             </div>
           </div>
 
@@ -434,11 +415,6 @@ export function TelegramForm({
               <SendNowButton
                 action={sendAfternoonFactoryNow}
                 label={t('emp.factory')}
-                confirmText={t('common.confirmSendReport')}
-              />
-              <SendNowButton
-                action={sendAfternoonUnclassifiedNow}
-                label={t('tg.unclassified')}
                 confirmText={t('common.confirmSendReport')}
               />
             </div>

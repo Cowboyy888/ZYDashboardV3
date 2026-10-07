@@ -502,12 +502,11 @@ export const dictionary = {
   'tg.attendanceGroup': { en: 'Attendance Telegram Group', zh: '考勤 Telegram 群组' },
   'tg.attendanceSchedule': { en: 'Attendance Schedule', zh: '考勤报告时间' },
   'tg.attendanceScheduleDesc': {
-    en: 'Shared by all three attendance destinations below — Office, Factory, and Unclassified all send at the same time.',
-    zh: '以下三个考勤目的地（办公室、工厂、未分类）共用此发送时间。',
+    en: 'Shared by both attendance destinations below — Office and Factory send at the same time.',
+    zh: '以下两个考勤目的地（办公室、工厂）共用此发送时间。',
   },
   'tg.attendanceOffice': { en: 'Attendance — Office', zh: '考勤 — 办公室' },
   'tg.attendanceFactory': { en: 'Attendance — Factory', zh: '考勤 — 工厂' },
-  'tg.attendanceUnclassified': { en: 'Attendance — Unclassified', zh: '考勤 — 未分类' },
   'tg.inventoryGroup': { en: 'Inventory Telegram Group', zh: '库存 Telegram 群组' },
   'tg.groupEnabled': { en: 'Enabled', zh: '已启用' },
   'tg.chatIdCurrent': { en: 'Current chat ID', zh: '当前会话 ID' },
@@ -560,7 +559,6 @@ export const dictionary = {
   },
   'tg.save': { en: 'Save settings', zh: '保存设置' },
   'tg.sendNow': { en: 'Send now', zh: '立即发送' },
-  'tg.unclassified': { en: 'Unclassified', zh: '未分类' },
   'tg.sendAll': { en: 'Send all', zh: '全部发送' },
   'tg.sendNowDesc': {
     en: 'Manually send (or resend a corrected) report to the configured chat.',

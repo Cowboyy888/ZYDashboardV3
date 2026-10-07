@@ -19,10 +19,8 @@ import {
   sendAfternoonNow,
   sendMorningOfficeNow,
   sendMorningFactoryNow,
-  sendMorningUnclassifiedNow,
   sendAfternoonOfficeNow,
   sendAfternoonFactoryNow,
-  sendAfternoonUnclassifiedNow,
   sendInventoryNow,
 } from '@/lib/actions/telegram';
 import type { ActionState } from '@/lib/actions/types';
@@ -83,11 +81,11 @@ export default async function ReportsPage({
   const locationLabel = (loc: AttendanceLocation) =>
     `${ATTENDANCE_LOCATION_LABEL[loc].zh} ${ATTENDANCE_LOCATION_LABEL[loc].en}`;
 
-  // Each shift fans out to three Telegram destinations (Office/Factory/
-  // Unclassified, see Settings > Telegram). The card header's button sends
-  // all three at once; each location also gets its own Send button so one
-  // destination can be resent (e.g. a wrong chat id) without touching the
-  // other two, which already received it fine.
+  // Each shift fans out to two Telegram destinations (Office/Factory, see
+  // Settings > Telegram). The card header's button sends both at once; each
+  // location also gets its own Send button so one destination can be resent
+  // (e.g. a wrong chat id) without touching the other, which already
+  // received it fine.
   const attendanceBody = (
     byLocation: Record<string, { text: string }>,
     locationActions: Record<AttendanceLocation, () => Promise<ActionState>>,
@@ -126,7 +124,6 @@ export default async function ReportsPage({
             attendanceBody(morning, {
               office: sendMorningOfficeNow,
               factory: sendMorningFactoryNow,
-              unclassified: sendMorningUnclassifiedNow,
             }),
             sendMorningNow,
             t('tg.sendAll'),
@@ -138,7 +135,6 @@ export default async function ReportsPage({
             attendanceBody(afternoon, {
               office: sendAfternoonOfficeNow,
               factory: sendAfternoonFactoryNow,
-              unclassified: sendAfternoonUnclassifiedNow,
             }),
             sendAfternoonNow,
             t('tg.sendAll'),

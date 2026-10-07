@@ -33,9 +33,6 @@ export async function saveTelegramSettings(
     attendanceFactoryChatId: formData.get('attendanceFactoryChatId'),
     attendanceFactoryChatIdClear: formData.get('attendanceFactoryChatIdClear') === 'on',
     attendanceFactoryEnabled: formData.get('attendanceFactoryEnabled') === 'on',
-    attendanceUnclassifiedChatId: formData.get('attendanceUnclassifiedChatId'),
-    attendanceUnclassifiedChatIdClear: formData.get('attendanceUnclassifiedChatIdClear') === 'on',
-    attendanceUnclassifiedEnabled: formData.get('attendanceUnclassifiedEnabled') === 'on',
     inventoryChatId: formData.get('inventoryChatId'),
     inventoryChatIdClear: formData.get('inventoryChatIdClear') === 'on',
     inventoryGroupEnabled: formData.get('inventoryGroupEnabled') === 'on',
@@ -50,7 +47,7 @@ export async function saveTelegramSettings(
   const { data: before } = await supabase
     .from('telegram_settings')
     .select(
-      'morning_time, afternoon_time, inventory_time, attendance_office_chat_id, attendance_factory_chat_id, attendance_unclassified_chat_id, inventory_chat_id',
+      'morning_time, afternoon_time, inventory_time, attendance_office_chat_id, attendance_factory_chat_id, inventory_chat_id',
     )
     .eq('id', 1)
     .maybeSingle();
@@ -64,9 +61,6 @@ export async function saveTelegramSettings(
   const factoryChatId = d.attendanceFactoryChatIdClear
     ? null
     : (d.attendanceFactoryChatId ?? undefined);
-  const unclassifiedChatId = d.attendanceUnclassifiedChatIdClear
-    ? null
-    : (d.attendanceUnclassifiedChatId ?? undefined);
   const inventoryChatId = d.inventoryChatIdClear ? null : (d.inventoryChatId ?? undefined);
 
   const { error } = await supabase
@@ -83,8 +77,6 @@ export async function saveTelegramSettings(
       attendance_office_enabled: d.attendanceOfficeEnabled,
       attendance_factory_chat_id: factoryChatId,
       attendance_factory_enabled: d.attendanceFactoryEnabled,
-      attendance_unclassified_chat_id: unclassifiedChatId,
-      attendance_unclassified_enabled: d.attendanceUnclassifiedEnabled,
       inventory_chat_id: inventoryChatId,
       inventory_group_enabled: d.inventoryGroupEnabled,
     })
@@ -104,7 +96,6 @@ export async function saveTelegramSettings(
       inventory_time: before?.inventory_time ?? null,
       attendanceOfficeChatId: before?.attendance_office_chat_id ? '***' : null,
       attendanceFactoryChatId: before?.attendance_factory_chat_id ? '***' : null,
-      attendanceUnclassifiedChatId: before?.attendance_unclassified_chat_id ? '***' : null,
       inventoryChatId: before?.inventory_chat_id ? '***' : null,
     },
     newValue: {
@@ -117,18 +108,11 @@ export async function saveTelegramSettings(
       reportLanguage: d.reportLanguage,
       attendanceOfficeEnabled: d.attendanceOfficeEnabled,
       attendanceFactoryEnabled: d.attendanceFactoryEnabled,
-      attendanceUnclassifiedEnabled: d.attendanceUnclassifiedEnabled,
       inventoryGroupEnabled: d.inventoryGroupEnabled,
       attendanceOfficeChatId: finalChatId(officeChatId, before?.attendance_office_chat_id)
         ? '***'
         : null,
       attendanceFactoryChatId: finalChatId(factoryChatId, before?.attendance_factory_chat_id)
-        ? '***'
-        : null,
-      attendanceUnclassifiedChatId: finalChatId(
-        unclassifiedChatId,
-        before?.attendance_unclassified_chat_id,
-      )
         ? '***'
         : null,
       inventoryChatId: finalChatId(inventoryChatId, before?.inventory_chat_id) ? '***' : null,
@@ -185,8 +169,8 @@ export async function sendAfternoonNow(): Promise<ActionState> {
 
 /**
  * Admin-only "Send now" for ONE attendance shift + ONE location (Office /
- * Factory / Unclassified) — lets an admin resend to just the destination
- * that needs it, without touching the other two. Bypasses idempotency.
+ * Factory) — lets an admin resend to just the destination that needs it,
+ * without touching the other one. Bypasses idempotency.
  */
 async function sendAttendanceNow(
   type: 'attendance_morning' | 'attendance_afternoon',
@@ -212,17 +196,11 @@ export async function sendMorningOfficeNow(): Promise<ActionState> {
 export async function sendMorningFactoryNow(): Promise<ActionState> {
   return sendAttendanceNow('attendance_morning', 'factory');
 }
-export async function sendMorningUnclassifiedNow(): Promise<ActionState> {
-  return sendAttendanceNow('attendance_morning', 'unclassified');
-}
 export async function sendAfternoonOfficeNow(): Promise<ActionState> {
   return sendAttendanceNow('attendance_afternoon', 'office');
 }
 export async function sendAfternoonFactoryNow(): Promise<ActionState> {
   return sendAttendanceNow('attendance_afternoon', 'factory');
-}
-export async function sendAfternoonUnclassifiedNow(): Promise<ActionState> {
-  return sendAttendanceNow('attendance_afternoon', 'unclassified');
 }
 
 /**
@@ -252,11 +230,6 @@ export async function testAttendanceOfficeConnection(typedChatId?: string): Prom
 }
 export async function testAttendanceFactoryConnection(typedChatId?: string): Promise<ActionState> {
   return testConnection('attendance_factory', typedChatId);
-}
-export async function testAttendanceUnclassifiedConnection(
-  typedChatId?: string,
-): Promise<ActionState> {
-  return testConnection('attendance_unclassified', typedChatId);
 }
 export async function testInventoryConnection(typedChatId?: string): Promise<ActionState> {
   return testConnection('inventory', typedChatId);

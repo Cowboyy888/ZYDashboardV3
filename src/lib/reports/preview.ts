@@ -17,19 +17,19 @@ import { renderInventoryReport, type InventoryReportRow } from '@/lib/domain/rep
 import { buildInventoryRows } from '@/lib/domain/inventory-view';
 import type { SkuRow } from '@/lib/db/types';
 
-/** Which location bucket an employee's work_location falls into for report routing. */
+/** Which location bucket an employee's work_location falls into for report
+ * routing. A missing/unexpected value falls back to Factory — see the same
+ * fallback in reports/service.ts. */
 function bucketFor(workLocation: string | null): AttendanceLocation {
-  if (workLocation === 'office') return 'office';
-  if (workLocation === 'factory') return 'factory';
-  return 'unclassified';
+  return workLocation === 'office' ? 'office' : 'factory';
 }
 
 /**
  * Build the grouped attendance report for a date + shift from LIVE records,
  * split by employees.work_location, using the request-scoped (RLS-respecting)
  * client. Used by the visible Report Preview page — the exact same builder
- * (and the same Office/Factory/Unclassified split) the Telegram jobs use, so
- * the preview matches what is actually sent.
+ * (and the same Office/Factory split) the Telegram jobs use, so the preview
+ * matches what is actually sent.
  */
 export async function buildAttendancePreview(
   date: string,
@@ -64,7 +64,6 @@ export async function buildAttendancePreview(
   const employeesByLocation: Record<AttendanceLocation, ReportEmployee[]> = {
     office: [],
     factory: [],
-    unclassified: [],
   };
   for (const e of employees ?? []) {
     const reportEmployee: ReportEmployee = {

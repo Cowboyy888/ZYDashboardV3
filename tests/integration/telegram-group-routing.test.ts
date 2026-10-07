@@ -11,18 +11,16 @@ import {
 
 /**
  * Proves, at the send layer (not just the pure routing function), that each
- * of the three attendance destinations (Office/Factory/Unclassified) and the
- * Inventory destination never cross — even when all four are fully
- * configured and enabled at the same time.
+ * of the two attendance destinations (Office/Factory) and the Inventory
+ * destination never cross — even when all three are fully configured and
+ * enabled at the same time.
  */
-describe('acceptance — attendance (office/factory/unclassified) and inventory reports never cross destinations', () => {
+describe('acceptance — attendance (office/factory) and inventory reports never cross destinations', () => {
   const destinations: TelegramDestinations = {
     attendanceOfficeChatId: '-1001111111111',
     attendanceOfficeEnabled: true,
     attendanceFactoryChatId: '-1003333333333',
     attendanceFactoryEnabled: true,
-    attendanceUnclassifiedChatId: '-1004444444444',
-    attendanceUnclassifiedEnabled: true,
     inventoryChatId: '-1002222222222',
     inventoryGroupEnabled: true,
   };
@@ -70,7 +68,7 @@ describe('acceptance — attendance (office/factory/unclassified) and inventory 
       await sendAttendance(client, store, 'attendance_morning', location, date);
     }
 
-    expect(client.sent).toHaveLength(3);
+    expect(client.sent).toHaveLength(2);
     const byLocation = new Map(
       ATTENDANCE_LOCATIONS.map((loc) => [attendanceChatIdFor(loc, destinations), loc]),
     );
@@ -78,8 +76,8 @@ describe('acceptance — attendance (office/factory/unclassified) and inventory 
       expect(byLocation.has(msg.chatId)).toBe(true);
       expect(msg.chatId).not.toBe(destinations.inventoryChatId);
     }
-    // All three resolved chat ids are distinct.
-    expect(new Set(client.sent.map((m) => m.chatId)).size).toBe(3);
+    // Both resolved chat ids are distinct.
+    expect(new Set(client.sent.map((m) => m.chatId)).size).toBe(2);
   });
 
   it('sends the inventory report only to the Inventory destination chat id', async () => {
@@ -96,7 +94,7 @@ describe('acceptance — attendance (office/factory/unclassified) and inventory 
     );
   });
 
-  it('a full day of both shifts (all locations) plus inventory never mixes destinations, and logs record the correct group', async () => {
+  it('a full day of both shifts (both locations) plus inventory never mixes destinations, and logs record the correct group', async () => {
     const client = new MockTelegramClient();
     const store = new InMemorySentReportStore();
     const date = '2026-07-25';
@@ -107,7 +105,7 @@ describe('acceptance — attendance (office/factory/unclassified) and inventory 
     }
     await sendInventory(client, store, date);
 
-    expect(client.sent).toHaveLength(7); // 3 locations x 2 shifts + 1 inventory
+    expect(client.sent).toHaveLength(5); // 2 locations x 2 shifts + 1 inventory
 
     for (const location of ATTENDANCE_LOCATIONS) {
       const entry = store.entries.find(
@@ -122,7 +120,7 @@ describe('acceptance — attendance (office/factory/unclassified) and inventory 
     expect(invEntry?.chatId).toBe(destinations.inventoryChatId);
   });
 
-  it('an unconfigured Inventory destination blocks only inventory, attendance still sends to all three locations', async () => {
+  it('an unconfigured Inventory destination blocks only inventory, attendance still sends to both locations', async () => {
     const client = new MockTelegramClient();
     const store = new InMemorySentReportStore();
     const partial: TelegramDestinations = { ...destinations, inventoryChatId: null };
@@ -142,10 +140,10 @@ describe('acceptance — attendance (office/factory/unclassified) and inventory 
     const inventory = await sendInventory(client, store, date, partial);
 
     expect(inventory.status).toBe('no_chat');
-    expect(client.sent).toHaveLength(3);
+    expect(client.sent).toHaveLength(2);
   });
 
-  it('a disabled Factory destination blocks only Factory — Office, Unclassified, and Inventory still send', async () => {
+  it('a disabled Factory destination blocks only Factory — Office and Inventory still send', async () => {
     const client = new MockTelegramClient();
     const store = new InMemorySentReportStore();
     const partial: TelegramDestinations = { ...destinations, attendanceFactoryEnabled: false };
@@ -167,20 +165,11 @@ describe('acceptance — attendance (office/factory/unclassified) and inventory 
       date,
       partial,
     );
-    const unclassified = await sendAttendance(
-      client,
-      store,
-      'attendance_morning',
-      'unclassified',
-      date,
-      partial,
-    );
     const inventory = await sendInventory(client, store, date, partial);
 
     expect(factory.status).toBe('no_chat');
     expect(office.status).toBe('sent');
-    expect(unclassified.status).toBe('sent');
     expect(inventory.status).toBe('sent');
-    expect(client.sent).toHaveLength(3);
+    expect(client.sent).toHaveLength(2);
   });
 });

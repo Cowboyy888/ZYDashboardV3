@@ -41,14 +41,6 @@ export default async function TelegramSettingsPage() {
       lastError: row?.attendance_factory_last_error ?? null,
       lastSentAt: row?.attendance_factory_last_sent_at ?? null,
     },
-    attendanceUnclassified: {
-      configured: !!row?.attendance_unclassified_chat_id,
-      masked: maskChatId(row?.attendance_unclassified_chat_id),
-      groupEnabled: row?.attendance_unclassified_enabled ?? true,
-      lastStatus: row?.attendance_unclassified_last_status ?? null,
-      lastError: row?.attendance_unclassified_last_error ?? null,
-      lastSentAt: row?.attendance_unclassified_last_sent_at ?? null,
-    },
     inventory: {
       configured: !!row?.inventory_chat_id,
       masked: maskChatId(row?.inventory_chat_id),

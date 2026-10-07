@@ -348,11 +348,6 @@ export interface TelegramSettingsRow {
   attendance_factory_last_status: 'sent' | 'failed' | null;
   attendance_factory_last_error: string | null;
   attendance_factory_last_sent_at: string | null;
-  attendance_unclassified_chat_id: string | null;
-  attendance_unclassified_enabled: boolean;
-  attendance_unclassified_last_status: 'sent' | 'failed' | null;
-  attendance_unclassified_last_error: string | null;
-  attendance_unclassified_last_sent_at: string | null;
   // --- Inventory Group destination (daily inventory report) -----------------
   inventory_chat_id: string | null;
   inventory_group_enabled: boolean;

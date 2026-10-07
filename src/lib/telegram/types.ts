@@ -27,7 +27,7 @@ export type TelegramDestinationGroup =
   | 'attendance' // legacy value — historical sent_reports rows only, never written by new code
   | 'attendance_office'
   | 'attendance_factory'
-  | 'attendance_unclassified'
+  | 'attendance_unclassified' // legacy value — historical sent_reports rows only, never written by new code
   | 'inventory';
 
 export interface SentReportStore {
