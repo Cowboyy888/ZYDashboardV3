@@ -6,12 +6,16 @@ import { businessDate, currentLocalTime } from '@/lib/domain/datetime';
 import type { Shift } from '@/lib/domain/attendance';
 import {
   dueReports,
-  reportGroup,
-  destinationChatId,
+  attendanceGroupFor,
+  attendanceChatIdFor,
+  inventoryChatId,
+  ATTENDANCE_LOCATIONS,
+  ATTENDANCE_LOCATION_LABEL,
   SCHEDULED_REPORT_TYPES,
   type ScheduledReportType,
   type ScheduleSettings,
   type ReportGroup,
+  type AttendanceLocation,
   type TelegramDestinations,
 } from '@/lib/domain/report-schedule';
 import {
@@ -31,19 +35,23 @@ const SHIFT_FOR: Record<'attendance_morning' | 'attendance_afternoon', Shift> = 
   attendance_afternoon: 'afternoon',
 };
 
-/** Read both destinations' chat id + enabled switch (never their status/error). */
+/** Read every destination's chat id + enabled switch (never their status/error). */
 async function resolveDestinations(): Promise<TelegramDestinations> {
   const admin = createSupabaseAdminClient();
   const { data } = await admin
     .from('telegram_settings')
     .select(
-      'attendance_chat_id, attendance_group_enabled, inventory_chat_id, inventory_group_enabled',
+      'attendance_office_chat_id, attendance_office_enabled, attendance_factory_chat_id, attendance_factory_enabled, attendance_unclassified_chat_id, attendance_unclassified_enabled, inventory_chat_id, inventory_group_enabled',
     )
     .eq('id', 1)
     .maybeSingle();
   return {
-    attendanceChatId: (data?.attendance_chat_id as string | null) ?? null,
-    attendanceGroupEnabled: data?.attendance_group_enabled ?? true,
+    attendanceOfficeChatId: (data?.attendance_office_chat_id as string | null) ?? null,
+    attendanceOfficeEnabled: data?.attendance_office_enabled ?? true,
+    attendanceFactoryChatId: (data?.attendance_factory_chat_id as string | null) ?? null,
+    attendanceFactoryEnabled: data?.attendance_factory_enabled ?? true,
+    attendanceUnclassifiedChatId: (data?.attendance_unclassified_chat_id as string | null) ?? null,
+    attendanceUnclassifiedEnabled: data?.attendance_unclassified_enabled ?? true,
     inventoryChatId: (data?.inventory_chat_id as string | null) ?? null,
     inventoryGroupEnabled: data?.inventory_group_enabled ?? true,
   };
@@ -71,8 +79,19 @@ async function recordDestinationHealth(
     .eq('id', 1);
 }
 
-/** Build the grouped attendance report body for a shift + date. */
-async function buildAttendanceText(shift: Shift, date: string): Promise<string> {
+/** Which location bucket an employee's work_location falls into for report routing. */
+function bucketFor(workLocation: string | null): AttendanceLocation {
+  if (workLocation === 'office') return 'office';
+  if (workLocation === 'factory') return 'factory';
+  return 'unclassified';
+}
+
+/** Build the grouped attendance report body for a shift + date, split by
+ * employees.work_location into Office / Factory / Unclassified. */
+async function buildAttendanceTexts(
+  shift: Shift,
+  date: string,
+): Promise<Record<AttendanceLocation, string>> {
   const admin = createSupabaseAdminClient();
   const [{ data: groups }, { data: employees }, { data: attendance }] = await Promise.all([
     admin
@@ -84,7 +103,7 @@ async function buildAttendanceText(shift: Shift, date: string): Promise<string> 
     admin
       .from('employees')
       .select(
-        'id, attendance_group_id, display_name, name_english, name_khmer, name_chinese, job_title, label',
+        'id, attendance_group_id, display_name, name_english, name_khmer, name_chinese, job_title, label, work_location',
       )
       .eq('is_active', true),
     admin
@@ -99,117 +118,187 @@ async function buildAttendanceText(shift: Shift, date: string): Promise<string> 
     name: g.name as string,
   }));
 
-  const reportEmployees: ReportEmployee[] = (employees ?? []).map((e) => ({
-    id: e.id as string,
-    groupId: (e.attendance_group_id as string | null) ?? null,
-    displayName:
-      (e.display_name as string | null) ||
-      (e.name_english as string | null) ||
-      (e.name_khmer as string | null) ||
-      (e.name_chinese as string | null) ||
-      (e.id as string),
-    jobTitle: (e.job_title as string | null) ?? null,
-    label: (e.label as string | null) ?? null,
-  }));
+  const employeesByLocation: Record<AttendanceLocation, ReportEmployee[]> = {
+    office: [],
+    factory: [],
+    unclassified: [],
+  };
+  for (const e of employees ?? []) {
+    const reportEmployee: ReportEmployee = {
+      id: e.id as string,
+      groupId: (e.attendance_group_id as string | null) ?? null,
+      displayName:
+        (e.display_name as string | null) ||
+        (e.name_english as string | null) ||
+        (e.name_khmer as string | null) ||
+        (e.name_chinese as string | null) ||
+        (e.id as string),
+      jobTitle: (e.job_title as string | null) ?? null,
+      label: (e.label as string | null) ?? null,
+    };
+    employeesByLocation[bucketFor(e.work_location as string | null)].push(reportEmployee);
+  }
 
   const records: ReportAttendance[] = (attendance ?? []).map((a) => ({
     employeeId: a.employee_id as string,
     status: a.status,
   }));
 
-  return buildGroupedAttendanceReport({
-    date,
-    shift,
-    groups: reportGroups,
-    employees: reportEmployees,
-    records,
-  }).text;
+  const texts = {} as Record<AttendanceLocation, string>;
+  for (const location of ATTENDANCE_LOCATIONS) {
+    texts[location] = buildGroupedAttendanceReport({
+      date,
+      shift,
+      groups: reportGroups,
+      employees: employeesByLocation[location],
+      records,
+      locationLabel: `${ATTENDANCE_LOCATION_LABEL[location].zh} ${ATTENDANCE_LOCATION_LABEL[location].en}`,
+    }).text;
+  }
+  return texts;
 }
 
-/** Build the message body for a report type + business date. */
-export async function buildReportText(type: ReportType, date: string): Promise<string> {
-  if (type === 'inventory') {
-    const admin = createSupabaseAdminClient();
-    const [{ data: skus }, { data: families }, { data: locations }, { data: balances }] =
-      await Promise.all([
-        admin.from('skus').select('*').eq('is_active', true),
-        admin.from('product_families').select('*'),
-        admin.from('locations').select('*'),
-        admin.from('stock_balances').select('*'),
-      ]);
-    const rows = buildInventoryRows(skus ?? [], families ?? [], locations ?? [], balances ?? []);
-    const skuById = new Map(((skus ?? []) as SkuRow[]).map((s) => [s.id, s]));
-    const reportRows: InventoryReportRow[] = rows
-      .filter((r) => r.total > 0 || r.isLow)
-      .map((r) => {
-        const sku = skuById.get(r.skuId);
-        return {
-          skuLabel: r.label,
-          familyName: r.familyName,
-          condition: r.condition,
-          unit: r.unit,
-          storageRoom: r.storageRoom,
-          warehouse: r.warehouse,
-          total: r.total,
-          minimumLevel: r.minimumLevel,
-          isLow: r.isLow,
-          diameter: sku?.diameter ?? null,
-          size: sku?.size ?? null,
-          hole: sku?.hole ?? null,
-          rodCount: sku?.rod_count ?? null,
-          extra: sku?.extra ?? null,
-          specType: r.specType,
-        };
-      });
+/** Build the inventory report body for a business date. */
+async function buildInventoryText(date: string): Promise<string> {
+  const admin = createSupabaseAdminClient();
+  const [{ data: skus }, { data: families }, { data: locations }, { data: balances }] =
+    await Promise.all([
+      admin.from('skus').select('*').eq('is_active', true),
+      admin.from('product_families').select('*'),
+      admin.from('locations').select('*'),
+      admin.from('stock_balances').select('*'),
+    ]);
+  const rows = buildInventoryRows(skus ?? [], families ?? [], locations ?? [], balances ?? []);
+  const skuById = new Map(((skus ?? []) as SkuRow[]).map((s) => [s.id, s]));
+  const reportRows: InventoryReportRow[] = rows
+    .filter((r) => r.total > 0 || r.isLow)
+    .map((r) => {
+      const sku = skuById.get(r.skuId);
+      return {
+        skuLabel: r.label,
+        familyName: r.familyName,
+        condition: r.condition,
+        unit: r.unit,
+        storageRoom: r.storageRoom,
+        warehouse: r.warehouse,
+        total: r.total,
+        minimumLevel: r.minimumLevel,
+        isLow: r.isLow,
+        diameter: sku?.diameter ?? null,
+        size: sku?.size ?? null,
+        hole: sku?.hole ?? null,
+        rodCount: sku?.rod_count ?? null,
+        extra: sku?.extra ?? null,
+        specType: r.specType,
+      };
+    });
 
-    return renderInventoryReport(reportRows, { businessDate: date });
+  return renderInventoryReport(reportRows, { businessDate: date });
+}
+
+/**
+ * Collapse several per-destination outcomes (one per attendance location)
+ * into the single outcome a caller (dispatch log, "Send now" button) sees.
+ * Priority: any real failure wins (so it's never silently hidden) > any real
+ * send > skipped (already sent) > no_chat (every location disabled/unconfigured).
+ */
+function rollUpOutcomes(reportKey: string, outcomes: SendReportOutcome[]): SendReportOutcome {
+  const byStatus = (s: SendReportOutcome['status']) => outcomes.filter((o) => o.status === s);
+  const failed = byStatus('failed');
+  if (failed.length > 0) {
+    return {
+      status: 'failed',
+      reportKey,
+      detail: failed.map((o) => `${o.reportKey}: ${o.detail ?? 'unknown error'}`).join('; '),
+    };
   }
+  if (byStatus('sent').length > 0) return { status: 'sent', reportKey };
+  if (byStatus('skipped').length > 0)
+    return { status: 'skipped', reportKey, detail: 'already sent' };
+  return { status: 'no_chat', reportKey, detail: 'no chat id configured' };
+}
 
-  return buildAttendanceText(SHIFT_FOR[type], date);
+/**
+ * Send one attendance shift's report, fanned out to its three location
+ * destinations (Office / Factory / Unclassified) — each independently
+ * idempotent via its own `${type}:${date}:${location}` key, so a partial
+ * failure (e.g. Factory's chat id is wrong) can retry just that location
+ * without resending to Office/Unclassified, which already succeeded.
+ */
+async function sendAttendanceReport(
+  type: 'attendance_morning' | 'attendance_afternoon',
+  date: string,
+  destinations: TelegramDestinations,
+  store: SupabaseSentReportStore,
+): Promise<SendReportOutcome> {
+  const texts = await buildAttendanceTexts(SHIFT_FOR[type], date);
+  const outcomes: SendReportOutcome[] = [];
+  for (const location of ATTENDANCE_LOCATIONS) {
+    const group = attendanceGroupFor(location);
+    const outcome = await sendReportOnce(getTelegramClient(), store, {
+      reportKey: `${type}:${date}:${location}`,
+      reportType: type,
+      businessDate: date,
+      chatId: attendanceChatIdFor(location, destinations),
+      destinationGroup: group,
+      text: texts[location],
+    });
+    await recordDestinationHealth(group, outcome);
+    outcomes.push(outcome);
+  }
+  return rollUpOutcomes(`${type}:${date}`, outcomes);
 }
 
 /**
  * Scheduled send: idempotent. Safe to call from a retried cron job — a report
- * already recorded as sent for (type, date) will be skipped. Routed to
- * EXACTLY ONE destination (`reportGroup(type)`); the other group's chat id is
- * never read for this type, let alone sent to.
+ * already recorded as sent for (type, date[, location]) will be skipped.
+ * Attendance types fan out to all three location destinations; inventory is
+ * routed to exactly its own destination, same as before.
  */
 export async function runScheduledReport(
   type: ReportType,
   date = businessDate(),
 ): Promise<SendReportOutcome> {
   const destinations = await resolveDestinations();
-  const chatId = destinationChatId(type, destinations);
-  const group = reportGroup(type);
-  const text = await buildReportText(type, date);
-  const outcome = await sendReportOnce(getTelegramClient(), new SupabaseSentReportStore(), {
-    reportKey: `${type}:${date}`,
-    reportType: type,
-    businessDate: date,
-    chatId,
-    destinationGroup: group,
-    text,
-  });
-  await recordDestinationHealth(group, outcome);
-  return outcome;
+  const store = new SupabaseSentReportStore();
+
+  if (type === 'inventory') {
+    const chatId = inventoryChatId(destinations);
+    const text = await buildInventoryText(date);
+    const outcome = await sendReportOnce(getTelegramClient(), store, {
+      reportKey: `${type}:${date}`,
+      reportType: type,
+      businessDate: date,
+      chatId,
+      destinationGroup: 'inventory',
+      text,
+    });
+    await recordDestinationHealth('inventory', outcome);
+    return outcome;
+  }
+
+  return sendAttendanceReport(type, date, destinations, store);
 }
 
 /**
- * Which scheduled reports have ALREADY been sent for `date` (canonical key
- * `<type>:<date>`, status 'sent'). Manual "Send now" rows use a different key
- * and never suppress the scheduled send.
+ * Which scheduled reports have ALREADY been fully sent for `date`. Inventory
+ * is one key; an attendance type needs ALL THREE of its location keys sent
+ * before the scheduler stops considering it due — so a partial prior failure
+ * (one location down) still gets retried for just that location. Manual
+ * "Send now" rows use a different key prefix and never suppress this.
  */
 async function alreadySentTypes(date: string): Promise<ScheduledReportType[]> {
   const admin = createSupabaseAdminClient();
-  const keys = SCHEDULED_REPORT_TYPES.map((t) => `${t}:${date}`);
   const { data } = await admin
     .from('sent_reports')
-    .select('report_type, report_key, status')
+    .select('report_key')
     .eq('business_date', date)
-    .eq('status', 'sent')
-    .in('report_key', keys);
-  const sent = new Set((data ?? []).map((r) => r.report_type as string));
-  return SCHEDULED_REPORT_TYPES.filter((t) => sent.has(t));
+    .eq('status', 'sent');
+  const sentKeys = new Set((data ?? []).map((r) => r.report_key as string));
+  return SCHEDULED_REPORT_TYPES.filter((t) => {
+    if (t === 'inventory') return sentKeys.has(`inventory:${date}`);
+    return ATTENDANCE_LOCATIONS.every((loc) => sentKeys.has(`${t}:${date}:${loc}`));
+  });
 }
 
 export interface DispatchResult {
@@ -260,31 +349,23 @@ export async function dispatchScheduledReports(
   return { date, nowLocal, due, sent };
 }
 
-/**
- * Manual "Send now": bypasses the idempotency guard so an Admin can resend a
- * corrected report, but still logs the send to sent_reports for the trail.
- * Routed to the same single destination a scheduled send of this type would use.
- */
-export async function sendReportManual(
-  type: ReportType,
-  date = businessDate(),
+/** One manual (idempotency-bypassing) send to a single destination, logged to sent_reports. */
+async function sendManualToDestination(
+  group: ReportGroup,
+  reportType: string,
+  date: string,
+  chatId: string | null,
+  text: string,
 ): Promise<SendReportOutcome> {
-  const destinations = await resolveDestinations();
-  const chatId = destinationChatId(type, destinations);
-  const group = reportGroup(type);
-  const text = await buildReportText(type, date);
+  const reportKey = `manual:${reportType}:${date}:${group}:${Date.now()}`;
   if (!chatId) {
-    return {
-      status: 'no_chat',
-      reportKey: `manual:${type}:${date}`,
-      detail: 'no chat id configured',
-    };
+    return { status: 'no_chat', reportKey, detail: 'no chat id configured' };
   }
   const result = await getTelegramClient().sendMessage(chatId, text);
   const admin = createSupabaseAdminClient();
   await admin.from('sent_reports').insert({
-    report_key: `manual:${type}:${date}:${Date.now()}`,
-    report_type: type,
+    report_key: reportKey,
+    report_type: reportType,
     business_date: date,
     chat_id: chatId,
     destination_group: group,
@@ -293,12 +374,45 @@ export async function sendReportManual(
   });
   const outcome: SendReportOutcome = {
     status: result.ok ? 'sent' : 'failed',
-    reportKey: `manual:${type}:${date}`,
+    reportKey,
     detail: result.error,
     result,
   };
   await recordDestinationHealth(group, outcome);
   return outcome;
+}
+
+/**
+ * Manual "Send now": bypasses the idempotency guard so an Admin can resend a
+ * corrected report, but still logs each send to sent_reports for the trail.
+ * Attendance types fan out to all three location destinations (same as a
+ * scheduled send); inventory goes to its own single destination.
+ */
+export async function sendReportManual(
+  type: ReportType,
+  date = businessDate(),
+): Promise<SendReportOutcome> {
+  const destinations = await resolveDestinations();
+
+  if (type === 'inventory') {
+    const text = await buildInventoryText(date);
+    return sendManualToDestination('inventory', type, date, inventoryChatId(destinations), text);
+  }
+
+  const texts = await buildAttendanceTexts(SHIFT_FOR[type], date);
+  const outcomes: SendReportOutcome[] = [];
+  for (const location of ATTENDANCE_LOCATIONS) {
+    outcomes.push(
+      await sendManualToDestination(
+        attendanceGroupFor(location),
+        type,
+        date,
+        attendanceChatIdFor(location, destinations),
+        texts[location],
+      ),
+    );
+  }
+  return rollUpOutcomes(`manual:${type}:${date}`, outcomes);
 }
 
 /**
@@ -313,6 +427,13 @@ export async function sendReportManual(
  * not-yet-saved first-time setup, which is confusing since the id is right
  * there in the input).
  */
+const TEST_DESTINATION_LABEL: Record<ReportGroup, string> = {
+  attendance_office: 'Attendance — Office',
+  attendance_factory: 'Attendance — Factory',
+  attendance_unclassified: 'Attendance — Unclassified',
+  inventory: 'Inventory Group',
+};
+
 export async function testTelegramDestination(
   group: ReportGroup,
   overrideChatId?: string,
@@ -322,14 +443,17 @@ export async function testTelegramDestination(
     chatId = overrideChatId;
   } else {
     const destinations = await resolveDestinations();
-    chatId =
-      group === 'attendance'
-        ? destinations.attendanceGroupEnabled
-          ? destinations.attendanceChatId
-          : null
-        : destinations.inventoryGroupEnabled
-          ? destinations.inventoryChatId
-          : null;
+    if (group === 'inventory') {
+      chatId = inventoryChatId(destinations);
+    } else {
+      const location: AttendanceLocation =
+        group === 'attendance_office'
+          ? 'office'
+          : group === 'attendance_factory'
+            ? 'factory'
+            : 'unclassified';
+      chatId = attendanceChatIdFor(location, destinations);
+    }
   }
 
   const reportKey = `test:${group}:${Date.now()}`;
@@ -337,7 +461,7 @@ export async function testTelegramDestination(
     return { status: 'no_chat', reportKey, detail: 'no chat id configured' };
   }
 
-  const label = group === 'attendance' ? 'Attendance Group' : 'Inventory Group';
+  const label = TEST_DESTINATION_LABEL[group];
   const result = await getTelegramClient().sendMessage(
     chatId,
     `✅ Zysteel Operations — ${label} connection test`,

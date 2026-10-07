@@ -23,7 +23,9 @@ import {
   sendMorningNow,
   sendAfternoonNow,
   sendInventoryNow,
-  testAttendanceConnection,
+  testAttendanceOfficeConnection,
+  testAttendanceFactoryConnection,
+  testAttendanceUnclassifiedConnection,
   testInventoryConnection,
 } from '@/lib/actions/telegram';
 import { formatDateTime } from '@/lib/domain/datetime';
@@ -49,7 +51,9 @@ export interface TelegramSettingsView {
   afternoonTime: string;
   inventoryTime: string;
   reportLanguage: 'en' | 'zh';
-  attendance: TelegramDestinationView;
+  attendanceOffice: TelegramDestinationView;
+  attendanceFactory: TelegramDestinationView;
+  attendanceUnclassified: TelegramDestinationView;
   inventory: TelegramDestinationView;
 }
 
@@ -95,7 +99,7 @@ function DestinationCard({
   placeholder: string;
   testAction: (typedChatId?: string) => Promise<ActionState>;
   fieldError?: string;
-  children: React.ReactNode;
+  children?: React.ReactNode;
 }) {
   const { t, m } = useT();
   const [clear, setClear] = useState(false);
@@ -155,7 +159,7 @@ function DestinationCard({
         />
         <LastSendStatus dest={dest} />
 
-        <div className="space-y-3 border-t pt-3">{children}</div>
+        {children && <div className="space-y-3 border-t pt-3">{children}</div>}
       </CardContent>
     </Card>
   );
@@ -213,106 +217,136 @@ export function TelegramForm({
         <strong>{t('tg.timezone')}</strong>
       </p>
 
-      <div className="grid gap-4 lg:grid-cols-2">
+      <Card>
+        <CardHeader>
+          <CardTitle className="text-base">{t('tg.attendanceSchedule')}</CardTitle>
+        </CardHeader>
+        <CardContent>
+          <p className="mb-3 text-xs text-muted-foreground">{t('tg.attendanceScheduleDesc')}</p>
+          <div className="grid gap-4 sm:grid-cols-2">
+            <div className="space-y-1.5">
+              <label className="flex items-center gap-2 text-sm font-medium">
+                <input
+                  type="checkbox"
+                  name="morningEnabled"
+                  defaultChecked={settings.morningEnabled}
+                />
+                {t('tg.morning')}
+              </label>
+              <Label htmlFor="morningTime" className="text-xs text-muted-foreground">
+                {t('tg.reportTime')}
+              </Label>
+              <Input
+                id="morningTime"
+                name="morningTime"
+                type="time"
+                value={morningTime}
+                onChange={(e) => setMorningTime(e.target.value)}
+                className={earlyMorning ? 'border-warning' : ''}
+              />
+              {earlyMorning && (
+                <p className="flex items-start gap-1 text-xs text-warning">
+                  <AlertTriangle className="mt-0.5 h-3.5 w-3.5 shrink-0" />
+                  {t('tg.earlyWarnMorning')}
+                </p>
+              )}
+            </div>
+
+            <div className="space-y-1.5">
+              <label className="flex items-center gap-2 text-sm font-medium">
+                <input
+                  type="checkbox"
+                  name="afternoonEnabled"
+                  defaultChecked={settings.afternoonEnabled}
+                />
+                {t('tg.afternoon')}
+              </label>
+              <Label htmlFor="afternoonTime" className="text-xs text-muted-foreground">
+                {t('tg.reportTime')}
+              </Label>
+              <Input
+                id="afternoonTime"
+                name="afternoonTime"
+                type="time"
+                value={afternoonTime}
+                onChange={(e) => setAfternoonTime(e.target.value)}
+                className={earlyAfternoon ? 'border-warning' : ''}
+              />
+              {earlyAfternoon && (
+                <p className="flex items-start gap-1 text-xs text-warning">
+                  <AlertTriangle className="mt-0.5 h-3.5 w-3.5 shrink-0" />
+                  {t('tg.earlyWarnAfternoon')}
+                </p>
+              )}
+            </div>
+          </div>
+        </CardContent>
+      </Card>
+
+      <div className="grid gap-4 lg:grid-cols-3">
         <DestinationCard
-          title={t('tg.attendanceGroup')}
-          dest={settings.attendance}
-          chatIdFieldName="attendanceChatId"
-          chatIdClearFieldName="attendanceChatIdClear"
-          groupEnabledFieldName="attendanceGroupEnabled"
+          title={t('tg.attendanceOffice')}
+          dest={settings.attendanceOffice}
+          chatIdFieldName="attendanceOfficeChatId"
+          chatIdClearFieldName="attendanceOfficeChatIdClear"
+          groupEnabledFieldName="attendanceOfficeEnabled"
           placeholder="-1001234567890"
-          testAction={testAttendanceConnection}
-          fieldError={state?.fieldErrors?.attendanceChatId}
-        >
-          <div className="space-y-1.5">
-            <label className="flex items-center gap-2 text-sm font-medium">
-              <input
-                type="checkbox"
-                name="morningEnabled"
-                defaultChecked={settings.morningEnabled}
-              />
-              {t('tg.morning')}
-            </label>
-            <Label htmlFor="morningTime" className="text-xs text-muted-foreground">
-              {t('tg.reportTime')}
-            </Label>
-            <Input
-              id="morningTime"
-              name="morningTime"
-              type="time"
-              value={morningTime}
-              onChange={(e) => setMorningTime(e.target.value)}
-              className={earlyMorning ? 'border-warning' : ''}
-            />
-            {earlyMorning && (
-              <p className="flex items-start gap-1 text-xs text-warning">
-                <AlertTriangle className="mt-0.5 h-3.5 w-3.5 shrink-0" />
-                {t('tg.earlyWarnMorning')}
-              </p>
-            )}
-          </div>
-
-          <div className="space-y-1.5">
-            <label className="flex items-center gap-2 text-sm font-medium">
-              <input
-                type="checkbox"
-                name="afternoonEnabled"
-                defaultChecked={settings.afternoonEnabled}
-              />
-              {t('tg.afternoon')}
-            </label>
-            <Label htmlFor="afternoonTime" className="text-xs text-muted-foreground">
-              {t('tg.reportTime')}
-            </Label>
-            <Input
-              id="afternoonTime"
-              name="afternoonTime"
-              type="time"
-              value={afternoonTime}
-              onChange={(e) => setAfternoonTime(e.target.value)}
-              className={earlyAfternoon ? 'border-warning' : ''}
-            />
-            {earlyAfternoon && (
-              <p className="flex items-start gap-1 text-xs text-warning">
-                <AlertTriangle className="mt-0.5 h-3.5 w-3.5 shrink-0" />
-                {t('tg.earlyWarnAfternoon')}
-              </p>
-            )}
-          </div>
-        </DestinationCard>
-
+          testAction={testAttendanceOfficeConnection}
+          fieldError={state?.fieldErrors?.attendanceOfficeChatId}
+        />
         <DestinationCard
-          title={t('tg.inventoryGroup')}
-          dest={settings.inventory}
-          chatIdFieldName="inventoryChatId"
-          chatIdClearFieldName="inventoryChatIdClear"
-          groupEnabledFieldName="inventoryGroupEnabled"
-          placeholder="-1009876543210"
-          testAction={testInventoryConnection}
-          fieldError={state?.fieldErrors?.inventoryChatId}
-        >
-          <div className="space-y-1.5">
-            <label className="flex items-center gap-2 text-sm font-medium">
-              <input
-                type="checkbox"
-                name="inventoryEnabled"
-                defaultChecked={settings.inventoryEnabled}
-              />
-              {t('tg.inventory')}
-            </label>
-            <Label htmlFor="inventoryTime" className="text-xs text-muted-foreground">
-              {t('tg.reportTime')}
-            </Label>
-            <Input
-              id="inventoryTime"
-              name="inventoryTime"
-              type="time"
-              value={inventoryTime}
-              onChange={(e) => setInventoryTime(e.target.value)}
-            />
-          </div>
-        </DestinationCard>
+          title={t('tg.attendanceFactory')}
+          dest={settings.attendanceFactory}
+          chatIdFieldName="attendanceFactoryChatId"
+          chatIdClearFieldName="attendanceFactoryChatIdClear"
+          groupEnabledFieldName="attendanceFactoryEnabled"
+          placeholder="-1001234567891"
+          testAction={testAttendanceFactoryConnection}
+          fieldError={state?.fieldErrors?.attendanceFactoryChatId}
+        />
+        <DestinationCard
+          title={t('tg.attendanceUnclassified')}
+          dest={settings.attendanceUnclassified}
+          chatIdFieldName="attendanceUnclassifiedChatId"
+          chatIdClearFieldName="attendanceUnclassifiedChatIdClear"
+          groupEnabledFieldName="attendanceUnclassifiedEnabled"
+          placeholder="-1001234567892"
+          testAction={testAttendanceUnclassifiedConnection}
+          fieldError={state?.fieldErrors?.attendanceUnclassifiedChatId}
+        />
       </div>
+
+      <DestinationCard
+        title={t('tg.inventoryGroup')}
+        dest={settings.inventory}
+        chatIdFieldName="inventoryChatId"
+        chatIdClearFieldName="inventoryChatIdClear"
+        groupEnabledFieldName="inventoryGroupEnabled"
+        placeholder="-1009876543210"
+        testAction={testInventoryConnection}
+        fieldError={state?.fieldErrors?.inventoryChatId}
+      >
+        <div className="space-y-1.5">
+          <label className="flex items-center gap-2 text-sm font-medium">
+            <input
+              type="checkbox"
+              name="inventoryEnabled"
+              defaultChecked={settings.inventoryEnabled}
+            />
+            {t('tg.inventory')}
+          </label>
+          <Label htmlFor="inventoryTime" className="text-xs text-muted-foreground">
+            {t('tg.reportTime')}
+          </Label>
+          <Input
+            id="inventoryTime"
+            name="inventoryTime"
+            type="time"
+            value={inventoryTime}
+            onChange={(e) => setInventoryTime(e.target.value)}
+          />
+        </div>
+      </DestinationCard>
 
       <Card>
         <CardHeader>

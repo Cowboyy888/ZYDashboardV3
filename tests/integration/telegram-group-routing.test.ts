@@ -1,146 +1,186 @@
 import { describe, it, expect } from 'vitest';
 import { MockTelegramClient, InMemorySentReportStore, sendReportOnce } from '@/lib/telegram';
 import {
-  destinationChatId,
-  reportGroup,
+  attendanceChatIdFor,
+  inventoryChatId,
+  attendanceGroupFor,
+  ATTENDANCE_LOCATIONS,
   type TelegramDestinations,
+  type AttendanceLocation,
 } from '@/lib/domain/report-schedule';
 
 /**
- * Proves, at the send layer (not just the pure routing function), that
- * attendance reports never reach the Inventory Group's chat and inventory
- * reports never reach the Attendance Group's chat — even when both
- * destinations are fully configured and enabled at the same time.
+ * Proves, at the send layer (not just the pure routing function), that each
+ * of the three attendance destinations (Office/Factory/Unclassified) and the
+ * Inventory destination never cross — even when all four are fully
+ * configured and enabled at the same time.
  */
-describe('acceptance — attendance and inventory reports never cross destinations', () => {
+describe('acceptance — attendance (office/factory/unclassified) and inventory reports never cross destinations', () => {
   const destinations: TelegramDestinations = {
-    attendanceChatId: '-1001111111111', // Attendance Group
-    attendanceGroupEnabled: true,
-    inventoryChatId: '-1002222222222', // Inventory Group
+    attendanceOfficeChatId: '-1001111111111',
+    attendanceOfficeEnabled: true,
+    attendanceFactoryChatId: '-1003333333333',
+    attendanceFactoryEnabled: true,
+    attendanceUnclassifiedChatId: '-1004444444444',
+    attendanceUnclassifiedEnabled: true,
+    inventoryChatId: '-1002222222222',
     inventoryGroupEnabled: true,
   };
 
-  async function send(
+  async function sendAttendance(
     client: MockTelegramClient,
     store: InMemorySentReportStore,
-    type: 'attendance_morning' | 'attendance_afternoon' | 'inventory',
+    type: 'attendance_morning' | 'attendance_afternoon',
+    location: AttendanceLocation,
     date: string,
+    d: TelegramDestinations = destinations,
   ) {
     return sendReportOnce(client, store, {
-      reportKey: `${type}:${date}`,
+      reportKey: `${type}:${date}:${location}`,
       reportType: type,
       businessDate: date,
-      chatId: destinationChatId(type, destinations),
-      destinationGroup: reportGroup(type),
-      text: `${type} body`,
+      chatId: attendanceChatIdFor(location, d),
+      destinationGroup: attendanceGroupFor(location),
+      text: `${type} ${location} body`,
     });
   }
 
-  it('sends attendance reports only to the Attendance Group chat id', async () => {
-    const client = new MockTelegramClient();
-    const store = new InMemorySentReportStore();
+  async function sendInventory(
+    client: MockTelegramClient,
+    store: InMemorySentReportStore,
+    date: string,
+    d: TelegramDestinations = destinations,
+  ) {
+    return sendReportOnce(client, store, {
+      reportKey: `inventory:${date}`,
+      reportType: 'inventory',
+      businessDate: date,
+      chatId: inventoryChatId(d),
+      destinationGroup: 'inventory',
+      text: 'inventory body',
+    });
+  }
 
-    await send(client, store, 'attendance_morning', '2026-07-25');
-    await send(client, store, 'attendance_afternoon', '2026-07-25');
-
-    expect(client.sent).toHaveLength(2);
-    for (const msg of client.sent) {
-      expect(msg.chatId).toBe(destinations.attendanceChatId);
-      expect(msg.chatId).not.toBe(destinations.inventoryChatId);
-    }
-  });
-
-  it('sends the inventory report only to the Inventory Group chat id', async () => {
-    const client = new MockTelegramClient();
-    const store = new InMemorySentReportStore();
-
-    await send(client, store, 'inventory', '2026-07-25');
-
-    expect(client.sent).toHaveLength(1);
-    const [msg] = client.sent;
-    expect(msg?.chatId).toBe(destinations.inventoryChatId);
-    expect(msg?.chatId).not.toBe(destinations.attendanceChatId);
-  });
-
-  it('a full day of all three reports never mixes destinations, and logs record the correct group', async () => {
+  it('sends each attendance location only to its own chat id', async () => {
     const client = new MockTelegramClient();
     const store = new InMemorySentReportStore();
     const date = '2026-07-25';
 
-    await send(client, store, 'attendance_morning', date);
-    await send(client, store, 'attendance_afternoon', date);
-    await send(client, store, 'inventory', date);
+    for (const location of ATTENDANCE_LOCATIONS) {
+      await sendAttendance(client, store, 'attendance_morning', location, date);
+    }
 
     expect(client.sent).toHaveLength(3);
-    const attendanceMsgs = client.sent.filter((m) => m.chatId === destinations.attendanceChatId);
-    const inventoryMsgs = client.sent.filter((m) => m.chatId === destinations.inventoryChatId);
-    expect(attendanceMsgs).toHaveLength(2);
-    expect(inventoryMsgs).toHaveLength(1);
-
-    // Report logs record which destination was actually used.
-    const byType = (t: string) => store.entries.find((e) => e.reportType === t);
-    expect(byType('attendance_morning')?.destinationGroup).toBe('attendance');
-    expect(byType('attendance_afternoon')?.destinationGroup).toBe('attendance');
-    expect(byType('inventory')?.destinationGroup).toBe('inventory');
-    expect(byType('attendance_morning')?.chatId).toBe(destinations.attendanceChatId);
-    expect(byType('inventory')?.chatId).toBe(destinations.inventoryChatId);
+    const byLocation = new Map(
+      ATTENDANCE_LOCATIONS.map((loc) => [attendanceChatIdFor(loc, destinations), loc]),
+    );
+    for (const msg of client.sent) {
+      expect(byLocation.has(msg.chatId)).toBe(true);
+      expect(msg.chatId).not.toBe(destinations.inventoryChatId);
+    }
+    // All three resolved chat ids are distinct.
+    expect(new Set(client.sent.map((m) => m.chatId)).size).toBe(3);
   });
 
-  it('an unconfigured Inventory Group blocks only inventory, attendance still sends', async () => {
+  it('sends the inventory report only to the Inventory destination chat id', async () => {
+    const client = new MockTelegramClient();
+    const store = new InMemorySentReportStore();
+
+    await sendInventory(client, store, '2026-07-25');
+
+    expect(client.sent).toHaveLength(1);
+    const [msg] = client.sent;
+    expect(msg?.chatId).toBe(destinations.inventoryChatId);
+    expect(ATTENDANCE_LOCATIONS.map((loc) => attendanceChatIdFor(loc, destinations))).not.toContain(
+      msg?.chatId,
+    );
+  });
+
+  it('a full day of both shifts (all locations) plus inventory never mixes destinations, and logs record the correct group', async () => {
+    const client = new MockTelegramClient();
+    const store = new InMemorySentReportStore();
+    const date = '2026-07-25';
+
+    for (const location of ATTENDANCE_LOCATIONS) {
+      await sendAttendance(client, store, 'attendance_morning', location, date);
+      await sendAttendance(client, store, 'attendance_afternoon', location, date);
+    }
+    await sendInventory(client, store, date);
+
+    expect(client.sent).toHaveLength(7); // 3 locations x 2 shifts + 1 inventory
+
+    for (const location of ATTENDANCE_LOCATIONS) {
+      const entry = store.entries.find(
+        (e) =>
+          e.reportType === 'attendance_morning' &&
+          e.chatId === attendanceChatIdFor(location, destinations),
+      );
+      expect(entry?.destinationGroup).toBe(attendanceGroupFor(location));
+    }
+    const invEntry = store.entries.find((e) => e.reportType === 'inventory');
+    expect(invEntry?.destinationGroup).toBe('inventory');
+    expect(invEntry?.chatId).toBe(destinations.inventoryChatId);
+  });
+
+  it('an unconfigured Inventory destination blocks only inventory, attendance still sends to all three locations', async () => {
     const client = new MockTelegramClient();
     const store = new InMemorySentReportStore();
     const partial: TelegramDestinations = { ...destinations, inventoryChatId: null };
     const date = '2026-07-25';
 
-    const attendance = await sendReportOnce(client, store, {
-      reportKey: `attendance_morning:${date}`,
-      reportType: 'attendance_morning',
-      businessDate: date,
-      chatId: destinationChatId('attendance_morning', partial),
-      destinationGroup: reportGroup('attendance_morning'),
-      text: 'morning body',
-    });
-    const inventory = await sendReportOnce(client, store, {
-      reportKey: `inventory:${date}`,
-      reportType: 'inventory',
-      businessDate: date,
-      chatId: destinationChatId('inventory', partial),
-      destinationGroup: reportGroup('inventory'),
-      text: 'inventory body',
-    });
+    for (const location of ATTENDANCE_LOCATIONS) {
+      const outcome = await sendAttendance(
+        client,
+        store,
+        'attendance_morning',
+        location,
+        date,
+        partial,
+      );
+      expect(outcome.status).toBe('sent');
+    }
+    const inventory = await sendInventory(client, store, date, partial);
 
-    expect(attendance.status).toBe('sent');
     expect(inventory.status).toBe('no_chat');
-    expect(client.sent).toHaveLength(1);
-    expect(client.sent[0]?.chatId).toBe(destinations.attendanceChatId);
+    expect(client.sent).toHaveLength(3);
   });
 
-  it('a disabled Attendance Group blocks only attendance, inventory still sends', async () => {
+  it('a disabled Factory destination blocks only Factory — Office, Unclassified, and Inventory still send', async () => {
     const client = new MockTelegramClient();
     const store = new InMemorySentReportStore();
-    const partial: TelegramDestinations = { ...destinations, attendanceGroupEnabled: false };
+    const partial: TelegramDestinations = { ...destinations, attendanceFactoryEnabled: false };
     const date = '2026-07-25';
 
-    const morning = await sendReportOnce(client, store, {
-      reportKey: `attendance_morning:${date}`,
-      reportType: 'attendance_morning',
-      businessDate: date,
-      chatId: destinationChatId('attendance_morning', partial),
-      destinationGroup: reportGroup('attendance_morning'),
-      text: 'morning body',
-    });
-    const inventory = await sendReportOnce(client, store, {
-      reportKey: `inventory:${date}`,
-      reportType: 'inventory',
-      businessDate: date,
-      chatId: destinationChatId('inventory', partial),
-      destinationGroup: reportGroup('inventory'),
-      text: 'inventory body',
-    });
+    const factory = await sendAttendance(
+      client,
+      store,
+      'attendance_morning',
+      'factory',
+      date,
+      partial,
+    );
+    const office = await sendAttendance(
+      client,
+      store,
+      'attendance_morning',
+      'office',
+      date,
+      partial,
+    );
+    const unclassified = await sendAttendance(
+      client,
+      store,
+      'attendance_morning',
+      'unclassified',
+      date,
+      partial,
+    );
+    const inventory = await sendInventory(client, store, date, partial);
 
-    expect(morning.status).toBe('no_chat');
+    expect(factory.status).toBe('no_chat');
+    expect(office.status).toBe('sent');
+    expect(unclassified.status).toBe('sent');
     expect(inventory.status).toBe('sent');
-    expect(client.sent).toHaveLength(1);
-    expect(client.sent[0]?.chatId).toBe(destinations.inventoryChatId);
+    expect(client.sent).toHaveLength(3);
   });
 });

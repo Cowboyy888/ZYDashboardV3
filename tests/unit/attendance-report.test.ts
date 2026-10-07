@@ -109,6 +109,30 @@ describe('grouped attendance report — exact format', () => {
     });
     expect(report.text.split('\n')[1]).toBe('中粤钢铁上午出勤记录');
   });
+
+  it('appends locationLabel to the title when given (splitting one shift into separate reports)', () => {
+    const { employees, records } = buildScenario();
+    const withLabel = buildGroupedAttendanceReport({
+      date: '2026-07-24',
+      shift: 'afternoon',
+      groups: GROUPS,
+      employees,
+      records,
+      locationLabel: '办公室 Office',
+    });
+    expect(withLabel.text.split('\n')[1]).toBe('中粤钢铁下午出勤记录 · 办公室 Office');
+    expect(withLabel.title).toBe('中粤钢铁下午出勤记录 · 办公室 Office');
+
+    // Omitting it keeps the original single-report title, unchanged.
+    const withoutLabel = buildGroupedAttendanceReport({
+      date: '2026-07-24',
+      shift: 'afternoon',
+      groups: GROUPS,
+      employees,
+      records,
+    });
+    expect(withoutLabel.title).toBe('中粤钢铁下午出勤记录');
+  });
 });
 
 describe('grouped attendance report — group totals', () => {

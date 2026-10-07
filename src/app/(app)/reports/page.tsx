@@ -3,6 +3,7 @@ import { requireUser } from '@/lib/auth';
 import { hasPermission, hasAnyPermission } from '@/lib/domain/rbac';
 import { businessDate, formatDDMMYYYY } from '@/lib/domain/datetime';
 import { buildAttendancePreview, buildInventoryPreview } from '@/lib/reports/preview';
+import { ATTENDANCE_LOCATIONS, ATTENDANCE_LOCATION_LABEL } from '@/lib/domain/report-schedule';
 import { getLocale } from '@/lib/i18n/locale';
 import { translator } from '@/lib/i18n';
 import { PageHeader } from '@/components/page-header';
@@ -37,9 +38,15 @@ export default async function ReportsPage({
     canInventory ? buildInventoryPreview(date) : Promise.resolve(null),
   ]);
 
+  const textBlock = (text: string) => (
+    <pre className="overflow-x-auto whitespace-pre-wrap rounded-md bg-[hsl(208_18%_13%)] p-4 font-mono text-[13px] leading-relaxed text-slate-100">
+      {text}
+    </pre>
+  );
+
   const block = (
     title: string,
-    text: string,
+    body: React.ReactNode,
     action: () => Promise<import('@/lib/actions/types').ActionState>,
   ) => (
     <Card>
@@ -53,12 +60,24 @@ export default async function ReportsPage({
           />
         )}
       </CardHeader>
-      <CardContent>
-        <pre className="overflow-x-auto whitespace-pre-wrap rounded-md bg-[hsl(208_18%_13%)] p-4 font-mono text-[13px] leading-relaxed text-slate-100">
-          {text}
-        </pre>
-      </CardContent>
+      <CardContent className="space-y-3">{body}</CardContent>
     </Card>
+  );
+
+  // Each shift fans out to three Telegram destinations (Office/Factory/
+  // Unclassified, see Settings > Telegram) — one card, one Send Now button,
+  // three stacked previews so it's still obvious what actually goes where.
+  const attendanceBody = (byLocation: Record<string, { text: string }>) => (
+    <>
+      {ATTENDANCE_LOCATIONS.map((loc) => (
+        <div key={loc} className="space-y-1.5">
+          <p className="text-xs font-medium text-muted-foreground">
+            {ATTENDANCE_LOCATION_LABEL[loc].zh} {ATTENDANCE_LOCATION_LABEL[loc].en}
+          </p>
+          {textBlock(byLocation[loc]!.text)}
+        </div>
+      ))}
+    </>
   );
 
   return (
@@ -69,9 +88,15 @@ export default async function ReportsPage({
         actions={<DateNav date={date} />}
       />
       <div className="grid gap-4 lg:grid-cols-2">
-        {canAttendance && morning && block(t('rp.morning'), morning.text, sendMorningNow)}
-        {canAttendance && afternoon && block(t('rp.afternoon'), afternoon.text, sendAfternoonNow)}
-        {canInventory && inventory && block(t('rp.inventory'), inventory, sendInventoryNow)}
+        {canAttendance &&
+          morning &&
+          block(t('rp.morning'), attendanceBody(morning), sendMorningNow)}
+        {canAttendance &&
+          afternoon &&
+          block(t('rp.afternoon'), attendanceBody(afternoon), sendAfternoonNow)}
+        {canInventory &&
+          inventory &&
+          block(t('rp.inventory'), textBlock(inventory), sendInventoryNow)}
       </div>
       {canSend && <p className="mt-3 text-xs text-muted-foreground">{t('rp.sendNote')}</p>}
     </div>

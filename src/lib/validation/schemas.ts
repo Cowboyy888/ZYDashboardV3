@@ -258,10 +258,16 @@ export const telegramSettingsSchema = z.object({
   // Future-ready: the attendance report is currently always sent in Chinese.
   reportLanguage: z.enum(['en', 'zh']).default('zh'),
 
-  // --- Attendance Group destination (morning + afternoon reports) ----------
-  attendanceChatId: chatIdText,
-  attendanceChatIdClear: z.boolean().default(false),
-  attendanceGroupEnabled: z.boolean().default(true),
+  // --- Attendance destinations, one per employees.work_location ------------
+  attendanceOfficeChatId: chatIdText,
+  attendanceOfficeChatIdClear: z.boolean().default(false),
+  attendanceOfficeEnabled: z.boolean().default(true),
+  attendanceFactoryChatId: chatIdText,
+  attendanceFactoryChatIdClear: z.boolean().default(false),
+  attendanceFactoryEnabled: z.boolean().default(true),
+  attendanceUnclassifiedChatId: chatIdText,
+  attendanceUnclassifiedChatIdClear: z.boolean().default(false),
+  attendanceUnclassifiedEnabled: z.boolean().default(true),
 
   // --- Inventory Group destination (daily inventory report) ----------------
   inventoryChatId: chatIdText,

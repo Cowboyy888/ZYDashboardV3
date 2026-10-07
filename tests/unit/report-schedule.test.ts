@@ -1,7 +1,6 @@
 import { describe, it, expect } from 'vitest';
 import {
   dueReports,
-  reportGroup,
   isValidHHmm,
   timeToMinutes,
   isBeforeManualEntry,
@@ -33,34 +32,6 @@ describe('HH:mm helpers', () => {
     expect(timeToMinutes('00:00')).toBe(0);
     expect(timeToMinutes('08:00')).toBe(480);
     expect(timeToMinutes('13:30')).toBe(810);
-  });
-});
-
-describe('routing — Attendance Group vs Inventory Group', () => {
-  it('maps each report type to the correct group', () => {
-    expect(reportGroup('attendance_morning')).toBe('attendance');
-    expect(reportGroup('attendance_afternoon')).toBe('attendance');
-    expect(reportGroup('inventory')).toBe('inventory');
-  });
-
-  it('due attendance reports route to attendance; due inventory routes to inventory', () => {
-    // 13:00 with morning already sent -> only the afternoon attendance report.
-    const att = dueReports({
-      nowLocal: '13:00',
-      settings: settings(),
-      alreadySent: ['attendance_morning'],
-    });
-    expect(att).toEqual(['attendance_afternoon']);
-    expect(att.map(reportGroup)).toEqual(['attendance']);
-
-    // 18:00 with both attendance reports sent -> only the inventory report.
-    const inv = dueReports({
-      nowLocal: '18:00',
-      settings: settings(),
-      alreadySent: ['attendance_morning', 'attendance_afternoon'],
-    });
-    expect(inv).toEqual(['inventory']);
-    expect(inv.map(reportGroup)).toEqual(['inventory']);
   });
 });
 

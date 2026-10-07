@@ -23,7 +23,12 @@ export interface TelegramClient {
  * key (e.g. "attendance:morning:2026-07-24"); once recorded as sent it must not
  * be sent again by a later/duplicate job run.
  */
-export type TelegramDestinationGroup = 'attendance' | 'inventory';
+export type TelegramDestinationGroup =
+  | 'attendance' // legacy value — historical sent_reports rows only, never written by new code
+  | 'attendance_office'
+  | 'attendance_factory'
+  | 'attendance_unclassified'
+  | 'inventory';
 
 export interface SentReportStore {
   has(reportKey: string): Promise<boolean>;

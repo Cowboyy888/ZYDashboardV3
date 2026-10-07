@@ -336,12 +336,23 @@ export interface TelegramSettingsRow {
   afternoon_time: string; // HH:mm (Asia/Bangkok) — attendance afternoon
   inventory_time: string; // HH:mm (Asia/Bangkok) — daily inventory
   report_language: 'en' | 'zh'; // future-ready; reports currently always Chinese
-  // --- Attendance Group destination (morning + afternoon reports) -----------
-  attendance_chat_id: string | null;
-  attendance_group_enabled: boolean;
-  attendance_last_status: 'sent' | 'failed' | null;
-  attendance_last_error: string | null;
-  attendance_last_sent_at: string | null;
+  // --- Attendance destinations (morning + afternoon reports), one per
+  // employees.work_location — see 0054_attendance_location_destinations.sql --
+  attendance_office_chat_id: string | null;
+  attendance_office_enabled: boolean;
+  attendance_office_last_status: 'sent' | 'failed' | null;
+  attendance_office_last_error: string | null;
+  attendance_office_last_sent_at: string | null;
+  attendance_factory_chat_id: string | null;
+  attendance_factory_enabled: boolean;
+  attendance_factory_last_status: 'sent' | 'failed' | null;
+  attendance_factory_last_error: string | null;
+  attendance_factory_last_sent_at: string | null;
+  attendance_unclassified_chat_id: string | null;
+  attendance_unclassified_enabled: boolean;
+  attendance_unclassified_last_status: 'sent' | 'failed' | null;
+  attendance_unclassified_last_error: string | null;
+  attendance_unclassified_last_sent_at: string | null;
   // --- Inventory Group destination (daily inventory report) -----------------
   inventory_chat_id: string | null;
   inventory_group_enabled: boolean;

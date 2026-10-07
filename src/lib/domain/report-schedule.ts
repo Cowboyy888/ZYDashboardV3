@@ -28,45 +28,64 @@ export const SCHEDULED_REPORT_TYPES: readonly ScheduledReportType[] = [
   'inventory',
 ] as const;
 
-/** Logical group each report is routed to. */
-export type ReportGroup = 'attendance' | 'inventory';
+/**
+ * Attendance is split into three independent audiences, each with its own
+ * Telegram destination (see 0054_attendance_location_destinations.sql) —
+ * driven by employees.work_location (0049_employee_work_location.sql).
+ * "unclassified" covers an employee with no Location set yet, so nobody
+ * silently vanishes from every report while the business finishes
+ * classifying staff.
+ */
+export const ATTENDANCE_LOCATIONS = ['office', 'factory', 'unclassified'] as const;
+export type AttendanceLocation = (typeof ATTENDANCE_LOCATIONS)[number];
 
-export const REPORT_GROUP: Record<ScheduledReportType, ReportGroup> = {
-  attendance_morning: 'attendance',
-  attendance_afternoon: 'attendance',
-  inventory: 'inventory',
+export const ATTENDANCE_LOCATION_LABEL: Record<AttendanceLocation, { en: string; zh: string }> = {
+  office: { en: 'Office', zh: '办公室' },
+  factory: { en: 'Factory', zh: '工厂' },
+  unclassified: { en: 'Unclassified', zh: '未分类' },
 };
 
-/** The Attendance Group vs Inventory Group routing for a report type. */
-export function reportGroup(type: ScheduledReportType): ReportGroup {
-  return REPORT_GROUP[type];
+/** Logical destination each report is routed to — one per attendance location, plus inventory. */
+export type ReportGroup =
+  'attendance_office' | 'attendance_factory' | 'attendance_unclassified' | 'inventory';
+
+/** The `ReportGroup` for a given attendance location — column names in
+ * telegram_settings follow this same `attendance_{location}_*` pattern. */
+export function attendanceGroupFor(location: AttendanceLocation): ReportGroup {
+  return `attendance_${location}`;
 }
 
 /**
  * Per-destination config the routing needs (subset of the `telegram_settings`
- * row). Each destination is independent: a group with no chat id configured,
- * or with its switch off, resolves to `null` — the OTHER group is unaffected.
+ * row). Each destination is independent: a destination with no chat id
+ * configured, or with its switch off, resolves to `null` — the others are
+ * unaffected.
  */
 export interface TelegramDestinations {
-  attendanceChatId: string | null;
-  attendanceGroupEnabled: boolean;
+  attendanceOfficeChatId: string | null;
+  attendanceOfficeEnabled: boolean;
+  attendanceFactoryChatId: string | null;
+  attendanceFactoryEnabled: boolean;
+  attendanceUnclassifiedChatId: string | null;
+  attendanceUnclassifiedEnabled: boolean;
   inventoryChatId: string | null;
   inventoryGroupEnabled: boolean;
 }
 
-/**
- * Resolve the destination chat id for a report type. A report only ever
- * reaches the chat id for ITS OWN group (`reportGroup(type)`) — there is no
- * code path that can route an attendance report to the inventory chat id or
- * vice versa, since each branch reads only its own group's fields.
- */
-export function destinationChatId(
-  type: ScheduledReportType,
+/** Resolve one attendance location's destination chat id (null if disabled/unconfigured). */
+export function attendanceChatIdFor(
+  location: AttendanceLocation,
   d: TelegramDestinations,
 ): string | null {
-  if (reportGroup(type) === 'attendance') {
-    return d.attendanceGroupEnabled ? (d.attendanceChatId ?? null) : null;
-  }
+  if (location === 'office')
+    return d.attendanceOfficeEnabled ? (d.attendanceOfficeChatId ?? null) : null;
+  if (location === 'factory')
+    return d.attendanceFactoryEnabled ? (d.attendanceFactoryChatId ?? null) : null;
+  return d.attendanceUnclassifiedEnabled ? (d.attendanceUnclassifiedChatId ?? null) : null;
+}
+
+/** Resolve the inventory destination chat id (null if disabled/unconfigured). */
+export function inventoryChatId(d: TelegramDestinations): string | null {
   return d.inventoryGroupEnabled ? (d.inventoryChatId ?? null) : null;
 }
 

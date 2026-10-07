@@ -22,9 +22,15 @@ export async function saveTelegramSettings(
     afternoonTime: formData.get('afternoonTime') || '13:00',
     inventoryTime: formData.get('inventoryTime') || '18:00',
     reportLanguage: formData.get('reportLanguage') || 'zh',
-    attendanceChatId: formData.get('attendanceChatId'),
-    attendanceChatIdClear: formData.get('attendanceChatIdClear') === 'on',
-    attendanceGroupEnabled: formData.get('attendanceGroupEnabled') === 'on',
+    attendanceOfficeChatId: formData.get('attendanceOfficeChatId'),
+    attendanceOfficeChatIdClear: formData.get('attendanceOfficeChatIdClear') === 'on',
+    attendanceOfficeEnabled: formData.get('attendanceOfficeEnabled') === 'on',
+    attendanceFactoryChatId: formData.get('attendanceFactoryChatId'),
+    attendanceFactoryChatIdClear: formData.get('attendanceFactoryChatIdClear') === 'on',
+    attendanceFactoryEnabled: formData.get('attendanceFactoryEnabled') === 'on',
+    attendanceUnclassifiedChatId: formData.get('attendanceUnclassifiedChatId'),
+    attendanceUnclassifiedChatIdClear: formData.get('attendanceUnclassifiedChatIdClear') === 'on',
+    attendanceUnclassifiedEnabled: formData.get('attendanceUnclassifiedEnabled') === 'on',
     inventoryChatId: formData.get('inventoryChatId'),
     inventoryChatIdClear: formData.get('inventoryChatIdClear') === 'on',
     inventoryGroupEnabled: formData.get('inventoryGroupEnabled') === 'on',
@@ -38,14 +44,24 @@ export async function saveTelegramSettings(
   // to keep when the admin left a chat-id field blank (blank = unchanged).
   const { data: before } = await supabase
     .from('telegram_settings')
-    .select('morning_time, afternoon_time, inventory_time, attendance_chat_id, inventory_chat_id')
+    .select(
+      'morning_time, afternoon_time, inventory_time, attendance_office_chat_id, attendance_factory_chat_id, attendance_unclassified_chat_id, inventory_chat_id',
+    )
     .eq('id', 1)
     .maybeSingle();
 
   // A blank chat-id field means "leave it as is"; the paired Clear checkbox is
   // the only way to remove one. This is why the form never round-trips the
   // real value into the input's defaultValue (only a masked display).
-  const attendanceChatId = d.attendanceChatIdClear ? null : (d.attendanceChatId ?? undefined);
+  const officeChatId = d.attendanceOfficeChatIdClear
+    ? null
+    : (d.attendanceOfficeChatId ?? undefined);
+  const factoryChatId = d.attendanceFactoryChatIdClear
+    ? null
+    : (d.attendanceFactoryChatId ?? undefined);
+  const unclassifiedChatId = d.attendanceUnclassifiedChatIdClear
+    ? null
+    : (d.attendanceUnclassifiedChatId ?? undefined);
   const inventoryChatId = d.inventoryChatIdClear ? null : (d.inventoryChatId ?? undefined);
 
   const { error } = await supabase
@@ -58,18 +74,20 @@ export async function saveTelegramSettings(
       afternoon_time: d.afternoonTime,
       inventory_time: d.inventoryTime,
       report_language: d.reportLanguage,
-      attendance_chat_id: attendanceChatId,
-      attendance_group_enabled: d.attendanceGroupEnabled,
+      attendance_office_chat_id: officeChatId,
+      attendance_office_enabled: d.attendanceOfficeEnabled,
+      attendance_factory_chat_id: factoryChatId,
+      attendance_factory_enabled: d.attendanceFactoryEnabled,
+      attendance_unclassified_chat_id: unclassifiedChatId,
+      attendance_unclassified_enabled: d.attendanceUnclassifiedEnabled,
       inventory_chat_id: inventoryChatId,
       inventory_group_enabled: d.inventoryGroupEnabled,
     })
     .eq('id', 1);
   if (error) return fail(error.message);
 
-  const finalAttendanceChatId =
-    attendanceChatId === undefined ? before?.attendance_chat_id : attendanceChatId;
-  const finalInventoryChatId =
-    inventoryChatId === undefined ? before?.inventory_chat_id : inventoryChatId;
+  const finalChatId = (next: string | null | undefined, prev: string | null | undefined) =>
+    next === undefined ? prev : next;
 
   await writeAudit(user, {
     action: 'telegram.settings_update',
@@ -79,7 +97,9 @@ export async function saveTelegramSettings(
       morning_time: before?.morning_time ?? null,
       afternoon_time: before?.afternoon_time ?? null,
       inventory_time: before?.inventory_time ?? null,
-      attendanceChatId: before?.attendance_chat_id ? '***' : null,
+      attendanceOfficeChatId: before?.attendance_office_chat_id ? '***' : null,
+      attendanceFactoryChatId: before?.attendance_factory_chat_id ? '***' : null,
+      attendanceUnclassifiedChatId: before?.attendance_unclassified_chat_id ? '***' : null,
       inventoryChatId: before?.inventory_chat_id ? '***' : null,
     },
     newValue: {
@@ -90,10 +110,23 @@ export async function saveTelegramSettings(
       afternoon_time: d.afternoonTime,
       inventory_time: d.inventoryTime,
       reportLanguage: d.reportLanguage,
-      attendanceGroupEnabled: d.attendanceGroupEnabled,
+      attendanceOfficeEnabled: d.attendanceOfficeEnabled,
+      attendanceFactoryEnabled: d.attendanceFactoryEnabled,
+      attendanceUnclassifiedEnabled: d.attendanceUnclassifiedEnabled,
       inventoryGroupEnabled: d.inventoryGroupEnabled,
-      attendanceChatId: finalAttendanceChatId ? '***' : null,
-      inventoryChatId: finalInventoryChatId ? '***' : null,
+      attendanceOfficeChatId: finalChatId(officeChatId, before?.attendance_office_chat_id)
+        ? '***'
+        : null,
+      attendanceFactoryChatId: finalChatId(factoryChatId, before?.attendance_factory_chat_id)
+        ? '***'
+        : null,
+      attendanceUnclassifiedChatId: finalChatId(
+        unclassifiedChatId,
+        before?.attendance_unclassified_chat_id,
+      )
+        ? '***'
+        : null,
+      inventoryChatId: finalChatId(inventoryChatId, before?.inventory_chat_id) ? '***' : null,
     },
   });
   revalidatePath('/settings/telegram');
@@ -148,8 +181,16 @@ async function testConnection(group: ReportGroup, typedChatId?: string): Promise
   return fail(`Test failed: ${outcome.detail ?? 'unknown error'}`);
 }
 
-export async function testAttendanceConnection(typedChatId?: string): Promise<ActionState> {
-  return testConnection('attendance', typedChatId);
+export async function testAttendanceOfficeConnection(typedChatId?: string): Promise<ActionState> {
+  return testConnection('attendance_office', typedChatId);
+}
+export async function testAttendanceFactoryConnection(typedChatId?: string): Promise<ActionState> {
+  return testConnection('attendance_factory', typedChatId);
+}
+export async function testAttendanceUnclassifiedConnection(
+  typedChatId?: string,
+): Promise<ActionState> {
+  return testConnection('attendance_unclassified', typedChatId);
 }
 export async function testInventoryConnection(typedChatId?: string): Promise<ActionState> {
   return testConnection('inventory', typedChatId);

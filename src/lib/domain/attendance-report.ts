@@ -110,8 +110,12 @@ export function buildGroupedAttendanceReport(params: {
   groups: ReportGroup[]; // active groups in display order
   employees: ReportEmployee[]; // active employees
   records: ReportAttendance[];
+  /** Appended to the title line, e.g. "办公室 Office" — used to split one
+   * shift's report into separate Office/Factory/Unclassified messages. Omit
+   * for the original single combined-report title. */
+  locationLabel?: string;
 }): GroupedAttendanceReport {
-  const { date, shift, groups, employees, records } = params;
+  const { date, shift, groups, employees, records, locationLabel } = params;
 
   // Resolve each active employee's status (record status, or `unmarked`).
   const statusByEmployee = new Map<string, AttendanceStatus>();
@@ -141,7 +145,7 @@ export function buildGroupedAttendanceReport(params: {
 
   const totalActive = employees.length;
   const actualPresent = employees.filter((e) => isActualPresent(resolvedStatus(e.id))).length;
-  const title = REPORT_TITLE[shift];
+  const title = locationLabel ? `${REPORT_TITLE[shift]} · ${locationLabel}` : REPORT_TITLE[shift];
   const slashDate = toSlashDate(date);
 
   // Assemble text (no blank lines between sections).

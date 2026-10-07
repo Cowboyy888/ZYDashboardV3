@@ -8,20 +8,33 @@ import {
   type ReportGroup,
 } from '@/lib/domain/attendance-report';
 import type { Shift } from '@/lib/domain/attendance';
+import {
+  ATTENDANCE_LOCATIONS,
+  ATTENDANCE_LOCATION_LABEL,
+  type AttendanceLocation,
+} from '@/lib/domain/report-schedule';
 import { renderInventoryReport, type InventoryReportRow } from '@/lib/domain/reports';
 import { buildInventoryRows } from '@/lib/domain/inventory-view';
 import type { SkuRow } from '@/lib/db/types';
 
+/** Which location bucket an employee's work_location falls into for report routing. */
+function bucketFor(workLocation: string | null): AttendanceLocation {
+  if (workLocation === 'office') return 'office';
+  if (workLocation === 'factory') return 'factory';
+  return 'unclassified';
+}
+
 /**
  * Build the grouped attendance report for a date + shift from LIVE records,
- * using the request-scoped (RLS-respecting) client. Used by the visible Report
- * Preview page — the exact same builder the Telegram jobs use, so the preview
- * matches what is sent.
+ * split by employees.work_location, using the request-scoped (RLS-respecting)
+ * client. Used by the visible Report Preview page — the exact same builder
+ * (and the same Office/Factory/Unclassified split) the Telegram jobs use, so
+ * the preview matches what is actually sent.
  */
 export async function buildAttendancePreview(
   date: string,
   shift: Shift,
-): Promise<GroupedAttendanceReport> {
+): Promise<Record<AttendanceLocation, GroupedAttendanceReport>> {
   const supabase = await createSupabaseServerClient();
   const [{ data: groups }, { data: employees }, { data: attendance }] = await Promise.all([
     supabase
@@ -33,7 +46,7 @@ export async function buildAttendancePreview(
     supabase
       .from('employees')
       .select(
-        'id, attendance_group_id, display_name, name_english, name_khmer, name_chinese, job_title, label',
+        'id, attendance_group_id, display_name, name_english, name_khmer, name_chinese, job_title, label, work_location',
       )
       .eq('is_active', true),
     supabase
@@ -47,30 +60,45 @@ export async function buildAttendancePreview(
     id: g.id as string,
     name: g.name as string,
   }));
-  const reportEmployees: ReportEmployee[] = (employees ?? []).map((e) => ({
-    id: e.id as string,
-    groupId: (e.attendance_group_id as string | null) ?? null,
-    displayName:
-      (e.display_name as string | null) ||
-      (e.name_english as string | null) ||
-      (e.name_khmer as string | null) ||
-      (e.name_chinese as string | null) ||
-      (e.id as string),
-    jobTitle: (e.job_title as string | null) ?? null,
-    label: (e.label as string | null) ?? null,
-  }));
+
+  const employeesByLocation: Record<AttendanceLocation, ReportEmployee[]> = {
+    office: [],
+    factory: [],
+    unclassified: [],
+  };
+  for (const e of employees ?? []) {
+    const reportEmployee: ReportEmployee = {
+      id: e.id as string,
+      groupId: (e.attendance_group_id as string | null) ?? null,
+      displayName:
+        (e.display_name as string | null) ||
+        (e.name_english as string | null) ||
+        (e.name_khmer as string | null) ||
+        (e.name_chinese as string | null) ||
+        (e.id as string),
+      jobTitle: (e.job_title as string | null) ?? null,
+      label: (e.label as string | null) ?? null,
+    };
+    employeesByLocation[bucketFor(e.work_location as string | null)].push(reportEmployee);
+  }
+
   const records: ReportAttendance[] = (attendance ?? []).map((a) => ({
     employeeId: a.employee_id as string,
     status: a.status,
   }));
 
-  return buildGroupedAttendanceReport({
-    date,
-    shift,
-    groups: reportGroups,
-    employees: reportEmployees,
-    records,
-  });
+  const result = {} as Record<AttendanceLocation, GroupedAttendanceReport>;
+  for (const location of ATTENDANCE_LOCATIONS) {
+    result[location] = buildGroupedAttendanceReport({
+      date,
+      shift,
+      groups: reportGroups,
+      employees: employeesByLocation[location],
+      records,
+      locationLabel: `${ATTENDANCE_LOCATION_LABEL[location].zh} ${ATTENDANCE_LOCATION_LABEL[location].en}`,
+    });
+  }
+  return result;
 }
 
 /**

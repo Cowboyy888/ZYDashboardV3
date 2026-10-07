@@ -1,63 +1,79 @@
 import { describe, it, expect } from 'vitest';
-import { destinationChatId, type TelegramDestinations } from '@/lib/domain/report-schedule';
+import {
+  attendanceChatIdFor,
+  inventoryChatId,
+  attendanceGroupFor,
+  type TelegramDestinations,
+} from '@/lib/domain/report-schedule';
 import { maskChatId } from '@/lib/domain/telegram-mask';
 
 const destinations = (o: Partial<TelegramDestinations> = {}): TelegramDestinations => ({
-  attendanceChatId: '-1001111111111',
-  attendanceGroupEnabled: true,
+  attendanceOfficeChatId: '-1001111111111',
+  attendanceOfficeEnabled: true,
+  attendanceFactoryChatId: '-1003333333333',
+  attendanceFactoryEnabled: true,
+  attendanceUnclassifiedChatId: '-1004444444444',
+  attendanceUnclassifiedEnabled: true,
   inventoryChatId: '-1002222222222',
   inventoryGroupEnabled: true,
   ...o,
 });
 
-describe('destinationChatId — Attendance Group vs Inventory Group never cross', () => {
-  it('routes both attendance report types to the attendance chat id only', () => {
+describe('attendanceGroupFor — the ReportGroup for each location', () => {
+  it('maps each location to its own group, matching the telegram_settings column prefix', () => {
+    expect(attendanceGroupFor('office')).toBe('attendance_office');
+    expect(attendanceGroupFor('factory')).toBe('attendance_factory');
+    expect(attendanceGroupFor('unclassified')).toBe('attendance_unclassified');
+  });
+});
+
+describe('attendanceChatIdFor / inventoryChatId — three attendance destinations never cross, nor with inventory', () => {
+  it('routes each location to its own configured chat id only', () => {
     const d = destinations();
-    expect(destinationChatId('attendance_morning', d)).toBe(d.attendanceChatId);
-    expect(destinationChatId('attendance_afternoon', d)).toBe(d.attendanceChatId);
-    expect(destinationChatId('attendance_morning', d)).not.toBe(d.inventoryChatId);
-    expect(destinationChatId('attendance_afternoon', d)).not.toBe(d.inventoryChatId);
+    expect(attendanceChatIdFor('office', d)).toBe(d.attendanceOfficeChatId);
+    expect(attendanceChatIdFor('factory', d)).toBe(d.attendanceFactoryChatId);
+    expect(attendanceChatIdFor('unclassified', d)).toBe(d.attendanceUnclassifiedChatId);
+    // All four resolved ids are distinct — no accidental cross-routing.
+    const all = [
+      attendanceChatIdFor('office', d),
+      attendanceChatIdFor('factory', d),
+      attendanceChatIdFor('unclassified', d),
+      inventoryChatId(d),
+    ];
+    expect(new Set(all).size).toBe(4);
   });
 
-  it('routes the inventory report to the inventory chat id only', () => {
-    const d = destinations();
-    expect(destinationChatId('inventory', d)).toBe(d.inventoryChatId);
-    expect(destinationChatId('inventory', d)).not.toBe(d.attendanceChatId);
+  it('a disabled Office destination yields no chat id, the others are unaffected', () => {
+    const d = destinations({ attendanceOfficeEnabled: false });
+    expect(attendanceChatIdFor('office', d)).toBeNull();
+    expect(attendanceChatIdFor('factory', d)).toBe(d.attendanceFactoryChatId);
+    expect(attendanceChatIdFor('unclassified', d)).toBe(d.attendanceUnclassifiedChatId);
+    expect(inventoryChatId(d)).toBe(d.inventoryChatId);
   });
 
-  it('a disabled Attendance Group yields no chat id, but Inventory is unaffected', () => {
-    const d = destinations({ attendanceGroupEnabled: false });
-    expect(destinationChatId('attendance_morning', d)).toBeNull();
-    expect(destinationChatId('attendance_afternoon', d)).toBeNull();
-    expect(destinationChatId('inventory', d)).toBe(d.inventoryChatId);
+  it('a disabled Factory destination yields no chat id, the others are unaffected', () => {
+    const d = destinations({ attendanceFactoryEnabled: false });
+    expect(attendanceChatIdFor('factory', d)).toBeNull();
+    expect(attendanceChatIdFor('office', d)).toBe(d.attendanceOfficeChatId);
   });
 
-  it('a disabled Inventory Group yields no chat id, but Attendance is unaffected', () => {
+  it('a disabled Unclassified destination yields no chat id, the others are unaffected', () => {
+    const d = destinations({ attendanceUnclassifiedEnabled: false });
+    expect(attendanceChatIdFor('unclassified', d)).toBeNull();
+    expect(attendanceChatIdFor('office', d)).toBe(d.attendanceOfficeChatId);
+  });
+
+  it('a disabled Inventory destination yields no chat id, attendance is unaffected', () => {
     const d = destinations({ inventoryGroupEnabled: false });
-    expect(destinationChatId('inventory', d)).toBeNull();
-    expect(destinationChatId('attendance_morning', d)).toBe(d.attendanceChatId);
-    expect(destinationChatId('attendance_afternoon', d)).toBe(d.attendanceChatId);
+    expect(inventoryChatId(d)).toBeNull();
+    expect(attendanceChatIdFor('office', d)).toBe(d.attendanceOfficeChatId);
   });
 
-  it('a missing (never configured) Attendance chat id yields null, independent of Inventory', () => {
-    const d = destinations({ attendanceChatId: null });
-    expect(destinationChatId('attendance_morning', d)).toBeNull();
-    expect(destinationChatId('inventory', d)).toBe(d.inventoryChatId);
-  });
-
-  it('a missing (never configured) Inventory chat id yields null, independent of Attendance', () => {
-    const d = destinations({ inventoryChatId: null });
-    expect(destinationChatId('inventory', d)).toBeNull();
-    expect(destinationChatId('attendance_morning', d)).toBe(d.attendanceChatId);
-  });
-
-  it('both groups configured and enabled resolve to two distinct chat ids', () => {
-    const d = destinations();
-    const attendance = destinationChatId('attendance_morning', d);
-    const inventory = destinationChatId('inventory', d);
-    expect(attendance).not.toBeNull();
-    expect(inventory).not.toBeNull();
-    expect(attendance).not.toBe(inventory);
+  it('a missing (never configured) chat id yields null, independent of the other destinations', () => {
+    const d = destinations({ attendanceFactoryChatId: null });
+    expect(attendanceChatIdFor('factory', d)).toBeNull();
+    expect(attendanceChatIdFor('office', d)).toBe(d.attendanceOfficeChatId);
+    expect(inventoryChatId(d)).toBe(d.inventoryChatId);
   });
 });
 
