@@ -22,6 +22,12 @@ import {
   saveTelegramSettings,
   sendMorningNow,
   sendAfternoonNow,
+  sendMorningOfficeNow,
+  sendMorningFactoryNow,
+  sendMorningUnclassifiedNow,
+  sendAfternoonOfficeNow,
+  sendAfternoonFactoryNow,
+  sendAfternoonUnclassifiedNow,
   sendInventoryNow,
   testAttendanceOfficeConnection,
   testAttendanceFactoryConnection,
@@ -383,23 +389,69 @@ export function TelegramForm({
         <CardHeader>
           <CardTitle className="text-base">{t('tg.sendNow')}</CardTitle>
         </CardHeader>
-        <CardContent className="space-y-3">
+        <CardContent className="space-y-4">
           <p className="text-sm text-muted-foreground">{t('tg.sendNowDesc')}</p>
-          <SendNowButton
-            action={sendMorningNow}
-            label={t('tg.morningAtt')}
-            confirmText={t('common.confirmSendReport')}
-          />
-          <SendNowButton
-            action={sendAfternoonNow}
-            label={t('tg.afternoonAtt')}
-            confirmText={t('common.confirmSendReport')}
-          />
-          <SendNowButton
-            action={sendInventoryNow}
-            label={t('tg.inventoryReport')}
-            confirmText={t('common.confirmSendReport')}
-          />
+
+          <div className="space-y-1.5">
+            <p className="text-xs font-medium text-muted-foreground">{t('tg.morningAtt')}</p>
+            <div className="flex flex-wrap gap-2">
+              <SendNowButton
+                action={sendMorningNow}
+                label={t('tg.sendAll')}
+                confirmText={t('common.confirmSendReport')}
+              />
+              <SendNowButton
+                action={sendMorningOfficeNow}
+                label={t('emp.office')}
+                confirmText={t('common.confirmSendReport')}
+              />
+              <SendNowButton
+                action={sendMorningFactoryNow}
+                label={t('emp.factory')}
+                confirmText={t('common.confirmSendReport')}
+              />
+              <SendNowButton
+                action={sendMorningUnclassifiedNow}
+                label={t('tg.unclassified')}
+                confirmText={t('common.confirmSendReport')}
+              />
+            </div>
+          </div>
+
+          <div className="space-y-1.5">
+            <p className="text-xs font-medium text-muted-foreground">{t('tg.afternoonAtt')}</p>
+            <div className="flex flex-wrap gap-2">
+              <SendNowButton
+                action={sendAfternoonNow}
+                label={t('tg.sendAll')}
+                confirmText={t('common.confirmSendReport')}
+              />
+              <SendNowButton
+                action={sendAfternoonOfficeNow}
+                label={t('emp.office')}
+                confirmText={t('common.confirmSendReport')}
+              />
+              <SendNowButton
+                action={sendAfternoonFactoryNow}
+                label={t('emp.factory')}
+                confirmText={t('common.confirmSendReport')}
+              />
+              <SendNowButton
+                action={sendAfternoonUnclassifiedNow}
+                label={t('tg.unclassified')}
+                confirmText={t('common.confirmSendReport')}
+              />
+            </div>
+          </div>
+
+          <div className="space-y-1.5">
+            <p className="text-xs font-medium text-muted-foreground">{t('tg.inventoryReport')}</p>
+            <SendNowButton
+              action={sendInventoryNow}
+              label={t('tg.sendNow')}
+              confirmText={t('common.confirmSendReport')}
+            />
+          </div>
         </CardContent>
       </Card>
 

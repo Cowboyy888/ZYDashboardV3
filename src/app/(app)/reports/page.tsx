@@ -3,14 +3,29 @@ import { requireUser } from '@/lib/auth';
 import { hasPermission, hasAnyPermission } from '@/lib/domain/rbac';
 import { businessDate, formatDDMMYYYY } from '@/lib/domain/datetime';
 import { buildAttendancePreview, buildInventoryPreview } from '@/lib/reports/preview';
-import { ATTENDANCE_LOCATIONS, ATTENDANCE_LOCATION_LABEL } from '@/lib/domain/report-schedule';
+import {
+  ATTENDANCE_LOCATIONS,
+  ATTENDANCE_LOCATION_LABEL,
+  type AttendanceLocation,
+} from '@/lib/domain/report-schedule';
 import { getLocale } from '@/lib/i18n/locale';
 import { translator } from '@/lib/i18n';
 import { PageHeader } from '@/components/page-header';
 import { DateNav } from '@/components/attendance/date-nav';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { SendNowButton } from '@/components/telegram/send-now-button';
-import { sendMorningNow, sendAfternoonNow, sendInventoryNow } from '@/lib/actions/telegram';
+import {
+  sendMorningNow,
+  sendAfternoonNow,
+  sendMorningOfficeNow,
+  sendMorningFactoryNow,
+  sendMorningUnclassifiedNow,
+  sendAfternoonOfficeNow,
+  sendAfternoonFactoryNow,
+  sendAfternoonUnclassifiedNow,
+  sendInventoryNow,
+} from '@/lib/actions/telegram';
+import type { ActionState } from '@/lib/actions/types';
 
 export const dynamic = 'force-dynamic';
 
@@ -47,7 +62,8 @@ export default async function ReportsPage({
   const block = (
     title: string,
     body: React.ReactNode,
-    action: () => Promise<import('@/lib/actions/types').ActionState>,
+    action: () => Promise<ActionState>,
+    allLabel: string,
   ) => (
     <Card>
       <CardHeader className="flex-row items-center justify-between space-y-0">
@@ -55,7 +71,7 @@ export default async function ReportsPage({
         {canSend && isToday && (
           <SendNowButton
             action={action}
-            label={t('common.sendNow')}
+            label={allLabel}
             confirmText={t('common.confirmSendReport')}
           />
         )}
@@ -64,16 +80,31 @@ export default async function ReportsPage({
     </Card>
   );
 
+  const locationLabel = (loc: AttendanceLocation) =>
+    `${ATTENDANCE_LOCATION_LABEL[loc].zh} ${ATTENDANCE_LOCATION_LABEL[loc].en}`;
+
   // Each shift fans out to three Telegram destinations (Office/Factory/
-  // Unclassified, see Settings > Telegram) — one card, one Send Now button,
-  // three stacked previews so it's still obvious what actually goes where.
-  const attendanceBody = (byLocation: Record<string, { text: string }>) => (
+  // Unclassified, see Settings > Telegram). The card header's button sends
+  // all three at once; each location also gets its own Send button so one
+  // destination can be resent (e.g. a wrong chat id) without touching the
+  // other two, which already received it fine.
+  const attendanceBody = (
+    byLocation: Record<string, { text: string }>,
+    locationActions: Record<AttendanceLocation, () => Promise<ActionState>>,
+  ) => (
     <>
       {ATTENDANCE_LOCATIONS.map((loc) => (
         <div key={loc} className="space-y-1.5">
-          <p className="text-xs font-medium text-muted-foreground">
-            {ATTENDANCE_LOCATION_LABEL[loc].zh} {ATTENDANCE_LOCATION_LABEL[loc].en}
-          </p>
+          <div className="flex items-center justify-between gap-2">
+            <p className="text-xs font-medium text-muted-foreground">{locationLabel(loc)}</p>
+            {canSend && isToday && (
+              <SendNowButton
+                action={locationActions[loc]}
+                label={t('tg.sendNow')}
+                confirmText={t('common.confirmSendReport')}
+              />
+            )}
+          </div>
           {textBlock(byLocation[loc]!.text)}
         </div>
       ))}
@@ -90,13 +121,31 @@ export default async function ReportsPage({
       <div className="grid gap-4 lg:grid-cols-2">
         {canAttendance &&
           morning &&
-          block(t('rp.morning'), attendanceBody(morning), sendMorningNow)}
+          block(
+            t('rp.morning'),
+            attendanceBody(morning, {
+              office: sendMorningOfficeNow,
+              factory: sendMorningFactoryNow,
+              unclassified: sendMorningUnclassifiedNow,
+            }),
+            sendMorningNow,
+            t('tg.sendAll'),
+          )}
         {canAttendance &&
           afternoon &&
-          block(t('rp.afternoon'), attendanceBody(afternoon), sendAfternoonNow)}
+          block(
+            t('rp.afternoon'),
+            attendanceBody(afternoon, {
+              office: sendAfternoonOfficeNow,
+              factory: sendAfternoonFactoryNow,
+              unclassified: sendAfternoonUnclassifiedNow,
+            }),
+            sendAfternoonNow,
+            t('tg.sendAll'),
+          )}
         {canInventory &&
           inventory &&
-          block(t('rp.inventory'), textBlock(inventory), sendInventoryNow)}
+          block(t('rp.inventory'), textBlock(inventory), sendInventoryNow, t('common.sendNow'))}
       </div>
       {canSend && <p className="mt-3 text-xs text-muted-foreground">{t('rp.sendNote')}</p>}
     </div>

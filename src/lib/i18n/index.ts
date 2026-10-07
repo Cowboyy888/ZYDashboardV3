@@ -560,6 +560,8 @@ export const dictionary = {
   },
   'tg.save': { en: 'Save settings', zh: '保存设置' },
   'tg.sendNow': { en: 'Send now', zh: '立即发送' },
+  'tg.unclassified': { en: 'Unclassified', zh: '未分类' },
+  'tg.sendAll': { en: 'Send all', zh: '全部发送' },
   'tg.sendNowDesc': {
     en: 'Manually send (or resend a corrected) report to the configured chat.',
     zh: '手动发送（或重发已更正的）报告到已配置的会话。',

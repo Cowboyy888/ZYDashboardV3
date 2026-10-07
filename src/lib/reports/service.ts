@@ -383,22 +383,35 @@ async function sendManualToDestination(
 }
 
 /**
- * Manual "Send now": bypasses the idempotency guard so an Admin can resend a
- * corrected report, but still logs each send to sent_reports for the trail.
- * Attendance types fan out to all three location destinations (same as a
- * scheduled send); inventory goes to its own single destination.
+ * Manual "Send now" for the inventory report: bypasses the idempotency guard
+ * so an Admin can resend a corrected report, but still logs the send to
+ * sent_reports for the trail.
  */
-export async function sendReportManual(
-  type: ReportType,
+export async function sendInventoryReportManual(date = businessDate()): Promise<SendReportOutcome> {
+  const destinations = await resolveDestinations();
+  const text = await buildInventoryText(date);
+  return sendManualToDestination(
+    'inventory',
+    'inventory',
+    date,
+    inventoryChatId(destinations),
+    text,
+  );
+}
+
+/**
+ * Manual "Send now" for ONE attendance shift, fanned out to all three
+ * locations at once — the everyday case on the Attendance marking page
+ * ("I just finished marking today, push the report out"). Bypasses the
+ * idempotency guard; each location is still logged to sent_reports and
+ * health-tracked independently. For resending to just ONE location, see
+ * `sendAttendanceReportManualForLocation` below.
+ */
+export async function sendAttendanceReportManual(
+  type: 'attendance_morning' | 'attendance_afternoon',
   date = businessDate(),
 ): Promise<SendReportOutcome> {
   const destinations = await resolveDestinations();
-
-  if (type === 'inventory') {
-    const text = await buildInventoryText(date);
-    return sendManualToDestination('inventory', type, date, inventoryChatId(destinations), text);
-  }
-
   const texts = await buildAttendanceTexts(SHIFT_FOR[type], date);
   const outcomes: SendReportOutcome[] = [];
   for (const location of ATTENDANCE_LOCATIONS) {
@@ -413,6 +426,28 @@ export async function sendReportManual(
     );
   }
   return rollUpOutcomes(`manual:${type}:${date}`, outcomes);
+}
+
+/**
+ * Manual "Send now" for ONE attendance shift + ONE location (Office / Factory
+ * / Unclassified) — e.g. resend just to Factory because their chat didn't
+ * receive it, without re-sending to Office/Unclassified who already got it
+ * fine. Bypasses the idempotency guard; still logs the send to sent_reports.
+ */
+export async function sendAttendanceReportManualForLocation(
+  type: 'attendance_morning' | 'attendance_afternoon',
+  location: AttendanceLocation,
+  date = businessDate(),
+): Promise<SendReportOutcome> {
+  const destinations = await resolveDestinations();
+  const texts = await buildAttendanceTexts(SHIFT_FOR[type], date);
+  return sendManualToDestination(
+    attendanceGroupFor(location),
+    type,
+    date,
+    attendanceChatIdFor(location, destinations),
+    texts[location],
+  );
 }
 
 /**

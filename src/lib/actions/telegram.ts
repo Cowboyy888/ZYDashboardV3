@@ -4,8 +4,13 @@ import { createSupabaseServerClient } from '@/lib/supabase/server';
 import { assertPermission } from '@/lib/auth';
 import { writeAudit } from '@/lib/audit';
 import { telegramSettingsSchema } from '@/lib/validation/schemas';
-import { sendReportManual, testTelegramDestination, type ReportType } from '@/lib/reports/service';
-import type { ReportGroup } from '@/lib/domain/report-schedule';
+import {
+  sendInventoryReportManual,
+  sendAttendanceReportManual,
+  sendAttendanceReportManualForLocation,
+  testTelegramDestination,
+} from '@/lib/reports/service';
+import type { ReportGroup, AttendanceLocation } from '@/lib/domain/report-schedule';
 import { businessDate } from '@/lib/domain/datetime';
 import { fail, ok, zodFieldErrors, type ActionState } from './types';
 
@@ -133,10 +138,32 @@ export async function saveTelegramSettings(
   return ok('Telegram settings saved');
 }
 
-/** Admin-only "Send now" for a report type. Bypasses idempotency (resend). */
-async function sendNow(type: ReportType): Promise<ActionState> {
+/** Admin-only "Send now" for the inventory report. Bypasses idempotency (resend). */
+export async function sendInventoryNow(): Promise<ActionState> {
   const user = await assertPermission('telegram:send');
-  const outcome = await sendReportManual(type, businessDate());
+  const outcome = await sendInventoryReportManual(businessDate());
+  await writeAudit(user, {
+    action: 'telegram.send_manual',
+    entity: 'telegram_settings',
+    entityId: 'inventory',
+    newValue: { status: outcome.status },
+  });
+  if (outcome.status === 'sent') return ok('Report sent via Telegram (inventory).');
+  if (outcome.status === 'no_chat')
+    return fail('No Telegram chat id configured. Set one in Settings → Telegram.');
+  return fail(`Send failed: ${outcome.detail ?? 'unknown error'}`);
+}
+
+/**
+ * Admin-only "Send now" for a whole attendance shift, fanned out to all
+ * three locations — the everyday button on the Attendance marking page.
+ * Bypasses idempotency.
+ */
+async function sendShiftNow(
+  type: 'attendance_morning' | 'attendance_afternoon',
+): Promise<ActionState> {
+  const user = await assertPermission('telegram:send');
+  const outcome = await sendAttendanceReportManual(type, businessDate());
   await writeAudit(user, {
     action: 'telegram.send_manual',
     entity: 'telegram_settings',
@@ -150,13 +177,52 @@ async function sendNow(type: ReportType): Promise<ActionState> {
 }
 
 export async function sendMorningNow(): Promise<ActionState> {
-  return sendNow('attendance_morning');
+  return sendShiftNow('attendance_morning');
 }
 export async function sendAfternoonNow(): Promise<ActionState> {
-  return sendNow('attendance_afternoon');
+  return sendShiftNow('attendance_afternoon');
 }
-export async function sendInventoryNow(): Promise<ActionState> {
-  return sendNow('inventory');
+
+/**
+ * Admin-only "Send now" for ONE attendance shift + ONE location (Office /
+ * Factory / Unclassified) — lets an admin resend to just the destination
+ * that needs it, without touching the other two. Bypasses idempotency.
+ */
+async function sendAttendanceNow(
+  type: 'attendance_morning' | 'attendance_afternoon',
+  location: AttendanceLocation,
+): Promise<ActionState> {
+  const user = await assertPermission('telegram:send');
+  const outcome = await sendAttendanceReportManualForLocation(type, location, businessDate());
+  await writeAudit(user, {
+    action: 'telegram.send_manual',
+    entity: 'telegram_settings',
+    entityId: `${type}:${location}`,
+    newValue: { status: outcome.status },
+  });
+  if (outcome.status === 'sent') return ok(`Report sent via Telegram (${type}, ${location}).`);
+  if (outcome.status === 'no_chat')
+    return fail('No Telegram chat id configured. Set one in Settings → Telegram.');
+  return fail(`Send failed: ${outcome.detail ?? 'unknown error'}`);
+}
+
+export async function sendMorningOfficeNow(): Promise<ActionState> {
+  return sendAttendanceNow('attendance_morning', 'office');
+}
+export async function sendMorningFactoryNow(): Promise<ActionState> {
+  return sendAttendanceNow('attendance_morning', 'factory');
+}
+export async function sendMorningUnclassifiedNow(): Promise<ActionState> {
+  return sendAttendanceNow('attendance_morning', 'unclassified');
+}
+export async function sendAfternoonOfficeNow(): Promise<ActionState> {
+  return sendAttendanceNow('attendance_afternoon', 'office');
+}
+export async function sendAfternoonFactoryNow(): Promise<ActionState> {
+  return sendAttendanceNow('attendance_afternoon', 'factory');
+}
+export async function sendAfternoonUnclassifiedNow(): Promise<ActionState> {
+  return sendAttendanceNow('attendance_afternoon', 'unclassified');
 }
 
 /**
