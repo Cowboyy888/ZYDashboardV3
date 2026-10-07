@@ -1071,6 +1071,23 @@ export async function getQuotations(): Promise<QuotationRow[]> {
   }
 }
 
+/** Distinct customer ids that have at least one quotation — scopes the
+ * Quotations list's Customer filter to customers actually worth filtering
+ * by, independent of pagination (unlike the page of quotations itself). */
+export async function getQuotationCustomerIds(): Promise<string[]> {
+  try {
+    const supabase = await client();
+    const { data } = await supabase
+      .from('quotations')
+      .select('customer_id')
+      .not('customer_id', 'is', null);
+    return [...new Set((data ?? []).map((r) => r.customer_id as string))];
+  } catch (e) {
+    console.error('[queries] getQuotationCustomerIds', e);
+    return [];
+  }
+}
+
 /**
  * Paginated + searchable quotations — the list page's real query.
  * getQuotations() (unfiltered, above) stays for callers that genuinely need

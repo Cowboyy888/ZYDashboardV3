@@ -82,6 +82,7 @@ export function QuotationsClient({
   quotations,
   items,
   customers,
+  customerFilterOptions,
   employees,
   vatRegistered,
   canManage,
@@ -93,6 +94,10 @@ export function QuotationsClient({
   quotations: QuotationRow[];
   items: QuotationItemRow[];
   customers: Opt[];
+  /** Customers who actually have a quotation — scopes the Customer FILTER
+   * dropdown (unlike `customers`, which stays the full list for linking a
+   * quotation to a customer record in the create/edit form). */
+  customerFilterOptions: Opt[];
   employees: Opt[];
   /** Company's CURRENT VAT status (invoice_settings) — informational only on
    * this form; a new quotation snapshots this at creation, see
@@ -175,7 +180,7 @@ export function QuotationsClient({
               className="w-48"
             >
               <option value="">{t('common.all')}</option>
-              {customers.map((c) => (
+              {customerFilterOptions.map((c) => (
                 <option key={c.id} value={c.id}>
                   {c.name}
                 </option>

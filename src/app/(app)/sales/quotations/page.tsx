@@ -4,6 +4,7 @@ import {
   getQuotationsPage,
   getQuotationItems,
   getCustomers,
+  getQuotationCustomerIds,
   getSalesOrdersByQuotationIds,
   getInvoiceSettings,
   getEmployees,
@@ -39,13 +40,16 @@ export default async function QuotationsPage({
   });
   const quotationIds = quotations.map((quo) => quo.id);
 
-  const [items, customers, linkedOrders, invoiceSettings, employees] = await Promise.all([
-    getQuotationItems(quotationIds),
-    getCustomers(true),
-    getSalesOrdersByQuotationIds(quotationIds),
-    getInvoiceSettings(),
-    getEmployees(),
-  ]);
+  const [items, customers, quotationCustomerIds, linkedOrders, invoiceSettings, employees] =
+    await Promise.all([
+      getQuotationItems(quotationIds),
+      getCustomers(true),
+      getQuotationCustomerIds(),
+      getSalesOrdersByQuotationIds(quotationIds),
+      getInvoiceSettings(),
+      getEmployees(),
+    ]);
+  const quotationCustomerIdSet = new Set(quotationCustomerIds);
 
   return (
     <div>
@@ -58,6 +62,9 @@ export default async function QuotationsPage({
         quotations={quotations}
         items={items}
         customers={customers.map((c) => ({ id: c.id, name: c.name }))}
+        customerFilterOptions={customers
+          .filter((c) => quotationCustomerIdSet.has(c.id))
+          .map((c) => ({ id: c.id, name: c.name }))}
         employees={employees.map((e) => ({
           id: e.id,
           name: e.display_name || e.name_english || e.name_chinese || e.employee_code,
