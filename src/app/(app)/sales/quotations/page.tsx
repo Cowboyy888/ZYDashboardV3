@@ -22,12 +22,12 @@ export const dynamic = 'force-dynamic';
 export default async function QuotationsPage({
   searchParams,
 }: {
-  searchParams: Promise<{ page?: string; q?: string; salesperson?: string }>;
+  searchParams: Promise<{ page?: string; q?: string; salesperson?: string; customer?: string }>;
 }) {
   const user = await requirePermission('sales:view');
   const locale = await getLocale();
   const t = translator(locale);
-  const { page: pageParam, q, salesperson } = await searchParams;
+  const { page: pageParam, q, salesperson, customer } = await searchParams;
   const page = Math.max(1, Number(pageParam) || 1);
 
   const { rows: quotations, total } = await getQuotationsPage({
@@ -35,6 +35,7 @@ export default async function QuotationsPage({
     pageSize: DEFAULT_PAGE_SIZE,
     search: q,
     salespersonId: salesperson,
+    customerId: customer,
   });
   const quotationIds = quotations.map((quo) => quo.id);
 
@@ -69,7 +70,8 @@ export default async function QuotationsPage({
           soNumber: o.so_number,
         }))}
         salespersonFilter={salesperson ?? ''}
-        isSearching={!!q?.trim() || !!salesperson}
+        customerFilter={customer ?? ''}
+        isSearching={!!q?.trim() || !!salesperson || !!customer}
       />
       <div className="mt-4">
         <Pagination
@@ -78,7 +80,7 @@ export default async function QuotationsPage({
           pageSize={DEFAULT_PAGE_SIZE}
           total={total}
           basePath="/sales/quotations"
-          searchParams={{ q, salesperson }}
+          searchParams={{ q, salesperson, customer }}
           prevLabel={t('common.previous')}
           nextLabel={t('common.next')}
         />

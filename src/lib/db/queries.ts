@@ -1083,11 +1083,13 @@ export async function getQuotationsPage({
   pageSize = DEFAULT_PAGE_SIZE,
   search,
   salespersonId,
+  customerId,
 }: {
   page: number;
   pageSize?: number;
   search?: string;
   salespersonId?: string;
+  customerId?: string;
 }): Promise<PageResult<QuotationRow>> {
   try {
     const supabase = await client();
@@ -1096,6 +1098,7 @@ export async function getQuotationsPage({
     let q = supabase.from('quotations').select('*', { count: 'exact' });
 
     if (salespersonId) q = q.eq('salesperson_id', salespersonId);
+    if (customerId) q = q.eq('customer_id', customerId);
 
     const term = search ? sanitizeSearchTerm(search) : '';
     if (term) {

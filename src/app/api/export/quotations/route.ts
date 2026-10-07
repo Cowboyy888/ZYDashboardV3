@@ -1,5 +1,5 @@
 import { requirePermission } from '@/lib/auth';
-import { getQuotations, getQuotationItems } from '@/lib/db/queries';
+import { getQuotations, getQuotationItems, getCustomers } from '@/lib/db/queries';
 import { quotationTotals, type QuotationTotals } from '@/lib/domain/quotation';
 import { businessDate, formatDDMMYYYY } from '@/lib/domain/datetime';
 import { buildXlsxBuffer, xlsxResponse, type XlsxColumn } from '@/lib/reports/xlsx';
@@ -59,6 +59,7 @@ export async function GET(request: Request) {
   const params = new URL(request.url).searchParams;
   const from = params.get('from') || '';
   const to = params.get('to') || '';
+  const customerId = params.get('customer') || '';
 
   const allQuotations = await getQuotations();
   // The one filter this report exists for: settled quotations only, not the
@@ -66,10 +67,13 @@ export async function GET(request: Request) {
   // been marked paid (markPaid() in actions/quotations.ts). An optional
   // from/to range further narrows to when the balance was actually paid, not
   // when the quotation was created — this report is about money collected.
+  // An optional customer narrows to one customer's sales, e.g. for a
+  // per-customer sales report.
   const quotations = allQuotations.filter((q) => {
     if (q.balance_paid_on == null) return false;
     if (from && q.balance_paid_on < from) return false;
     if (to && q.balance_paid_on > to) return false;
+    if (customerId && q.customer_id !== customerId) return false;
     return true;
   });
 
@@ -102,12 +106,16 @@ export async function GET(request: Request) {
     from || to
       ? `${from ? formatDDMMYYYY(from) : '…'} – ${to ? formatDDMMYYYY(to) : '…'}`
       : 'All dates';
+  const customerLabel = customerId
+    ? ((await getCustomers(true, [customerId]))[0]?.name ?? null)
+    : null;
 
   const buffer = await buildXlsxBuffer('Balance Paid', COLUMNS, rows, {
     title: 'QUOTATIONS — BALANCE PAID · 报价单 — 尾款已付',
     metaLeft: [
       { label: 'REPORT:', value: 'Balance Paid Quotations 尾款已付报价单' },
       { label: 'Balance paid between:', value: dateRangeLabel },
+      ...(customerLabel ? [{ label: 'Customer:', value: customerLabel }] : []),
     ],
     metaRight: [
       { label: 'Generated:', value: formatDDMMYYYY(today) },
@@ -127,6 +135,14 @@ export async function GET(request: Request) {
     ],
     notes: ['Only quotations whose balance invoice has been marked paid are listed here.'],
   });
-  const filenameSuffix = from || to ? `_${from || 'start'}_${to || 'end'}` : '';
-  return xlsxResponse(buffer, `quotations-balance-paid-${today}${filenameSuffix}.xlsx`);
+  const dateSuffix = from || to ? `_${from || 'start'}_${to || 'end'}` : '';
+  // ASCII-only: the filename goes straight into a Content-Disposition header,
+  // which isn't safe for arbitrary UTF-8 (e.g. a Chinese customer name) —
+  // the full name is still shown, correctly, in the report's own meta row.
+  const asciiCustomer = customerLabel?.replace(/[^A-Za-z0-9]+/g, '-').replace(/^-+|-+$/g, '');
+  const customerSuffix = asciiCustomer ? `_${asciiCustomer}` : '';
+  return xlsxResponse(
+    buffer,
+    `quotations-balance-paid-${today}${dateSuffix}${customerSuffix}.xlsx`,
+  );
 }

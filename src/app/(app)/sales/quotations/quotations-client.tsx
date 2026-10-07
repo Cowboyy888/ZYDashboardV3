@@ -87,6 +87,7 @@ export function QuotationsClient({
   canManage,
   linkedOrders,
   salespersonFilter = '',
+  customerFilter = '',
   isSearching = false,
 }: {
   quotations: QuotationRow[];
@@ -101,6 +102,8 @@ export function QuotationsClient({
   linkedOrders: { quotationId: string; soId: string; soNumber: string | null }[];
   /** Current `?salesperson=` filter value, server-derived — drives the list's own query. */
   salespersonFilter?: string;
+  /** Current `?customer=` filter value, server-derived — drives the list's own query. */
+  customerFilter?: string;
   isSearching?: boolean;
 }) {
   const { t } = useT();
@@ -122,14 +125,24 @@ export function QuotationsClient({
     const params = new URLSearchParams();
     if (downloadFrom) params.set('from', downloadFrom);
     if (downloadTo) params.set('to', downloadTo);
+    if (customerFilter) params.set('customer', customerFilter);
     const qs = params.toString();
     return qs ? `/api/export/quotations?${qs}` : '/api/export/quotations';
-  }, [downloadFrom, downloadTo]);
+  }, [downloadFrom, downloadTo, customerFilter]);
 
   function onSalespersonFilterChange(next: string) {
     const params = new URLSearchParams(searchParams.toString());
     if (next) params.set('salesperson', next);
     else params.delete('salesperson');
+    params.delete('page');
+    const qs = params.toString();
+    router.push(qs ? `${pathname}?${qs}` : pathname);
+  }
+
+  function onCustomerFilterChange(next: string) {
+    const params = new URLSearchParams(searchParams.toString());
+    if (next) params.set('customer', next);
+    else params.delete('customer');
     params.delete('page');
     const qs = params.toString();
     router.push(qs ? `${pathname}?${qs}` : pathname);
@@ -152,21 +165,39 @@ export function QuotationsClient({
   return (
     <div className="space-y-4">
       <div className="flex flex-wrap items-end justify-between gap-2">
-        <div className="space-y-1.5">
-          <Label htmlFor="quo-filter-salesperson">{t('quo.salesperson')}</Label>
-          <NativeSelect
-            id="quo-filter-salesperson"
-            value={salespersonFilter}
-            onChange={(e) => onSalespersonFilterChange(e.target.value)}
-            className="w-48"
-          >
-            <option value="">{t('common.all')}</option>
-            {employees.map((e) => (
-              <option key={e.id} value={e.id}>
-                {e.name}
-              </option>
-            ))}
-          </NativeSelect>
+        <div className="flex flex-wrap items-end gap-2">
+          <div className="space-y-1.5">
+            <Label htmlFor="quo-filter-customer">{t('quo.customer')}</Label>
+            <NativeSelect
+              id="quo-filter-customer"
+              value={customerFilter}
+              onChange={(e) => onCustomerFilterChange(e.target.value)}
+              className="w-48"
+            >
+              <option value="">{t('common.all')}</option>
+              {customers.map((c) => (
+                <option key={c.id} value={c.id}>
+                  {c.name}
+                </option>
+              ))}
+            </NativeSelect>
+          </div>
+          <div className="space-y-1.5">
+            <Label htmlFor="quo-filter-salesperson">{t('quo.salesperson')}</Label>
+            <NativeSelect
+              id="quo-filter-salesperson"
+              value={salespersonFilter}
+              onChange={(e) => onSalespersonFilterChange(e.target.value)}
+              className="w-48"
+            >
+              <option value="">{t('common.all')}</option>
+              {employees.map((e) => (
+                <option key={e.id} value={e.id}>
+                  {e.name}
+                </option>
+              ))}
+            </NativeSelect>
+          </div>
         </div>
         <div className="flex flex-wrap items-end justify-end gap-2">
           <div className="space-y-1.5">
