@@ -2,7 +2,7 @@
 import { useEffect, useRef, useState } from 'react';
 import { AlertTriangle } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
-import { Card, CardContent } from '@/components/ui/card';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import {
   Table,
   TableBody,
@@ -27,7 +27,19 @@ import {
   type AttendanceStatus,
   type Shift,
 } from '@/lib/domain/attendance';
+import {
+  ATTENDANCE_LOCATIONS,
+  ATTENDANCE_LOCATION_LABEL,
+  type AttendanceLocation,
+} from '@/lib/domain/report-schedule';
 import type { AttendanceRow, EmployeeRow } from '@/lib/db/types';
+
+// Same fallback as the report builders (src/lib/reports/service.ts's
+// bucketFor): everyone is Office or Factory, so an unexpected/missing value
+// still lands somewhere clickable rather than vanishing from the board.
+function locationOf(e: EmployeeRow): AttendanceLocation {
+  return e.work_location === 'office' ? 'office' : 'factory';
+}
 
 const SETTABLE = ATTENDANCE_STATUSES.filter((s) => s !== 'unmarked') as Exclude<
   AttendanceStatus,
@@ -62,6 +74,12 @@ export function AttendanceBoard({
   const [shift, setShift] = useState<Shift>('morning');
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
   const activeIds = employees.map((e) => e.id);
+  const employeesByLocation: Record<AttendanceLocation, EmployeeRow[]> = {
+    office: [],
+    factory: [],
+  };
+  for (const e of employees) employeesByLocation[locationOf(e)].push(e);
+
   const asRecords: AttendanceRecord[] = records.map((r) => ({
     employeeId: r.employee_id,
     businessDate: r.business_date,
@@ -74,15 +92,33 @@ export function AttendanceBoard({
   };
   const summary = summarizeShift(activeIds, asRecords, date, shift);
 
-  const allSelected = employees.length > 0 && selectedIds.size === employees.length;
-  const someSelected = selectedIds.size > 0 && !allSelected;
-  const headerCheckboxRef = useRef<HTMLInputElement>(null);
+  const headerCheckboxRefs = useRef<Partial<Record<AttendanceLocation, HTMLInputElement | null>>>(
+    {},
+  );
   useEffect(() => {
-    if (headerCheckboxRef.current) headerCheckboxRef.current.indeterminate = someSelected;
-  }, [someSelected]);
+    for (const loc of ATTENDANCE_LOCATIONS) {
+      const ids = employeesByLocation[loc].map((e) => e.id);
+      const allIn = ids.length > 0 && ids.every((id) => selectedIds.has(id));
+      const someIn = ids.some((id) => selectedIds.has(id));
+      const el = headerCheckboxRefs.current[loc];
+      if (el) el.indeterminate = someIn && !allIn;
+    }
+    // employeesByLocation is derived fresh from `employees` every render, so
+    // depending on `employees` instead keeps this in sync without re-running
+    // on every unrelated render.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [selectedIds, employees]);
 
-  function toggleAll() {
-    setSelectedIds(allSelected ? new Set() : new Set(activeIds));
+  function toggleAllIn(ids: string[]) {
+    setSelectedIds((prev) => {
+      const allIn = ids.length > 0 && ids.every((id) => prev.has(id));
+      const next = new Set(prev);
+      for (const id of ids) {
+        if (allIn) next.delete(id);
+        else next.add(id);
+      }
+      return next;
+    });
   }
   function toggleOne(id: string) {
     setSelectedIds((prev) => {
@@ -168,101 +204,116 @@ export function AttendanceBoard({
               </div>
             )}
 
-            <Card>
-              <CardContent className="p-0">
-                <Table>
-                  <TableHeader>
-                    <TableRow>
-                      {canManage && (
-                        <TableHead className="w-10">
-                          <input
-                            ref={headerCheckboxRef}
-                            type="checkbox"
-                            aria-label={t('att.selectAll')}
-                            checked={allSelected}
-                            onChange={toggleAll}
-                          />
-                        </TableHead>
-                      )}
-                      <TableHead>{t('att.employee')}</TableHead>
-                      <TableHead>{t('common.status')}</TableHead>
-                      {canManage && <TableHead>{t('att.set')}</TableHead>}
-                    </TableRow>
-                  </TableHeader>
-                  <TableBody>
-                    {employees.map((e) => {
-                      const current = statusFor(e.id);
-                      return (
-                        <TableRow key={e.id}>
+            {ATTENDANCE_LOCATIONS.map((loc) => {
+              const group = employeesByLocation[loc];
+              const ids = group.map((e) => e.id);
+              const allIn = ids.length > 0 && ids.every((id) => selectedIds.has(id));
+              return (
+                <Card key={loc}>
+                  <CardHeader className="flex-row items-center justify-between space-y-0 py-3">
+                    <CardTitle className="text-base">
+                      {ATTENDANCE_LOCATION_LABEL[loc].zh} {ATTENDANCE_LOCATION_LABEL[loc].en}{' '}
+                      <span className="font-normal text-muted-foreground">({group.length})</span>
+                    </CardTitle>
+                  </CardHeader>
+                  <CardContent className="p-0">
+                    <Table>
+                      <TableHeader>
+                        <TableRow>
                           {canManage && (
-                            <TableCell>
+                            <TableHead className="w-10">
                               <input
+                                ref={(el) => {
+                                  headerCheckboxRefs.current[loc] = el;
+                                }}
                                 type="checkbox"
-                                aria-label={e.display_name || e.employee_code}
-                                checked={selectedIds.has(e.id)}
-                                onChange={() => toggleOne(e.id)}
+                                aria-label={t('att.selectAll')}
+                                checked={allIn}
+                                onChange={() => toggleAllIn(ids)}
                               />
-                            </TableCell>
+                            </TableHead>
                           )}
-                          <TableCell>
-                            <div className="font-medium">
-                              {e.display_name ||
-                                e.name_english ||
-                                e.name_chinese ||
-                                e.employee_code}
-                            </div>
-                            {e.name_khmer && (
-                              <div className="name-khmer text-xs text-muted-foreground">
-                                {e.name_khmer}
-                              </div>
-                            )}
-                          </TableCell>
-                          <TableCell>
-                            <Badge variant={STATUS_VARIANT[current]}>
-                              {STATUS_LABELS[current][locale]}
-                            </Badge>
-                          </TableCell>
-                          {canManage && (
-                            <TableCell>
-                              <div className="flex flex-wrap gap-1">
-                                {SETTABLE.map((st) => (
-                                  <ActionForm
-                                    key={st}
-                                    action={markAttendance}
-                                    className="space-y-0"
-                                  >
-                                    <input type="hidden" name="employeeId" value={e.id} />
-                                    <input type="hidden" name="businessDate" value={date} />
-                                    <input type="hidden" name="shift" value={shift} />
-                                    <input type="hidden" name="status" value={st} />
-                                    <SubmitButton
-                                      variant={current === st ? 'default' : 'outline'}
-                                      size="sm"
-                                    >
-                                      {STATUS_LABELS[st][locale]}
-                                    </SubmitButton>
-                                  </ActionForm>
-                                ))}
-                              </div>
-                            </TableCell>
-                          )}
+                          <TableHead>{t('att.employee')}</TableHead>
+                          <TableHead>{t('common.status')}</TableHead>
+                          {canManage && <TableHead>{t('att.set')}</TableHead>}
                         </TableRow>
-                      );
-                    })}
-                    {employees.length === 0 && (
-                      <TableRow>
-                        <TableCell
-                          colSpan={canManage ? 4 : 2}
-                          className="text-center text-muted-foreground"
-                        >
-                          {t('att.noActive')}
-                        </TableCell>
-                      </TableRow>
-                    )}
-                  </TableBody>
-                </Table>
-              </CardContent>
-            </Card>
+                      </TableHeader>
+                      <TableBody>
+                        {group.map((e) => {
+                          const current = statusFor(e.id);
+                          return (
+                            <TableRow key={e.id}>
+                              {canManage && (
+                                <TableCell>
+                                  <input
+                                    type="checkbox"
+                                    aria-label={e.display_name || e.employee_code}
+                                    checked={selectedIds.has(e.id)}
+                                    onChange={() => toggleOne(e.id)}
+                                  />
+                                </TableCell>
+                              )}
+                              <TableCell>
+                                <div className="font-medium">
+                                  {e.display_name ||
+                                    e.name_english ||
+                                    e.name_chinese ||
+                                    e.employee_code}
+                                </div>
+                                {e.name_khmer && (
+                                  <div className="name-khmer text-xs text-muted-foreground">
+                                    {e.name_khmer}
+                                  </div>
+                                )}
+                              </TableCell>
+                              <TableCell>
+                                <Badge variant={STATUS_VARIANT[current]}>
+                                  {STATUS_LABELS[current][locale]}
+                                </Badge>
+                              </TableCell>
+                              {canManage && (
+                                <TableCell>
+                                  <div className="flex flex-wrap gap-1">
+                                    {SETTABLE.map((st) => (
+                                      <ActionForm
+                                        key={st}
+                                        action={markAttendance}
+                                        className="space-y-0"
+                                      >
+                                        <input type="hidden" name="employeeId" value={e.id} />
+                                        <input type="hidden" name="businessDate" value={date} />
+                                        <input type="hidden" name="shift" value={shift} />
+                                        <input type="hidden" name="status" value={st} />
+                                        <SubmitButton
+                                          variant={current === st ? 'default' : 'outline'}
+                                          size="sm"
+                                        >
+                                          {STATUS_LABELS[st][locale]}
+                                        </SubmitButton>
+                                      </ActionForm>
+                                    ))}
+                                  </div>
+                                </TableCell>
+                              )}
+                            </TableRow>
+                          );
+                        })}
+                        {group.length === 0 && (
+                          <TableRow>
+                            <TableCell
+                              colSpan={canManage ? 4 : 2}
+                              className="text-center text-muted-foreground"
+                            >
+                              {t('att.noActive')}
+                            </TableCell>
+                          </TableRow>
+                        )}
+                      </TableBody>
+                    </Table>
+                  </CardContent>
+                </Card>
+              );
+            })}
           </TabsContent>
         ))}
       </Tabs>
