@@ -38,13 +38,19 @@ const SHIFT_FOR: Record<'attendance_morning' | 'attendance_afternoon', Shift> = 
 /** Read every destination's chat id + enabled switch (never their status/error). */
 async function resolveDestinations(): Promise<TelegramDestinations> {
   const admin = createSupabaseAdminClient();
-  const { data } = await admin
+  const { data, error } = await admin
     .from('telegram_settings')
     .select(
       'attendance_office_chat_id, attendance_office_enabled, attendance_factory_chat_id, attendance_factory_enabled, inventory_chat_id, inventory_group_enabled',
     )
     .eq('id', 1)
     .maybeSingle();
+  // A real DB error here (bad column, RLS denial, connection issue) must not
+  // look identical to "admin genuinely hasn't configured a chat id yet" —
+  // the send action would otherwise tell the user to go fix Settings when
+  // Settings is actually fine. Logged, not thrown: a transient failure here
+  // shouldn't crash the send attempt when fail-open (no_chat) is recoverable.
+  if (error) console.error('[reports/service] resolveDestinations', error);
   return {
     attendanceOfficeChatId: (data?.attendance_office_chat_id as string | null) ?? null,
     attendanceOfficeEnabled: data?.attendance_office_enabled ?? true,
