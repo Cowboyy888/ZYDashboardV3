@@ -6,6 +6,7 @@ import { ROLES } from '@/lib/domain/rbac';
 import { CURRENCIES } from '@/lib/domain/purchasing';
 import { DEDUCTION_KINDS } from '@/lib/domain/payroll';
 import { WORK_LOCATIONS } from '@/lib/domain/employees';
+import { TASK_PRIORITIES, TASK_STATUSES } from '@/lib/domain/tasks';
 
 /** Reusable primitives. */
 const nonEmpty = z.string().trim().min(1, 'Required');
@@ -712,3 +713,69 @@ export const equipmentMaintenanceSchema = z
     path: ['nextDueDate'],
   });
 export type EquipmentMaintenanceInput = z.infer<typeof equipmentMaintenanceSchema>;
+
+// --- Team Task & Activity Tracking -------------------------------------------
+
+const optionalHhmm = z.preprocess((v) => (v === '' || v == null ? undefined : v), hhmm.optional());
+
+export const taskSchema = z.object({
+  employeeId: z.string().uuid(),
+  departmentId: z.string().uuid(),
+  categoryId: optionalUuid,
+  businessDate: isoDate,
+  title: nonEmpty.max(200),
+  description: optionalText,
+  priority: z.enum(TASK_PRIORITIES).default('medium'),
+  plannedStart: optionalHhmm,
+  plannedEnd: optionalHhmm,
+  status: z.enum(TASK_STATUSES).default('planned'),
+  result: optionalText,
+  customerId: optionalUuid,
+  location: optionalText,
+  notes: optionalText,
+});
+export type TaskInput = z.infer<typeof taskSchema>;
+
+export const taskUpdateSchema = taskSchema.extend({ id: z.string().uuid() });
+export type TaskUpdateInput = z.infer<typeof taskUpdateSchema>;
+
+export const taskStatusChangeSchema = z.object({
+  id: z.string().uuid(),
+  status: z.enum(TASK_STATUSES),
+  result: optionalText,
+});
+export type TaskStatusChangeInput = z.infer<typeof taskStatusChangeSchema>;
+
+const dailyMetricEntrySchema = z.object({
+  metricKey: nonEmpty,
+  value: z.coerce.number().min(0),
+});
+
+export const saveDailyMetricsSchema = z.object({
+  employeeId: z.string().uuid(),
+  businessDate: isoDate,
+  entries: z.array(dailyMetricEntrySchema),
+});
+export type SaveDailyMetricsInput = z.infer<typeof saveDailyMetricsSchema>;
+
+export const taskDepartmentSchema = z.object({ name: nonEmpty.max(80) });
+export type TaskDepartmentInput = z.infer<typeof taskDepartmentSchema>;
+
+export const taskCategorySchema = z.object({
+  departmentId: z.string().uuid(),
+  name: nonEmpty.max(120),
+});
+export type TaskCategoryInput = z.infer<typeof taskCategorySchema>;
+
+export const taskMetricTypeSchema = z.object({
+  key: z
+    .string()
+    .trim()
+    .min(1)
+    .max(60)
+    .regex(/^[a-z][a-z0-9_]*$/, 'lowercase_snake_case only'),
+  departmentId: optionalUuid,
+  labelEn: nonEmpty.max(80),
+  labelZh: nonEmpty.max(80),
+});
+export type TaskMetricTypeInput = z.infer<typeof taskMetricTypeSchema>;

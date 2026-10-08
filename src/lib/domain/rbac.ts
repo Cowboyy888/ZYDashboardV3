@@ -81,6 +81,8 @@ export type Permission =
   | 'price_records:manage'
   | 'maintenance:view'
   | 'maintenance:manage'
+  | 'tasks:view'
+  | 'tasks:manage'
   // Narrow: ADD a new product spec only — not edit/archive/delete (that stays
   // under 'products:manage'). Lets whoever manages prices add a brand-new
   // spec inline on the Price Records form without a detour through Settings.
@@ -126,6 +128,7 @@ const ROLE_PERMISSIONS: Record<Role, Permission[]> = {
     'kpi:manage',
     'price_records:view',
     'price_records:manage',
+    'tasks:view',
   ],
   attendance_admin: [
     ...EVERYONE,
@@ -166,6 +169,8 @@ const ROLE_PERMISSIONS: Record<Role, Permission[]> = {
     'kpi:manage',
     'price_records:view',
     'price_records:manage',
+    'tasks:view',
+    'tasks:manage',
   ],
   payroll_admin: [
     ...EVERYONE,

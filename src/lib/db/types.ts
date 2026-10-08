@@ -648,3 +648,67 @@ export interface PriceRecordRow {
   created_at: string;
   updated_at: string;
 }
+
+// --- Team Task & Activity Tracking (0056) -------------------------------------
+
+export interface TaskDepartmentRow {
+  id: string;
+  name: string;
+  sort_order: number;
+  is_active: boolean;
+  created_at: string;
+}
+
+export interface TaskCategoryRow {
+  id: string;
+  department_id: string;
+  name: string;
+  sort_order: number;
+  is_active: boolean;
+  created_at: string;
+}
+
+export interface TaskMetricTypeRow {
+  key: string;
+  department_id: string | null;
+  label_en: string;
+  label_zh: string;
+  sort_order: number;
+  is_active: boolean;
+  created_at: string;
+}
+
+export interface TaskRow {
+  id: string;
+  employee_id: string;
+  department_id: string;
+  category_id: string | null;
+  business_date: string;
+  title: string;
+  description: string | null;
+  priority: 'high' | 'medium' | 'low';
+  planned_start: string | null;
+  planned_end: string | null;
+  status: 'planned' | 'in_progress' | 'completed' | 'partially_completed' | 'cancelled';
+  result: string | null;
+  customer_id: string | null;
+  location: string | null;
+  notes: string | null;
+  attachment_path: string | null;
+  created_by: string | null;
+  assigned_by: string | null;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface DailyMetricRow {
+  id: string;
+  employee_id: string;
+  business_date: string;
+  metric_key: string;
+  value: number;
+  task_id: string | null;
+  created_by: string | null;
+  created_at: string;
+  updated_at: string;
+}

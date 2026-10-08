@@ -10,6 +10,7 @@ import {
   Receipt,
   Tags,
   Building2,
+  ClipboardList,
 } from 'lucide-react';
 import { requirePermission } from '@/lib/auth';
 import { getLocale } from '@/lib/i18n/locale';
@@ -67,6 +68,12 @@ export default async function SettingsPage() {
       icon: Building2,
       label: t('set.customerTypes'),
       show: hasPermission(user.role, 'inquiries:manage'),
+    },
+    {
+      href: '/settings/task-categories',
+      icon: ClipboardList,
+      label: t('set.taskCategories'),
+      show: hasPermission(user.role, 'settings:manage'),
     },
     {
       href: '/settings/users',

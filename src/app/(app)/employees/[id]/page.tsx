@@ -7,8 +7,11 @@ import {
   getEmployeePrivate,
   getSignedPhotoUrl,
   getAttendanceGroups,
+  getTaskMetricTypes,
+  getTasksForRange,
+  getDailyMetricsForRange,
 } from '@/lib/db/queries';
-import { formatDDMMYYYY } from '@/lib/domain/datetime';
+import { formatDDMMYYYY, businessDate, weekRange, addDays } from '@/lib/domain/datetime';
 import { getLocale } from '@/lib/i18n/locale';
 import { translator } from '@/lib/i18n';
 import { PageHeader } from '@/components/page-header';
@@ -19,6 +22,7 @@ import { PhotoViewer } from './photo-viewer';
 import { PrivateForm } from './private-form';
 import { EmployeeProfileForm } from './profile-form';
 import { EmployeeDetailsForm } from './details-form';
+import { EmployeeTaskSummary } from './task-summary';
 
 export const dynamic = 'force-dynamic';
 
@@ -32,9 +36,19 @@ export default async function EmployeeDetailPage({ params }: { params: Promise<{
 
   const canSensitive = canViewSensitiveEmployeeData(user.role);
   const canManage = hasPermission(user.role, 'employees:manage');
+  const canTasks = hasPermission(user.role, 'tasks:view');
   const [priv, photoUrl] = canSensitive
     ? await Promise.all([getEmployeePrivate(id), getSignedPhotoUrl(employee.photo_path)])
     : [null, null];
+  const { start, end } = weekRange(businessDate());
+  const weekDates = Array.from({ length: 7 }, (_, i) => addDays(start, i));
+  const [taskMetricTypes, employeeTasks, employeeMetrics] = canTasks
+    ? await Promise.all([
+        getTaskMetricTypes(),
+        getTasksForRange(start, end, id),
+        getDailyMetricsForRange(start, end, id),
+      ])
+    : [[], [], []];
   const groupName = groups.find((g) => g.id === employee.attendance_group_id)?.name ?? '—';
   const displayName =
     employee.display_name ||
@@ -145,6 +159,16 @@ export default async function EmployeeDetailPage({ params }: { params: Promise<{
               )}
             </CardContent>
           </Card>
+
+          {canTasks && (
+            <EmployeeTaskSummary
+              locale={locale}
+              weekDates={weekDates}
+              tasks={employeeTasks}
+              metrics={employeeMetrics}
+              metricTypes={taskMetricTypes}
+            />
+          )}
         </div>
       </div>
     </div>

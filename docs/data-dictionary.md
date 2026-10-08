@@ -459,6 +459,55 @@ line on this run, not tracked as a loan against future runs).
   `sales_order_item_delivered`. Net pay = `base_amount − deductions_total`,
   computed in `buildPayrollRunRows` (`src/lib/domain/payroll-view.ts`).
 
+### task_departments / task_categories / task_metric_types  *(0056 — editable master lists)*
+Same shape as `attendance_groups`/`locations`/`product_families`: `id`,
+`name`, `sort_order`, `is_active`, `created_at` (all authenticated read,
+owner/system_admin write). Seeded departments: Marketing, B2B Sales, Field
+Sales, Sales Assistant. `task_categories` adds `department_id →
+task_departments` (unique per department). `task_metric_types` uses a
+stable `key text` primary key (not a uuid — it's a code-facing identifier
+read by the domain layer) plus `department_id` (nullable — a metric with no
+department, e.g. `customer_contacts`, is shared across all four) and
+`label_en`/`label_zh`.
+`employees.department` (free text, pre-existing) is deliberately NOT linked
+to `task_departments` — each task carries its own `department_id` rather
+than risking a migration of unreviewed production free-text values.
+
+### tasks  *(0056 — Team Task & Activity Tracking)*
+`id`, `employee_id → employees`, `department_id → task_departments`,
+`category_id → task_categories` (nullable), `business_date`, `title`,
+`description`, `priority` (`high`/`medium`/`low`), `planned_start`/
+`planned_end` (`time`, nullable), `status` (`planned`/`in_progress`/
+`completed`/`partially_completed`/`cancelled`), `result`, `customer_id →
+customers` (nullable), `location`, `notes`, `attachment_path` (nullable —
+reuses the existing `attachments` Storage bucket), `created_by`/
+`assigned_by → profiles`, `created_at`, `updated_at`.
+- No stored `overdue` status — derived at read time
+  (`src/lib/domain/tasks.ts`'s `isOverdue`) as `business_date < today AND
+  status in ('planned','in_progress')`, same "derive, don't store" posture
+  as `stock_balances`/`payroll_items_live`.
+- No immutability trigger (tasks are operational notes, not a commercial
+  commitment like a PO/SO) — full edit history lives in `audit_log` like
+  every other mutation in this app, not a bespoke activity-log table.
+- No employee self-service: `employees` has no link to `profiles` anywhere
+  in this schema, so — same as `attendance` — a manager/admin enters tasks
+  for the team, not each employee for themselves.
+
+### daily_metrics  *(0056 — the activity ledger)*
+`id`, `employee_id → employees`, `business_date`, `metric_key →
+task_metric_types`, `value numeric(14,2)`, `task_id → tasks` (nullable — a
+metric can stand alone as an end-of-day number or trace back to the task
+that produced it), `created_by → profiles`, `created_at`, `updated_at`.
+Unique `(employee_id, business_date, metric_key)` — one **updatable** row
+per metric per employee per day (correcting a number is a direct edit, same
+as `attendance` allows, not a second correcting ledger entry). Weekly/
+monthly totals are always `SUM(value) ... GROUP BY`, never stored — this is
+what the Weekly Team Performance dashboard and the Employee Detail daily
+breakdown both read.
+- RLS on `tasks`/`daily_metrics`: select owner/system_admin/sales_admin;
+  insert/update owner/sales_admin only — identical split to
+  `customers`/`sales_orders` above (system_admin is view-only).
+
 ## RLS matrix (summary)
 
 | Table | Read | Write |
@@ -478,6 +527,8 @@ line on this run, not tracked as a loan against future runs).
 | customers / sales_orders / sales_order_items | owner/system_admin/sales | owner/sales (system_admin is view-only — this is also what keeps prices, which live on these same rows, out of every other role) |
 | deposit_invoices / payment_receipts | owner/system_admin/sales | owner/sales (system_admin is view-only, same reasoning as sales_orders) |
 | payroll_runs / payroll_items / payroll_item_lines | owner/system_admin/payroll | owner/payroll (system_admin is view-only — approving a run additionally requires Owner specifically, enforced by a DB trigger) |
+| task_departments / task_categories / task_metric_types | all authenticated | owner/system_admin |
+| tasks / daily_metrics | owner/system_admin/sales | owner/sales (system_admin is view-only, same reasoning as sales_orders) |
 
 Storage buckets (all **private**): `employee-photos`, `employee-docs` — read by
 owner/system_admin/payroll, write by owner/system_admin; `attachments` — read by

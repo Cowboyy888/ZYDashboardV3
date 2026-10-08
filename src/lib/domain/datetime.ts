@@ -97,6 +97,21 @@ export function addDays(date: BusinessDate, days: number): BusinessDate {
   return dt.toISOString().slice(0, 10);
 }
 
+/** Monday of the week containing `date` (ISO week — Monday start). */
+export function startOfWeek(date: BusinessDate): BusinessDate {
+  const [y, m, d] = date.split('-').map(Number);
+  const dt = new Date(Date.UTC(y!, (m ?? 1) - 1, d!));
+  const isoDow = dt.getUTCDay() || 7; // Sun=0 -> 7, so Mon=1..Sun=7
+  dt.setUTCDate(dt.getUTCDate() - (isoDow - 1));
+  return dt.toISOString().slice(0, 10);
+}
+
+/** [Monday, Sunday] business-date range for the week containing `date`. */
+export function weekRange(date: BusinessDate): { start: BusinessDate; end: BusinessDate } {
+  const start = startOfWeek(date);
+  return { start, end: addDays(start, 6) };
+}
+
 /** Format a business date (or Date) as dd/mm/yyyy. */
 export function formatDDMMYYYY(value: BusinessDate | Date, tz: string = APP_TIMEZONE): string {
   const iso =

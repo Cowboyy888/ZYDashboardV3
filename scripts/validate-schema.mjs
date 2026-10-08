@@ -251,6 +251,26 @@ check(
   /customers_select[\s\S]*?auth_role\(\) in \('owner', 'system_admin', 'sales_admin'\)/i.test(sql),
   'customers/SO visibility (and therefore prices) restricted to owner/system_admin/sales_admin',
 );
+// tasks/daily_metrics use the InitPlan-cached `(select auth_role())` form
+// (0053_optimize_rls_performance.sql) rather than the older bare form above.
+check(
+  /tasks_select[\s\S]*?auth_role\(\)\) in \('owner', 'system_admin', 'sales_admin'\)/i.test(sql),
+  'tasks visibility restricted to owner/system_admin/sales_admin, same split as customers/SO',
+);
+check(
+  /tasks_write[\s\S]*?auth_role\(\)\) in \('owner', 'sales_admin'\)/i.test(sql),
+  'tasks write restricted to owner/sales_admin (system_admin view-only)',
+);
+check(
+  /daily_metrics_write[\s\S]*?auth_role\(\)\) in \('owner', 'sales_admin'\)/i.test(sql),
+  'daily_metrics write restricted to owner/sales_admin (system_admin view-only)',
+);
+check(
+  /create table if not exists public\.task_departments/i.test(sql) &&
+    /create table if not exists public\.task_categories/i.test(sql) &&
+    /create table if not exists public\.task_metric_types/i.test(sql),
+  'task_departments/task_categories/task_metric_types editable lists',
+);
 check(
   /sale_delivery.*quantity < 0/i.test(sql) || /'sale_delivery'.*quantity < 0/i.test(sql),
   'sale_delivery stored as a negative-signed movement',

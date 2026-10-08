@@ -44,6 +44,11 @@ import type {
   SkuRow,
   StockMovementRow,
   SupplierRow,
+  TaskCategoryRow,
+  TaskDepartmentRow,
+  TaskMetricTypeRow,
+  TaskRow,
+  DailyMetricRow,
   TelegramSettingsRow,
 } from './types';
 
@@ -1552,5 +1557,103 @@ export async function getPriceRecordCounts(): Promise<PriceRecordCounts> {
       changedThisMonth: 0,
       expiringSoon: 0,
     };
+  }
+}
+
+// --- Team Task & Activity Tracking (0056) -------------------------------------
+
+export async function getTaskDepartments(includeInactive = false): Promise<TaskDepartmentRow[]> {
+  try {
+    const supabase = await client();
+    let q = supabase.from('task_departments').select('*').order('sort_order').order('name');
+    if (!includeInactive) q = q.eq('is_active', true);
+    const { data } = await q;
+    return (data as TaskDepartmentRow[]) ?? [];
+  } catch (e) {
+    console.error('[queries] getTaskDepartments', e);
+    return [];
+  }
+}
+
+export async function getTaskCategories(includeInactive = false): Promise<TaskCategoryRow[]> {
+  try {
+    const supabase = await client();
+    let q = supabase.from('task_categories').select('*').order('sort_order').order('name');
+    if (!includeInactive) q = q.eq('is_active', true);
+    const { data } = await q;
+    return (data as TaskCategoryRow[]) ?? [];
+  } catch (e) {
+    console.error('[queries] getTaskCategories', e);
+    return [];
+  }
+}
+
+export async function getTaskMetricTypes(includeInactive = false): Promise<TaskMetricTypeRow[]> {
+  try {
+    const supabase = await client();
+    let q = supabase.from('task_metric_types').select('*').order('sort_order').order('key');
+    if (!includeInactive) q = q.eq('is_active', true);
+    const { data } = await q;
+    return (data as TaskMetricTypeRow[]) ?? [];
+  } catch (e) {
+    console.error('[queries] getTaskMetricTypes', e);
+    return [];
+  }
+}
+
+/** Tasks whose business_date falls in [from, to], optionally for one employee. */
+export async function getTasksForRange(
+  from: string,
+  to: string,
+  employeeId?: string,
+): Promise<TaskRow[]> {
+  try {
+    const supabase = await client();
+    let q = supabase
+      .from('tasks')
+      .select('*')
+      .gte('business_date', from)
+      .lte('business_date', to)
+      .order('business_date')
+      .order('created_at');
+    if (employeeId) q = q.eq('employee_id', employeeId);
+    const { data } = await q;
+    return (data as TaskRow[]) ?? [];
+  } catch (e) {
+    console.error('[queries] getTasksForRange', e);
+    return [];
+  }
+}
+
+export async function getTask(id: string): Promise<TaskRow | null> {
+  try {
+    const supabase = await client();
+    const { data } = await supabase.from('tasks').select('*').eq('id', id).maybeSingle();
+    return (data as TaskRow) ?? null;
+  } catch (e) {
+    console.error('[queries] getTask', e);
+    return null;
+  }
+}
+
+/** Daily metric entries in [from, to], optionally for one employee. */
+export async function getDailyMetricsForRange(
+  from: string,
+  to: string,
+  employeeId?: string,
+): Promise<DailyMetricRow[]> {
+  try {
+    const supabase = await client();
+    let q = supabase
+      .from('daily_metrics')
+      .select('*')
+      .gte('business_date', from)
+      .lte('business_date', to);
+    if (employeeId) q = q.eq('employee_id', employeeId);
+    const { data } = await q;
+    return (data as DailyMetricRow[]) ?? [];
+  } catch (e) {
+    console.error('[queries] getDailyMetricsForRange', e);
+    return [];
   }
 }

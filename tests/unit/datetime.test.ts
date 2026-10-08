@@ -8,6 +8,8 @@ import {
   formatDateTime,
   addDays,
   tzOffsetMinutes,
+  startOfWeek,
+  weekRange,
 } from '@/lib/domain/datetime';
 
 const TZ = 'Asia/Bangkok'; // UTC+7, no DST
@@ -53,5 +55,29 @@ describe('display formatting', () => {
     expect(addDays('2026-07-24', 1)).toBe('2026-07-25');
     expect(addDays('2026-03-01', -1)).toBe('2026-02-28');
     expect(addDays('2026-12-31', 1)).toBe('2027-01-01');
+  });
+});
+
+describe('week boundaries (Monday start, for the Weekly Team Performance dashboard)', () => {
+  it('finds Monday for a mid-week date', () => {
+    // 2026-07-24 is a Friday -> Monday of that week is 2026-07-20.
+    expect(startOfWeek('2026-07-24')).toBe('2026-07-20');
+  });
+
+  it('a Monday maps to itself', () => {
+    expect(startOfWeek('2026-07-20')).toBe('2026-07-20');
+  });
+
+  it('a Sunday belongs to the week that started the previous Monday', () => {
+    expect(startOfWeek('2026-07-26')).toBe('2026-07-20');
+  });
+
+  it('weekRange returns the Monday..Sunday pair', () => {
+    expect(weekRange('2026-07-24')).toEqual({ start: '2026-07-20', end: '2026-07-26' });
+  });
+
+  it('weekRange spans a month/year boundary correctly', () => {
+    // 2026-12-31 is a Thursday -> Monday 2026-12-28, Sunday 2027-01-03.
+    expect(weekRange('2026-12-31')).toEqual({ start: '2026-12-28', end: '2027-01-03' });
   });
 });
