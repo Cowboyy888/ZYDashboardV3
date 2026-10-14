@@ -84,6 +84,10 @@ function ScorecardFields({
   const [lines, setLines] = useState<LineDraft[]>(
     defaults?.lines ? linesFromScorecard(defaults.lines) : defaultLines(),
   );
+  // Weight/label are a one-time setup decision (the owner sets them once, see
+  // DEFAULT_KPI_LINES) — locked by default so the monthly form only asks for
+  // the 2 numbers that actually change: Target and Actual. Rarely unlocked.
+  const [editingSetup, setEditingSetup] = useState(false);
   const preview = scoreCard(
     lines.map((l) => ({
       label: l.label,
@@ -127,12 +131,23 @@ function ScorecardFields({
         </div>
       </div>
 
+      <div className="flex items-center justify-between">
+        <p className="text-xs text-muted-foreground">{t('kpi.monthlyHint')}</p>
+        <button
+          type="button"
+          className="text-xs text-primary underline underline-offset-2"
+          onClick={() => setEditingSetup((s) => !s)}
+        >
+          {editingSetup ? t('kpi.doneSetup') : t('kpi.editSetup')}
+        </button>
+      </div>
+
       <div className="overflow-x-auto rounded-md border">
         <Table>
           <TableHeader>
             <TableRow>
               <TableHead>{t('kpi.line')}</TableHead>
-              <TableHead>{t('kpi.weight')}</TableHead>
+              {editingSetup && <TableHead>{t('kpi.weight')}</TableHead>}
               <TableHead>{t('kpi.target')}</TableHead>
               <TableHead>{t('kpi.actual')}</TableHead>
               <TableHead>{t('kpi.totalScore')}</TableHead>
@@ -149,28 +164,38 @@ function ScorecardFields({
                       name="lineLowerIsBetter"
                       value={l.lowerIsBetter ? 'true' : 'false'}
                     />
-                    <Input
-                      name="lineLabel"
-                      value={l.label}
-                      onChange={(e) => updateLine(i, { label: e.target.value })}
-                      className="min-w-[220px]"
-                    />
+                    {editingSetup ? (
+                      <Input
+                        name="lineLabel"
+                        value={l.label}
+                        onChange={(e) => updateLine(i, { label: e.target.value })}
+                        className="min-w-[220px]"
+                      />
+                    ) : (
+                      <>
+                        <input type="hidden" name="lineLabel" value={l.label} />
+                        <input type="hidden" name="lineWeight" value={l.weight} />
+                        <span className="text-sm">{l.label}</span>
+                      </>
+                    )}
                     {l.lowerIsBetter && (
                       <p className="mt-1 text-xs text-muted-foreground">{t('kpi.lowerIsBetter')}</p>
                     )}
                   </TableCell>
-                  <TableCell>
-                    <Input
-                      type="number"
-                      step="0.01"
-                      min="0"
-                      max="1"
-                      name="lineWeight"
-                      value={l.weight}
-                      onChange={(e) => updateLine(i, { weight: Number(e.target.value) || 0 })}
-                      className="w-20"
-                    />
-                  </TableCell>
+                  {editingSetup && (
+                    <TableCell>
+                      <Input
+                        type="number"
+                        step="0.01"
+                        min="0"
+                        max="1"
+                        name="lineWeight"
+                        value={l.weight}
+                        onChange={(e) => updateLine(i, { weight: Number(e.target.value) || 0 })}
+                        className="w-20"
+                      />
+                    </TableCell>
+                  )}
                   <TableCell>
                     <Input
                       type="number"

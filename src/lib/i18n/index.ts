@@ -1124,6 +1124,12 @@ export const dictionary = {
     zh: '权重合计不等于 100% — 请检查设置。',
   },
   'kpi.noScorecards': { en: 'No KPI scorecards for this period.', zh: '该周期暂无 KPI 考核表。' },
+  'kpi.monthlyHint': {
+    en: 'Just enter this month’s Target and Actual for each line — the weights were already set up.',
+    zh: '只需填写本月每项的目标值与实际值——权重已预先设定。',
+  },
+  'kpi.editSetup': { en: 'Edit line setup', zh: '编辑考核项设置' },
+  'kpi.doneSetup': { en: 'Done editing setup', zh: '完成设置' },
 
   // --- Invoice / VAT settings ------------------------------------------------------
   // Prefixed "ivc." (not "inv.", already Inventory's prefix above).
