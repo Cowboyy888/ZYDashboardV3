@@ -464,10 +464,10 @@ export const dictionary = {
   'set.addCustomerType': { en: 'Add customer type', zh: '新增客户类型' },
   'set.customerTypesTable': { en: 'Customer types', zh: '客户类型' },
   'set.noCustomerTypes': { en: 'No customer types yet.', zh: '暂无客户类型。' },
-  'set.taskCategories': { en: 'Task Categories', zh: '任务分类' },
+  'set.taskCategories': { en: 'Departments & Task Categories', zh: '部门与任务分类' },
   'set.taskCategoriesDesc': {
-    en: 'Departments, task categories, and activity metrics used by Team Tasks.',
-    zh: '团队任务所使用的部门、任务分类与活动指标。',
+    en: 'Departments (also used for each employee’s Department field), task categories, and activity metrics used by Team Tasks.',
+    zh: '部门（同时用于员工资料中的"部门"字段）、任务分类与团队任务所使用的活动指标。',
   },
   'set.taskDepartments': { en: 'Departments', zh: '部门' },
   'set.addTaskDepartment': { en: 'Add department', zh: '新增部门' },
