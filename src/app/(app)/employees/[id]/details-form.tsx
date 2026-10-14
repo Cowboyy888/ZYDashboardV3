@@ -6,10 +6,25 @@ import { ActionForm } from '@/components/forms/action-form';
 import { SubmitButton } from '@/components/forms/submit-button';
 import { useT } from '@/components/i18n-provider';
 import { updateEmployeeDetails } from '@/lib/actions/employees';
-import type { EmployeeRow } from '@/lib/db/types';
+import type { EmployeeRow, TaskDepartmentRow } from '@/lib/db/types';
 
-export function EmployeeDetailsForm({ employee }: { employee: EmployeeRow }) {
+export function EmployeeDetailsForm({
+  employee,
+  departments,
+}: {
+  employee: EmployeeRow;
+  departments: TaskDepartmentRow[];
+}) {
   const { t } = useT();
+  // Department used to be free text — an existing value that predates the
+  // department list (or was typed differently) must still show up as an
+  // option, not get silently dropped the next time this form is saved.
+  const currentDept = employee.department?.trim() ?? '';
+  const knownNames = new Set(departments.map((d) => d.name));
+  const deptOptions =
+    currentDept && !knownNames.has(currentDept)
+      ? [...departments, { id: 'current', name: currentDept } as TaskDepartmentRow]
+      : departments;
   return (
     <ActionForm action={updateEmployeeDetails}>
       <input type="hidden" name="employeeId" value={employee.id} />
@@ -28,7 +43,14 @@ export function EmployeeDetailsForm({ employee }: { employee: EmployeeRow }) {
         </div>
         <div className="space-y-1.5">
           <Label htmlFor="df-dept">{t('emp.department')}</Label>
-          <Input id="df-dept" name="department" defaultValue={employee.department ?? ''} />
+          <NativeSelect id="df-dept" name="department" defaultValue={currentDept}>
+            <option value="">{t('common.select')}</option>
+            {deptOptions.map((d) => (
+              <option key={d.id} value={d.name}>
+                {d.name}
+              </option>
+            ))}
+          </NativeSelect>
         </div>
         <div className="space-y-1.5">
           <Label htmlFor="df-location">{t('emp.workLocation')}</Label>

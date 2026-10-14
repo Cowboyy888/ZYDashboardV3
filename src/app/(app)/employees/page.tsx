@@ -5,6 +5,7 @@ import {
   getAttendanceGroups,
   getAllEmployeePrivate,
   getSignedPhotoUrls,
+  getTaskDepartments,
 } from '@/lib/db/queries';
 import { getLocale } from '@/lib/i18n/locale';
 import { translator } from '@/lib/i18n';
@@ -18,9 +19,10 @@ export default async function EmployeesPage() {
   const locale = await getLocale();
   const t = translator(locale);
   const canSensitive = canViewSensitiveEmployeeData(user.role);
-  const [employees, groups, privateRows] = await Promise.all([
+  const [employees, groups, departments, privateRows] = await Promise.all([
     getEmployees(true),
     getAttendanceGroups(),
+    getTaskDepartments(),
     canSensitive ? getAllEmployeePrivate() : Promise.resolve([]),
   ]);
 
@@ -48,6 +50,7 @@ export default async function EmployeesPage() {
       <EmployeesClient
         employees={employees}
         groups={groups}
+        departments={departments}
         canManage={hasPermission(user.role, 'employees:manage')}
         canSensitive={canSensitive}
         privateRows={privateRows}

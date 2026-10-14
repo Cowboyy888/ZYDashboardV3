@@ -21,11 +21,17 @@ import { SubmitButton } from '@/components/forms/submit-button';
 import { useT } from '@/components/i18n-provider';
 import { toggleEmployee } from '@/lib/actions/employees';
 import { CreateEmployeeForm } from './create-employee-form';
-import type { AttendanceGroupRow, EmployeeRow, EmployeePrivateRow } from '@/lib/db/types';
+import type {
+  AttendanceGroupRow,
+  EmployeeRow,
+  EmployeePrivateRow,
+  TaskDepartmentRow,
+} from '@/lib/db/types';
 
 export function EmployeesClient({
   employees,
   groups,
+  departments,
   canManage,
   canSensitive,
   privateRows,
@@ -33,6 +39,7 @@ export function EmployeesClient({
 }: {
   employees: EmployeeRow[];
   groups: AttendanceGroupRow[];
+  departments: TaskDepartmentRow[];
   canManage: boolean;
   canSensitive: boolean;
   privateRows: EmployeePrivateRow[];
@@ -126,7 +133,7 @@ export function EmployeesClient({
             <CardTitle className="text-base">{t('emp.new')}</CardTitle>
           </CardHeader>
           <CardContent>
-            <CreateEmployeeForm groups={groups} />
+            <CreateEmployeeForm groups={groups} departments={departments} />
           </CardContent>
         </Card>
       )}

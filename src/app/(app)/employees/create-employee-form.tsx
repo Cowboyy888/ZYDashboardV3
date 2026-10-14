@@ -9,7 +9,7 @@ import { useT } from '@/components/i18n-provider';
 import { FormError } from '@/components/forms/form-error';
 import { createEmployee, setEmployeePhoto } from '@/lib/actions/employees';
 import type { ActionState } from '@/lib/actions/types';
-import type { AttendanceGroupRow } from '@/lib/db/types';
+import type { AttendanceGroupRow, TaskDepartmentRow } from '@/lib/db/types';
 
 const BLANK = {
   displayName: '',
@@ -27,7 +27,13 @@ const BLANK = {
 
 type PhotoStatus = null | 'uploading' | 'done' | 'failed';
 
-export function CreateEmployeeForm({ groups }: { groups: AttendanceGroupRow[] }) {
+export function CreateEmployeeForm({
+  groups,
+  departments,
+}: {
+  groups: AttendanceGroupRow[];
+  departments: TaskDepartmentRow[];
+}) {
   const { t, m } = useT();
   const [state, formAction, pending] = useActionState<ActionState, FormData>(createEmployee, null);
   const [v, setV] = useState({ ...BLANK });
@@ -218,12 +224,19 @@ export function CreateEmployeeForm({ groups }: { groups: AttendanceGroupRow[] })
           </div>
           <div className="space-y-1.5">
             <Label htmlFor="ce-dept">{t('emp.department')}</Label>
-            <Input
+            <NativeSelect
               id="ce-dept"
               name="department"
               value={v.department}
               onChange={set('department')}
-            />
+            >
+              <option value="">{t('common.select')}</option>
+              {departments.map((d) => (
+                <option key={d.id} value={d.name}>
+                  {d.name}
+                </option>
+              ))}
+            </NativeSelect>
           </div>
           <div className="space-y-1.5">
             <Label htmlFor="ce-location">{t('emp.workLocation')}</Label>

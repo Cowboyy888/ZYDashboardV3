@@ -7,6 +7,7 @@ import {
   getEmployeePrivate,
   getSignedPhotoUrl,
   getAttendanceGroups,
+  getTaskDepartments,
   getTaskMetricTypes,
   getTasksForRange,
   getDailyMetricsForRange,
@@ -31,7 +32,11 @@ export default async function EmployeeDetailPage({ params }: { params: Promise<{
   const user = await requirePermission('employees:view');
   const locale = await getLocale();
   const t = translator(locale);
-  const [employee, groups] = await Promise.all([getEmployee(id), getAttendanceGroups(true)]);
+  const [employee, groups, departments] = await Promise.all([
+    getEmployee(id),
+    getAttendanceGroups(true),
+    getTaskDepartments(),
+  ]);
   if (!employee) notFound();
 
   const canSensitive = canViewSensitiveEmployeeData(user.role);
@@ -124,7 +129,7 @@ export default async function EmployeeDetailPage({ params }: { params: Promise<{
                 </CardTitle>
               </CardHeader>
               <CardContent>
-                <EmployeeDetailsForm employee={employee} />
+                <EmployeeDetailsForm employee={employee} departments={departments} />
               </CardContent>
             </Card>
           )}
