@@ -253,17 +253,38 @@ check(
 );
 // tasks/daily_metrics use the InitPlan-cached `(select auth_role())` form
 // (0053_optimize_rls_performance.sql) rather than the older bare form above.
+// Widened by 0058 to also admit marketing_admin — checked against that
+// final widened text specifically (not just 0056's original list) so a
+// regression in 0058 actually fails this.
 check(
-  /tasks_select[\s\S]*?auth_role\(\)\) in \('owner', 'system_admin', 'sales_admin'\)/i.test(sql),
-  'tasks visibility restricted to owner/system_admin/sales_admin, same split as customers/SO',
+  /tasks_select[\s\S]*?auth_role\(\)\) in \('owner', 'system_admin', 'sales_admin', 'marketing_admin'\)/i.test(
+    sql,
+  ),
+  'tasks visibility restricted to owner/system_admin/sales_admin/marketing_admin',
 );
 check(
-  /tasks_write[\s\S]*?auth_role\(\)\) in \('owner', 'sales_admin'\)/i.test(sql),
-  'tasks write restricted to owner/sales_admin (system_admin view-only)',
+  /tasks_write[\s\S]*?auth_role\(\)\) in \('owner', 'sales_admin', 'marketing_admin'\)/i.test(sql),
+  'tasks write restricted to owner/sales_admin/marketing_admin (system_admin view-only)',
 );
 check(
-  /daily_metrics_write[\s\S]*?auth_role\(\)\) in \('owner', 'sales_admin'\)/i.test(sql),
-  'daily_metrics write restricted to owner/sales_admin (system_admin view-only)',
+  /daily_metrics_write[\s\S]*?auth_role\(\)\) in \('owner', 'sales_admin', 'marketing_admin'\)/i.test(
+    sql,
+  ),
+  'daily_metrics write restricted to owner/sales_admin/marketing_admin (system_admin view-only)',
+);
+check(
+  /alter type public\.app_role add value if not exists 'marketing_admin'/i.test(sql),
+  'marketing_admin added to the app_role enum (0057)',
+);
+check(
+  /employees_select[\s\S]*?auth_role\(\)\) in[\s\S]*?'marketing_admin'/i.test(sql),
+  'marketing_admin can read employees (0059) — required for the New Task employee picker',
+);
+check(
+  /customers_select[\s\S]*?auth_role\(\)\) in \('owner', 'system_admin', 'sales_admin', 'marketing_admin'\)/i.test(
+    sql,
+  ),
+  'marketing_admin can read customers (0059) — for the New Task customer picker',
 );
 check(
   /create table if not exists public\.task_departments/i.test(sql) &&

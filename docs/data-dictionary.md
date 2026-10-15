@@ -6,7 +6,11 @@ whenever the schema changes (AGENTS.md rule 5).
 ## Enums & controlled values
 
 - **Roles** (`app_role`): `owner`, `system_admin`, `attendance_admin`,
-  `warehouse_admin`, `sales_admin`, `payroll_admin`, `viewer`.
+  `warehouse_admin`, `sales_admin`, `marketing_admin`, `payroll_admin`,
+  `viewer`. `marketing_admin` (0057) is scoped to Team Tasks only
+  (`tasks:view`/`tasks:manage`, same as `sales_admin`'s Tasks access) — it
+  does not get `sales_admin`'s other grants (inquiries, targets, KPI, price
+  records).
 - **Movement types**: `opening_balance`, `purchase_receipt`, `production_output`,
   `sale_delivery`, `other_stock_out`, `adjustment`, `transfer_out`, `transfer_in`.
 - **Purchase order status**: `draft`, `ordered`, `cancelled` (the app-level enum —
@@ -504,9 +508,12 @@ as `attendance` allows, not a second correcting ledger entry). Weekly/
 monthly totals are always `SUM(value) ... GROUP BY`, never stored — this is
 what the Weekly Team Performance dashboard and the Employee Detail daily
 breakdown both read.
-- RLS on `tasks`/`daily_metrics`: select owner/system_admin/sales_admin;
-  insert/update owner/sales_admin only — identical split to
-  `customers`/`sales_orders` above (system_admin is view-only).
+- RLS on `tasks`/`daily_metrics`: select owner/system_admin/sales_admin/
+  marketing_admin; insert/update owner/sales_admin/marketing_admin only —
+  same split as `customers`/`sales_orders` above (system_admin is
+  view-only). `marketing_admin` (0057/0058) was added after this table
+  shipped — see 0059 for why it also needed read access to `employees`/
+  `customers` (the New Task form's pickers), not just `tasks` itself.
 
 ## RLS matrix (summary)
 
@@ -515,7 +522,7 @@ breakdown both read.
 | profiles | self; owner/system_admin all | owner/system_admin |
 | locations / product_families / skus | all authenticated | owner/system_admin |
 | stock_movements | owner/system_admin/warehouse/sales/viewer | insert: owner/system_admin/warehouse/sales · no update/delete |
-| employees | owner/system_admin/payroll/attendance/viewer | owner/system_admin |
+| employees | owner/system_admin/payroll/attendance/sales/marketing/viewer | owner/system_admin |
 | **employee_private** | **owner/system_admin/payroll** | **owner/system_admin/payroll** |
 | attendance | owner/system_admin/attendance/payroll/viewer | insert/update: owner/system_admin/attendance · no delete |
 | attendance_groups | all authenticated | owner/system_admin |
@@ -524,11 +531,11 @@ breakdown both read.
 | sent_reports | owner/system_admin | insert: owner/system_admin (+ service role) |
 | telegram_settings | owner/system_admin | owner/system_admin |
 | suppliers / purchase_orders / purchase_order_manual_items | owner/system_admin/warehouse | owner/warehouse (system_admin is view-only). `purchase_order_items` has the same RLS but is dormant — the app no longer writes to it. |
-| customers / sales_orders / sales_order_items | owner/system_admin/sales | owner/sales (system_admin is view-only — this is also what keeps prices, which live on these same rows, out of every other role) |
+| customers / sales_orders / sales_order_items | owner/system_admin/sales (`customers` read additionally: marketing, read-only — needed for the Team Tasks customer picker, see 0059) | owner/sales (system_admin is view-only — this is also what keeps prices, which live on these same rows, out of every other role) |
 | deposit_invoices / payment_receipts | owner/system_admin/sales | owner/sales (system_admin is view-only, same reasoning as sales_orders) |
 | payroll_runs / payroll_items / payroll_item_lines | owner/system_admin/payroll | owner/payroll (system_admin is view-only — approving a run additionally requires Owner specifically, enforced by a DB trigger) |
 | task_departments / task_categories / task_metric_types | all authenticated | owner/system_admin |
-| tasks / daily_metrics | owner/system_admin/sales | owner/sales (system_admin is view-only, same reasoning as sales_orders) |
+| tasks / daily_metrics | owner/system_admin/sales/marketing | owner/sales/marketing (system_admin is view-only, same reasoning as sales_orders) |
 
 Storage buckets (all **private**): `employee-photos`, `employee-docs` — read by
 owner/system_admin/payroll, write by owner/system_admin; `attachments` — read by

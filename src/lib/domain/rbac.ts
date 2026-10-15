@@ -16,6 +16,7 @@ export const ROLES = [
   'attendance_admin',
   'warehouse_admin',
   'sales_admin',
+  'marketing_admin',
   'payroll_admin',
   'viewer',
 ] as const;
@@ -32,6 +33,7 @@ export const ROLE_LABELS: Record<Role, { en: string; zh: string }> = {
   attendance_admin: { en: 'Attendance Admin', zh: '考勤管理员' },
   warehouse_admin: { en: 'Warehouse Admin', zh: '仓库管理员' },
   sales_admin: { en: 'Sales Admin', zh: '销售管理员' },
+  marketing_admin: { en: 'Marketing Admin', zh: '市场管理员' },
   payroll_admin: { en: 'Payroll Admin', zh: '工资管理员' },
   viewer: { en: 'Viewer', zh: '查看者' },
 };
@@ -172,6 +174,7 @@ const ROLE_PERMISSIONS: Record<Role, Permission[]> = {
     'tasks:view',
     'tasks:manage',
   ],
+  marketing_admin: [...EVERYONE, 'tasks:view', 'tasks:manage'],
   payroll_admin: [
     ...EVERYONE,
     'employees:view',
