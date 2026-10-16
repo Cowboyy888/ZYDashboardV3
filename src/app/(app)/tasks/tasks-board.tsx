@@ -48,6 +48,20 @@ const STATUS_VARIANT: Record<
   cancelled: 'destructive',
 };
 
+const PRIORITY_VARIANT: Record<'high' | 'medium' | 'low', 'destructive' | 'warning' | 'secondary'> =
+  {
+    high: 'destructive',
+    medium: 'warning',
+    low: 'secondary',
+  };
+
+function formatTimeRange(start: string | null, end: string | null): string | null {
+  if (!start && !end) return null;
+  const trim = (v: string) => v.slice(0, 5); // HH:mm:ss -> HH:mm
+  if (start && end) return `${trim(start)}–${trim(end)}`;
+  return trim((start ?? end)!);
+}
+
 function employeeName(e: EmployeeRow): string {
   return e.display_name || e.name_english || e.name_chinese || e.employee_code;
 }
@@ -99,6 +113,7 @@ export function TasksBoard({
   const employeeById = new Map(employees.map((e) => [e.id, e]));
   const departmentById = new Map(departments.map((d) => [d.id, d]));
   const categoryById = new Map(categories.map((c) => [c.id, c]));
+  const customerById = new Map(customers.map((c) => [c.id, c]));
 
   const filtered = tasks.filter((task) => {
     if (departmentFilter !== 'all' && task.department_id !== departmentFilter) return false;
@@ -139,13 +154,13 @@ export function TasksBoard({
       </div>
 
       <Card>
-        <CardContent className="p-0">
+        <CardContent className="overflow-x-auto p-0">
           <Table>
             <TableHeader>
               <TableRow>
                 <TableHead>{t('att.employee')}</TableHead>
-                <TableHead>{t('tasks.department')}</TableHead>
                 <TableHead>{t('tasks.taskTitle')}</TableHead>
+                <TableHead>{t('tasks.customer')}</TableHead>
                 <TableHead>{t('tasks.priority')}</TableHead>
                 <TableHead>{t('common.status')}</TableHead>
                 {canManage && <TableHead className="text-right">{t('common.actions')}</TableHead>}
@@ -156,23 +171,38 @@ export function TasksBoard({
                 const employee = employeeById.get(task.employee_id);
                 const department = departmentById.get(task.department_id);
                 const category = categoryById.get(task.category_id ?? '');
+                const customer = customerById.get(task.customer_id ?? '');
+                const timeRange = formatTimeRange(task.planned_start, task.planned_end);
+                const taskMeta = [category?.name, timeRange, task.location]
+                  .filter(Boolean)
+                  .join(' · ');
                 return (
                   <TableRow key={task.id}>
-                    <TableCell>{employee ? employeeName(employee) : task.employee_id}</TableCell>
-                    <TableCell className="text-muted-foreground">
-                      {department?.name ?? '—'}
+                    <TableCell>
+                      <div className="font-medium">
+                        {employee ? employeeName(employee) : task.employee_id}
+                      </div>
+                      <div className="text-xs text-muted-foreground">{department?.name ?? '—'}</div>
                     </TableCell>
                     <TableCell>
                       <div className="font-medium">{task.title}</div>
-                      {category && (
-                        <div className="text-xs text-muted-foreground">{category.name}</div>
-                      )}
+                      {taskMeta && <div className="text-xs text-muted-foreground">{taskMeta}</div>}
                     </TableCell>
-                    <TableCell>{TASK_PRIORITY_LABELS[task.priority][locale]}</TableCell>
+                    <TableCell className="text-muted-foreground">{customer?.name ?? '—'}</TableCell>
+                    <TableCell>
+                      <Badge variant={PRIORITY_VARIANT[task.priority]}>
+                        {TASK_PRIORITY_LABELS[task.priority][locale]}
+                      </Badge>
+                    </TableCell>
                     <TableCell>
                       <Badge variant={STATUS_VARIANT[task.status]}>
                         {TASK_STATUS_LABELS[task.status][locale]}
                       </Badge>
+                      {task.result && (
+                        <div className="mt-1 max-w-[220px] truncate text-xs text-muted-foreground">
+                          {task.result}
+                        </div>
+                      )}
                     </TableCell>
                     {canManage && (
                       <TableCell className="text-right">
