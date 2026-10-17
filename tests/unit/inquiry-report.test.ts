@@ -196,6 +196,21 @@ describe('buildInquiryReportHtml', () => {
     expect(INQUIRY_PDF_COLUMNS.map((c) => c.key)).not.toContain('meshOpening');
   });
 
+  it('does not show Diff or Est. Profit columns — margin figures stay out of the printed report', () => {
+    const html = buildInquiryReportHtml({
+      generatedOn: '21/07/2026',
+      summary,
+      rows: [toReportRow(inquiry(), resolvers)],
+    });
+    expect(html).not.toContain('Diff ($/m²)');
+    expect(html).not.toContain('Est. Profit ($)');
+    expect(INQUIRY_PDF_COLUMNS.map((c) => c.key)).not.toContain('diff');
+    expect(INQUIRY_PDF_COLUMNS.map((c) => c.key)).not.toContain('profit');
+    // Excel still has them — this is a PDF-only removal.
+    expect(INQUIRY_REPORT_COLUMNS.map((c) => c.key)).toContain('diff');
+    expect(INQUIRY_REPORT_COLUMNS.map((c) => c.key)).toContain('profit');
+  });
+
   it('escapes HTML-special characters in data', () => {
     const html = buildInquiryReportHtml({
       generatedOn: '21/07/2026',

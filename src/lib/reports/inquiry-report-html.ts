@@ -59,14 +59,17 @@ export const INQUIRY_REPORT_COLUMNS: ReportColumn[] = [
 /**
  * PDF-only: same as INQUIRY_REPORT_COLUMNS, but Spec / Diameter / Mesh
  * opening collapse into one combined column (the PDF is for reading, not
- * filtering — Excel keeps them separate since that's more useful there).
- * Derived from INQUIRY_REPORT_COLUMNS rather than duplicated, so adding or
- * reordering any other column only has to happen in one place.
+ * filtering — Excel keeps them separate since that's more useful there),
+ * and Diff / Est. Profit are dropped entirely (margin figures don't belong
+ * on this printed report; Excel still has them). Derived from
+ * INQUIRY_REPORT_COLUMNS rather than duplicated, so adding or reordering
+ * any other column only has to happen in one place.
  */
 export const INQUIRY_PDF_COLUMNS: ReportColumn[] = INQUIRY_REPORT_COLUMNS.flatMap((c) => {
   if (c.key === 'spec')
     return [{ key: 'specCombined', header: 'Specification 规格', width: 22, kind: 'text' }];
-  if (c.key === 'diameter' || c.key === 'meshOpening') return [];
+  if (c.key === 'diameter' || c.key === 'meshOpening' || c.key === 'diff' || c.key === 'profit')
+    return [];
   return [c];
 });
 
@@ -302,8 +305,6 @@ ${KHMER_FONT_FACE_CSS}
   <div class="notes">
     <h4>NOTES · 说明</h4>
     <ol>
-      <li>Price Difference = Quoted − Target ($/m²). 价差 = 报价 − 目标价。</li>
-      <li>Estimated Profit = (Final or Quoted − Cost) × Area × Qty. 预估利润 =（成交价或报价 − 成本）× 面积 × 数量。</li>
       <li>Confidential — internal sales report. 机密，内部销售报告。</li>
     </ol>
   </div>
