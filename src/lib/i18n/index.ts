@@ -158,6 +158,7 @@ export const dictionary = {
     zh: '所选周的完成情况与活动数据。',
   },
   'tasks.newTask': { en: 'New task', zh: '新建任务' },
+  'tasks.downloadPdf': { en: 'Download PDF', zh: '下载 PDF' },
   'tasks.editTask': { en: 'Edit task', zh: '编辑任务' },
   'tasks.taskTitle': { en: 'Title', zh: '标题' },
   'tasks.description': { en: 'Description', zh: '描述' },

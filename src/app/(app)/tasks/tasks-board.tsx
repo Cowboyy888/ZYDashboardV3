@@ -1,6 +1,7 @@
 'use client';
-import { useActionState, useEffect, useRef, useState } from 'react';
+import { useActionState, useEffect, useMemo, useRef, useState } from 'react';
 import { useRouter } from 'next/navigation';
+import { FileText } from 'lucide-react';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
@@ -121,11 +122,26 @@ export function TasksBoard({
     return true;
   });
 
+  // Mirrors what's currently on screen, so the PDF always matches the filters above.
+  const pdfHref = useMemo(() => {
+    const params = new URLSearchParams({ date });
+    if (departmentFilter !== 'all') params.set('department', departmentFilter);
+    if (statusFilter) params.set('status', statusFilter);
+    return `/api/export/tasks/pdf?${params.toString()}`;
+  }, [date, departmentFilter, statusFilter]);
+
   return (
     <div className="space-y-4">
       <div className="flex flex-wrap items-center justify-between gap-3">
         <TaskDateNav date={date} />
-        {canManage && <Button onClick={() => setShowCreate(true)}>{t('tasks.newTask')}</Button>}
+        <div className="flex items-center gap-2">
+          <Button asChild variant="outline">
+            <a href={pdfHref} target="_blank" rel="noopener noreferrer">
+              <FileText className="h-4 w-4" /> {t('tasks.downloadPdf')}
+            </a>
+          </Button>
+          {canManage && <Button onClick={() => setShowCreate(true)}>{t('tasks.newTask')}</Button>}
+        </div>
       </div>
 
       <div className="flex flex-wrap items-center justify-between gap-3">
