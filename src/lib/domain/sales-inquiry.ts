@@ -65,6 +65,26 @@ export function formatInquiryNo(year: number, seq: number): string {
   return `ZY-${year}-${String(seq).padStart(3, '0')}`;
 }
 
+/**
+ * Combine Specification / Diameter / Mesh opening into one display string —
+ * e.g. diameter "8", meshOpening "200x200", specification "2.4x6" becomes
+ * "8mm@200x200 2.4x6". Shared by the on-screen Inquiries table and the PDF
+ * export so the format only lives in one place. Returns '' when every input
+ * is empty; callers render that as their own placeholder (e.g. '—').
+ */
+export function combineSpecification(i: {
+  diameter?: string | null;
+  meshOpening?: string | null;
+  specification?: string | null;
+}): string {
+  const dia = i.diameter?.trim() || '';
+  const mesh = i.meshOpening?.trim() || '';
+  const spec = i.specification?.trim() || '';
+  const diaLabel = dia ? (/mm\s*$/i.test(dia) ? dia : `${dia}mm`) : '';
+  const head = diaLabel && mesh ? `${diaLabel}@${mesh}` : diaLabel || mesh;
+  return [head, spec].filter(Boolean).join(' ');
+}
+
 // --- Filtering ------------------------------------------------------------------
 
 /** The fields a row needs for filterInquiries — deliberately narrower than the

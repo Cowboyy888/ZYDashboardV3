@@ -7,6 +7,7 @@ import {
   formatInquiryNo,
   summarizeInquiries,
   filterInquiries,
+  combineSpecification,
   type InquiryForSummary,
   type InquiryFilterable,
 } from '@/lib/domain/sales-inquiry';
@@ -90,6 +91,38 @@ describe('inquiry calculations (match the workbook formulas)', () => {
     expect(formatInquiryNo(2026, 1)).toBe('ZY-2026-001');
     expect(formatInquiryNo(2026, 42)).toBe('ZY-2026-042');
     expect(formatInquiryNo(2026, 123)).toBe('ZY-2026-123');
+  });
+});
+
+describe('combineSpecification — Spec/Diameter/Mesh opening shown as one field', () => {
+  it('joins diameter + mesh opening with "@", then specification after a space', () => {
+    expect(
+      combineSpecification({ diameter: '8', meshOpening: '200x200', specification: '2.4x6' }),
+    ).toBe('8mm@200x200 2.4x6');
+  });
+
+  it('does not double up "mm" when diameter already has it', () => {
+    expect(
+      combineSpecification({ diameter: '7.2mm', meshOpening: null, specification: null }),
+    ).toBe('7.2mm');
+  });
+
+  it('falls back gracefully when only some fields are set', () => {
+    expect(combineSpecification({ diameter: '8', meshOpening: null, specification: null })).toBe(
+      '8mm',
+    );
+    expect(
+      combineSpecification({ diameter: null, meshOpening: '200x200', specification: null }),
+    ).toBe('200x200');
+    expect(
+      combineSpecification({ diameter: null, meshOpening: null, specification: '2.4x6' }),
+    ).toBe('2.4x6');
+  });
+
+  it('returns an empty string when nothing is set (caller decides the placeholder)', () => {
+    expect(combineSpecification({ diameter: null, meshOpening: null, specification: null })).toBe(
+      '',
+    );
   });
 });
 

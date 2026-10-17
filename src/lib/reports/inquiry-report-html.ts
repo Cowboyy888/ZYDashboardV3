@@ -10,7 +10,11 @@
  * Headers are always bilingual (EN / 中文), like the source workbooks.
  */
 import type { SalesInquiryRow } from '@/lib/db/types';
-import type { InquirySummary, StatusCategory } from '@/lib/domain/sales-inquiry';
+import {
+  combineSpecification,
+  type InquirySummary,
+  type StatusCategory,
+} from '@/lib/domain/sales-inquiry';
 import { KHMER_FONT_FACE_CSS } from './fonts/noto-sans-khmer';
 
 export type ColumnKind = 'text' | 'num' | 'usd';
@@ -52,6 +56,20 @@ export const INQUIRY_REPORT_COLUMNS: ReportColumn[] = [
   { key: 'remarks', header: 'Remarks 备注', width: 24, kind: 'text' },
 ];
 
+/**
+ * PDF-only: same as INQUIRY_REPORT_COLUMNS, but Spec / Diameter / Mesh
+ * opening collapse into one combined column (the PDF is for reading, not
+ * filtering — Excel keeps them separate since that's more useful there).
+ * Derived from INQUIRY_REPORT_COLUMNS rather than duplicated, so adding or
+ * reordering any other column only has to happen in one place.
+ */
+export const INQUIRY_PDF_COLUMNS: ReportColumn[] = INQUIRY_REPORT_COLUMNS.flatMap((c) => {
+  if (c.key === 'spec')
+    return [{ key: 'specCombined', header: 'Specification 规格', width: 22, kind: 'text' }];
+  if (c.key === 'diameter' || c.key === 'meshOpening') return [];
+  return [c];
+});
+
 /** A report row: text columns hold strings, num/usd columns hold number|null. */
 export type InquiryReportRow = Record<string, string | number | null>;
 
@@ -85,6 +103,11 @@ export function toReportRow(i: SalesInquiryRow, r: InquiryReportResolvers): Inqu
     spec: i.specification ?? '',
     diameter: i.diameter ?? '',
     meshOpening: i.mesh_opening ?? '',
+    specCombined: combineSpecification({
+      diameter: i.diameter,
+      meshOpening: i.mesh_opening,
+      specification: i.specification,
+    }),
     qty: i.quantity,
     area: i.area_per_sheet,
     cost: i.factory_cost,
@@ -157,17 +180,17 @@ export function buildInquiryReportHtml(data: InquiryReportData): string {
     ['WON PROFIT 成交利润:', formatUsd(s.wonProfit), true],
   ];
 
-  const thead = INQUIRY_REPORT_COLUMNS.map(
+  const thead = INQUIRY_PDF_COLUMNS.map(
     (c) => `<th class="${c.kind === 'text' ? 'l' : 'r'}">${esc(c.header)}</th>`,
   ).join('');
 
   const tbody =
     data.rows.length === 0
-      ? `<tr><td class="empty" colspan="${INQUIRY_REPORT_COLUMNS.length}">No records for this report 暂无记录</td></tr>`
+      ? `<tr><td class="empty" colspan="${INQUIRY_PDF_COLUMNS.length}">No records for this report 暂无记录</td></tr>`
       : data.rows
           .map(
             (row) =>
-              `<tr>${INQUIRY_REPORT_COLUMNS.map((c) => {
+              `<tr>${INQUIRY_PDF_COLUMNS.map((c) => {
                 const align = c.kind === 'text' ? 'l' : 'r';
                 return `<td class="${align}">${esc(cellText(row[c.key] ?? null, c.kind))}</td>`;
               }).join('')}</tr>`,

@@ -53,6 +53,7 @@ import {
   estimatedProfit,
   summarizeInquiries,
   filterInquiries,
+  combineSpecification,
   type StatusCategory,
 } from '@/lib/domain/sales-inquiry';
 import type { ActionState } from '@/lib/actions/types';
@@ -405,9 +406,11 @@ export function InquiriesClient({
                       {(i.family_id && familyName.get(i.family_id)) || '—'}
                     </TableCell>
                     <TableCell className="text-sm">
-                      {[i.specification, i.diameter && `Ø${i.diameter}mm`, i.mesh_opening]
-                        .filter(Boolean)
-                        .join(' · ') || '—'}
+                      {combineSpecification({
+                        diameter: i.diameter,
+                        meshOpening: i.mesh_opening,
+                        specification: i.specification,
+                      }) || '—'}
                     </TableCell>
                     <TableCell className="text-right tabular-nums">{fmt(i.quantity, 0)}</TableCell>
                     <TableCell className="text-right tabular-nums">{fmt(i.quoted_price)}</TableCell>

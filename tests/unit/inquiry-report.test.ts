@@ -1,6 +1,7 @@
 import { describe, it, expect } from 'vitest';
 import {
   INQUIRY_REPORT_COLUMNS,
+  INQUIRY_PDF_COLUMNS,
   toReportRow,
   cellText,
   formatUsd,
@@ -77,6 +78,7 @@ describe('toReportRow', () => {
     expect(row.type).toBe('中间商(Distributor)');
     expect(row.source).toBe('Telegram');
     expect(row.product).toBe('钢筋网');
+    expect(row.specCombined).toBe('7.2mm@200*200 3.2m*6m');
     expect(row.status).toBe('成交');
     expect(row.diff).toBe(0.13);
     expect(row.profit).toBe(99);
@@ -176,6 +178,22 @@ describe('buildInquiryReportHtml', () => {
     });
     expect(html).toContain('Remarks 备注'); // column header
     expect(html).toContain('Needs 3-week lead time'); // the actual data
+  });
+
+  it('shows Specification/Diameter/Mesh opening combined into one column, not three', () => {
+    const html = buildInquiryReportHtml({
+      generatedOn: '21/07/2026',
+      summary,
+      rows: [toReportRow(inquiry(), resolvers)],
+    });
+    expect(html).toContain('Specification 规格'); // the one combined header
+    expect(html).toContain('7.2mm@200*200 3.2m*6m'); // the combined value
+    expect(html).not.toContain('Spec 规格</th>'); // the old separate headers
+    expect(html).not.toContain('Dia (mm) 直径');
+    expect(html).not.toContain('Mesh opening 网孔尺寸');
+    expect(INQUIRY_PDF_COLUMNS.map((c) => c.key)).not.toContain('spec');
+    expect(INQUIRY_PDF_COLUMNS.map((c) => c.key)).not.toContain('diameter');
+    expect(INQUIRY_PDF_COLUMNS.map((c) => c.key)).not.toContain('meshOpening');
   });
 
   it('escapes HTML-special characters in data', () => {
