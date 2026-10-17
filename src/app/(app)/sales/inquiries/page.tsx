@@ -3,6 +3,7 @@ import {
   getInquiries,
   getInquiryFollowups,
   getInquiryCustomerTypes,
+  getInquirySources,
   getInquiryStatuses,
   getEmployees,
   getFamilies,
@@ -22,14 +23,16 @@ export default async function InquiriesPage() {
   const t = translator(locale);
   const canManage = hasPermission(user.role, 'inquiries:manage');
 
-  const [inquiries, followups, customerTypes, statuses, employees, families] = await Promise.all([
-    getInquiries(),
-    getInquiryFollowups(),
-    getInquiryCustomerTypes(true),
-    getInquiryStatuses(true),
-    getEmployees(),
-    getFamilies(true),
-  ]);
+  const [inquiries, followups, customerTypes, sources, statuses, employees, families] =
+    await Promise.all([
+      getInquiries(),
+      getInquiryFollowups(),
+      getInquiryCustomerTypes(true),
+      getInquirySources(true),
+      getInquiryStatuses(true),
+      getEmployees(),
+      getFamilies(true),
+    ]);
 
   return (
     <div>
@@ -39,6 +42,7 @@ export default async function InquiriesPage() {
         inquiries={inquiries}
         followups={followups}
         customerTypes={customerTypes}
+        sources={sources}
         statuses={statuses}
         employees={employees.map((e) => ({
           id: e.id,

@@ -269,6 +269,14 @@ export interface InquiryCustomerTypeRow {
   created_at: string;
 }
 
+export interface InquirySourceRow {
+  id: string;
+  name: string;
+  sort_order: number;
+  is_active: boolean;
+  created_at: string;
+}
+
 export interface InquiryStatusRow {
   id: string;
   name: string;
@@ -288,6 +296,7 @@ export interface SalesInquiryRow {
   company_name: string | null;
   contact: string | null;
   customer_type_id: string | null;
+  source_id: string | null;
   family_id: string | null;
   specification: string | null;
   diameter: string | null;

@@ -15,6 +15,7 @@ import type {
   EmployeePrivateRow,
   InquiryCustomerTypeRow,
   InquiryFollowupRow,
+  InquirySourceRow,
   InquiryStatusRow,
   InvoiceSettingsRow,
   KpiScorecardLineRow,
@@ -1232,6 +1233,19 @@ export async function getInquiryCustomerTypes(
     return (data as InquiryCustomerTypeRow[]) ?? [];
   } catch (e) {
     console.error('[queries] getInquiryCustomerTypes', e);
+    return [];
+  }
+}
+
+export async function getInquirySources(includeArchived = false): Promise<InquirySourceRow[]> {
+  try {
+    const supabase = await client();
+    let q = supabase.from('inquiry_sources').select('*').order('sort_order').order('name');
+    if (!includeArchived) q = q.eq('is_active', true);
+    const { data } = await q;
+    return (data as InquirySourceRow[]) ?? [];
+  } catch (e) {
+    console.error('[queries] getInquirySources', e);
     return [];
   }
 }

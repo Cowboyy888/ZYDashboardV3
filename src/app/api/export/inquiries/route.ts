@@ -3,6 +3,7 @@ import {
   getInquiries,
   getInquiryStatuses,
   getInquiryCustomerTypes,
+  getInquirySources,
   getEmployees,
   getFamilies,
 } from '@/lib/db/queries';
@@ -26,10 +27,11 @@ export const dynamic = 'force-dynamic';
 export async function GET(request: Request) {
   await requirePermission('inquiries:view');
 
-  const [allInquiries, statuses, customerTypes, employees, families] = await Promise.all([
+  const [allInquiries, statuses, customerTypes, sources, employees, families] = await Promise.all([
     getInquiries(),
     getInquiryStatuses(true),
     getInquiryCustomerTypes(true),
+    getInquirySources(true),
     getEmployees(true),
     getFamilies(true),
   ]);
@@ -45,12 +47,14 @@ export async function GET(request: Request) {
     ]),
   );
   const typeName = new Map(customerTypes.map((c) => [c.id, c.name]));
+  const sourceName = new Map(sources.map((s) => [s.id, s.name]));
   const familyName = new Map(families.map((f) => [f.id, f.name]));
   const statusById = new Map(statuses.map((s) => [s.id, s]));
 
   const resolvers: InquiryReportResolvers = {
     salespersonName: (id) => (id && empName.get(id)) || '',
     typeName: (id) => (id && typeName.get(id)) || '',
+    sourceName: (id) => (id && sourceName.get(id)) || '',
     familyName: (id) => (id && familyName.get(id)) || '',
     status: (id) => {
       const s = id ? statusById.get(id) : undefined;

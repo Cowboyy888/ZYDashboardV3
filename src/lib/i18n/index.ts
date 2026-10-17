@@ -836,6 +836,7 @@ export const dictionary = {
   'inq.contact': { en: 'Contact / Telegram', zh: '联系电话 / Telegram' },
   'inq.salesperson': { en: 'Salesperson', zh: '销售员' },
   'inq.customerType': { en: 'Customer type', zh: '客户类型' },
+  'inq.source': { en: 'Source', zh: '来源' },
   'inq.product': { en: 'Product', zh: '产品' },
   'inq.specification': { en: 'Specification', zh: '规格' },
   'inq.diameter': { en: 'Diameter (mm)', zh: '直径(毫米)' },

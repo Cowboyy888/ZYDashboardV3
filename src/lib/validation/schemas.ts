@@ -584,6 +584,7 @@ export const inquirySchema = z.object({
   companyName: optionalText,
   contact: optionalText,
   customerTypeId: optionalUuid,
+  sourceId: optionalUuid,
   familyId: optionalUuid,
   specification: optionalText,
   diameter: optionalText,

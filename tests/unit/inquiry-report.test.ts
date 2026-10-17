@@ -14,6 +14,7 @@ import type { SalesInquiryRow } from '@/lib/db/types';
 const resolvers: InquiryReportResolvers = {
   salespersonName: (id) => (id === 'ash' ? '啊山' : ''),
   typeName: (id) => (id === 'dist' ? '中间商(Distributor)' : ''),
+  sourceName: (id) => (id === 'tg' ? 'Telegram' : ''),
   familyName: (id) => (id === 'mesh' ? '钢筋网' : ''),
   status: (id) => (id === 'won' ? { name: '成交', category: 'won' } : null),
 };
@@ -29,6 +30,7 @@ const inquiry = (o: Partial<SalesInquiryRow> = {}): SalesInquiryRow =>
     company_name: 'Galleria Tile Depot',
     contact: null,
     customer_type_id: 'dist',
+    source_id: 'tg',
     family_id: 'mesh',
     specification: '3.2m*6m',
     diameter: '7.2mm',
@@ -73,6 +75,7 @@ describe('toReportRow', () => {
     expect(row.no).toBe('ZY-2026-001');
     expect(row.salesperson).toBe('啊山');
     expect(row.type).toBe('中间商(Distributor)');
+    expect(row.source).toBe('Telegram');
     expect(row.product).toBe('钢筋网');
     expect(row.status).toBe('成交');
     expect(row.diff).toBe(0.13);

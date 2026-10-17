@@ -31,6 +31,7 @@ export const INQUIRY_REPORT_COLUMNS: ReportColumn[] = [
   { key: 'company', header: 'Company 公司', width: 18, kind: 'text' },
   { key: 'contact', header: 'Contact / Telegram 联系电话 / Telegram', width: 18, kind: 'text' },
   { key: 'type', header: 'Type 客户类型', width: 16, kind: 'text' },
+  { key: 'source', header: 'Source 来源', width: 14, kind: 'text' },
   { key: 'product', header: 'Product 产品', width: 14, kind: 'text' },
   { key: 'spec', header: 'Spec 规格', width: 14, kind: 'text' },
   { key: 'diameter', header: 'Dia (mm) 直径', width: 10, kind: 'text' },
@@ -64,6 +65,7 @@ export interface InquiryReportData {
 export interface InquiryReportResolvers {
   salespersonName: (id: string | null) => string;
   typeName: (id: string | null) => string;
+  sourceName: (id: string | null) => string;
   familyName: (id: string | null) => string;
   status: (id: string | null) => { name: string; category: StatusCategory } | null;
 }
@@ -78,6 +80,7 @@ export function toReportRow(i: SalesInquiryRow, r: InquiryReportResolvers): Inqu
     company: i.company_name ?? '',
     contact: i.contact ?? '',
     type: r.typeName(i.customer_type_id),
+    source: r.sourceName(i.source_id),
     product: r.familyName(i.family_id),
     spec: i.specification ?? '',
     diameter: i.diameter ?? '',

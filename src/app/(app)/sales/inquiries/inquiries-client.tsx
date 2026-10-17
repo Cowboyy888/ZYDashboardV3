@@ -60,6 +60,7 @@ import type {
   SalesInquiryRow,
   InquiryFollowupRow,
   InquiryCustomerTypeRow,
+  InquirySourceRow,
   InquiryStatusRow,
 } from '@/lib/db/types';
 
@@ -78,6 +79,7 @@ export function InquiriesClient({
   inquiries,
   followups,
   customerTypes,
+  sources,
   statuses,
   employees,
   families,
@@ -86,6 +88,7 @@ export function InquiriesClient({
   inquiries: SalesInquiryRow[];
   followups: InquiryFollowupRow[];
   customerTypes: InquiryCustomerTypeRow[];
+  sources: InquirySourceRow[];
   statuses: InquiryStatusRow[];
   employees: Opt[];
   families: Opt[];
@@ -95,9 +98,11 @@ export function InquiriesClient({
 
   const empName = useMemo(() => new Map(employees.map((e) => [e.id, e.name])), [employees]);
   const familyName = useMemo(() => new Map(families.map((f) => [f.id, f.name])), [families]);
+  const sourceName = useMemo(() => new Map(sources.map((s) => [s.id, s.name])), [sources]);
   const statusById = useMemo(() => new Map(statuses.map((s) => [s.id, s])), [statuses]);
   const inquiryById = useMemo(() => new Map(inquiries.map((i) => [i.id, i])), [inquiries]);
   const activeTypes = customerTypes.filter((c) => c.is_active);
+  const activeSources = sources.filter((s) => s.is_active);
   const activeStatuses = statuses.filter((s) => s.is_active);
 
   const [search, setSearch] = useState('');
@@ -368,7 +373,9 @@ export function InquiriesClient({
                   <TableHead>{t('inq.no')}</TableHead>
                   <TableHead>{t('inq.date')}</TableHead>
                   <TableHead>{t('inq.customer')}</TableHead>
+                  <TableHead>{t('inq.source')}</TableHead>
                   <TableHead>{t('inq.product')}</TableHead>
+                  <TableHead>{t('inq.specification')}</TableHead>
                   <TableHead className="text-right">{t('inq.qty')}</TableHead>
                   <TableHead className="text-right">{t('inq.quoted')}</TableHead>
                   <TableHead className="text-right">{t('inq.target')}</TableHead>
@@ -392,7 +399,15 @@ export function InquiriesClient({
                       )}
                     </TableCell>
                     <TableCell className="text-sm">
+                      {(i.source_id && sourceName.get(i.source_id)) || '—'}
+                    </TableCell>
+                    <TableCell className="text-sm">
                       {(i.family_id && familyName.get(i.family_id)) || '—'}
+                    </TableCell>
+                    <TableCell className="text-sm">
+                      {[i.specification, i.diameter && `Ø${i.diameter}mm`, i.mesh_opening]
+                        .filter(Boolean)
+                        .join(' · ') || '—'}
                     </TableCell>
                     <TableCell className="text-right tabular-nums">{fmt(i.quantity, 0)}</TableCell>
                     <TableCell className="text-right tabular-nums">{fmt(i.quoted_price)}</TableCell>
@@ -426,7 +441,7 @@ export function InquiriesClient({
                 {filteredInquiries.length === 0 && (
                   <TableRow>
                     <TableCell
-                      colSpan={canManage ? 11 : 10}
+                      colSpan={canManage ? 13 : 12}
                       className="text-center text-muted-foreground"
                     >
                       {inquiries.length === 0 ? t('inq.none') : t('inq.noMatches')}
@@ -601,6 +616,7 @@ export function InquiriesClient({
                 employees={employees}
                 families={families}
                 customerTypes={activeTypes}
+                sources={activeSources}
                 statuses={activeStatuses}
                 onDone={() => setShowCreate(false)}
               />
@@ -621,6 +637,7 @@ export function InquiriesClient({
                   employees={employees}
                   families={families}
                   customerTypes={activeTypes}
+                  sources={activeSources}
                   statuses={activeStatuses}
                   onDone={() => setEditing(null)}
                 />
@@ -739,6 +756,7 @@ function InquiryForm({
   employees,
   families,
   customerTypes,
+  sources,
   statuses,
   onDone,
 }: {
@@ -747,6 +765,7 @@ function InquiryForm({
   employees: Opt[];
   families: Opt[];
   customerTypes: InquiryCustomerTypeRow[];
+  sources: InquirySourceRow[];
   statuses: InquiryStatusRow[];
   onDone: () => void;
 }) {
@@ -839,6 +858,17 @@ function InquiryForm({
             ))}
           </NativeSelect>
         </div>
+        <div className="space-y-1.5">
+          <Label htmlFor="if-source">{t('inq.source')}</Label>
+          <NativeSelect id="if-source" name="sourceId" defaultValue={row?.source_id ?? ''}>
+            <option value="">{t('common.select')}</option>
+            {sources.map((s) => (
+              <option key={s.id} value={s.id}>
+                {s.name}
+              </option>
+            ))}
+          </NativeSelect>
+        </div>
       </div>
 
       {/* Product spec */}
@@ -854,9 +884,27 @@ function InquiryForm({
             ))}
           </NativeSelect>
         </div>
-        {field(t('inq.specification'), 'specification', row?.specification)}
-        {field(t('inq.diameter'), 'diameter', row?.diameter)}
-        {field(t('inq.meshOpening'), 'meshOpening', row?.mesh_opening)}
+        <div className="space-y-1.5">
+          <Label htmlFor="if-specification">{t('inq.specification')}</Label>
+          <Input
+            id="if-specification"
+            name="specification"
+            placeholder={t('inq.specification')}
+            defaultValue={row?.specification ?? ''}
+          />
+          <Input
+            name="diameter"
+            placeholder={t('inq.diameter')}
+            aria-label={t('inq.diameter')}
+            defaultValue={row?.diameter ?? ''}
+          />
+          <Input
+            name="meshOpening"
+            placeholder={t('inq.meshOpening')}
+            aria-label={t('inq.meshOpening')}
+            defaultValue={row?.mesh_opening ?? ''}
+          />
+        </div>
         <div className="space-y-1.5">
           <Label htmlFor="if-area">{t('inq.area')}</Label>
           <Input
