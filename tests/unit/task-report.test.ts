@@ -23,7 +23,7 @@ const task = (o: Partial<TaskRow> = {}): TaskRow =>
     category_id: 'cat1',
     business_date: '2026-10-16',
     title: 'Visit construction site',
-    description: null,
+    description: 'Discuss the Q4 reinforcement mesh order and site measurements',
     priority: 'high',
     planned_start: '09:00:00',
     planned_end: '11:00:00',
@@ -58,11 +58,17 @@ describe('toTaskReportRow', () => {
     expect(row.department).toBe('Marketing');
     expect(row.category).toBe('Visit customer');
     expect(row.title).toBe('Visit construction site');
+    expect(row.description).toBe('Discuss the Q4 reinforcement mesh order and site measurements');
     expect(row.priority).toBe('High');
     expect(row.time).toBe('09:00–11:00');
     expect(row.customer).toBe('Galleria Tile');
     expect(row.location).toBe('Phnom Penh');
     expect(row.status).toBe('Planned');
+  });
+
+  it('leaves description blank rather than null when none was set', () => {
+    const row = toTaskReportRow(task({ description: null }), 1, resolvers, 'en');
+    expect(row.description).toBe('');
   });
 
   it('formats a single planned time (no end) without a dash', () => {
@@ -103,7 +109,10 @@ describe('buildTaskReportHtml', () => {
     expect(html).toContain('中粤铁网');
     expect(html).toContain('TEAM TASKS REPORT');
     expect(html).toContain('print-color-adjust: exact');
-    expect(html).toContain('Visit construction site');
+    expect(html).toContain('Title 标题'); // column header
+    expect(html).toContain('Visit construction site'); // the title value
+    expect(html).toContain('Description 描述'); // column header
+    expect(html).toContain('Discuss the Q4 reinforcement mesh order and site measurements');
     expect(html).toContain('17/10/2026');
     expect(html).toContain('Thank you for your business');
   });
