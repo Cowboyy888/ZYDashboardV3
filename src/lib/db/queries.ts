@@ -1639,6 +1639,33 @@ export async function getTasksForRange(
   }
 }
 
+/**
+ * Still-open tasks (planned/in_progress) from before `beforeDate` — so an
+ * incomplete task keeps showing up on today's board instead of silently
+ * dropping off once its original business_date passes.
+ */
+export async function getOpenTasksBefore(
+  beforeDate: string,
+  employeeId?: string,
+): Promise<TaskRow[]> {
+  try {
+    const supabase = await client();
+    let q = supabase
+      .from('tasks')
+      .select('*')
+      .lt('business_date', beforeDate)
+      .in('status', ['planned', 'in_progress'])
+      .order('business_date')
+      .order('created_at');
+    if (employeeId) q = q.eq('employee_id', employeeId);
+    const { data } = await q;
+    return (data as TaskRow[]) ?? [];
+  } catch (e) {
+    console.error('[queries] getOpenTasksBefore', e);
+    return [];
+  }
+}
+
 export async function getTask(id: string): Promise<TaskRow | null> {
   try {
     const supabase = await client();

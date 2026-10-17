@@ -7,6 +7,7 @@ import {
   getTaskCategories,
   getCustomers,
   getTasksForRange,
+  getOpenTasksBefore,
 } from '@/lib/db/queries';
 import { getLocale } from '@/lib/i18n/locale';
 import { translator } from '@/lib/i18n';
@@ -25,14 +26,21 @@ export default async function TasksPage({
   const t = translator(locale);
   const { date: dateParam } = await searchParams;
   const date = /^\d{4}-\d{2}-\d{2}$/.test(dateParam ?? '') ? dateParam! : businessDate();
+  const isToday = date === businessDate();
 
-  const [employees, departments, categories, customers, tasks] = await Promise.all([
+  const [employees, departments, categories, customers, dayTasks, carriedOver] = await Promise.all([
     getEmployees(),
     getTaskDepartments(),
     getTaskCategories(),
     getCustomers(),
     getTasksForRange(date, date),
+    // Still-incomplete tasks from earlier dates, carried onto today's board
+    // so nothing silently disappears once its original date passes. Only
+    // makes sense when looking at "right now" — a past date shows exactly
+    // what that day actually looked like.
+    isToday ? getOpenTasksBefore(date) : Promise.resolve([]),
   ]);
+  const tasks = [...carriedOver, ...dayTasks];
 
   return (
     <div>

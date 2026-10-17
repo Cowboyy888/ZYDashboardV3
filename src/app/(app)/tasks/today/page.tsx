@@ -6,6 +6,7 @@ import {
   getTaskDepartments,
   getTaskMetricTypes,
   getTasksForRange,
+  getOpenTasksBefore,
   getDailyMetricsForRange,
 } from '@/lib/db/queries';
 import { getLocale } from '@/lib/i18n/locale';
@@ -21,13 +22,19 @@ export default async function TasksTodayPage() {
   const t = translator(locale);
   const today = businessDate();
 
-  const [employees, departments, metricTypes, tasks, metrics] = await Promise.all([
-    getEmployees(),
-    getTaskDepartments(),
-    getTaskMetricTypes(),
-    getTasksForRange(today, today),
-    getDailyMetricsForRange(today, today),
-  ]);
+  const [employees, departments, metricTypes, todayTasks, carriedOver, metrics] = await Promise.all(
+    [
+      getEmployees(),
+      getTaskDepartments(),
+      getTaskMetricTypes(),
+      getTasksForRange(today, today),
+      // Still-incomplete tasks from earlier dates — kept on today's activity
+      // view instead of disappearing once their original date passes.
+      getOpenTasksBefore(today),
+      getDailyMetricsForRange(today, today),
+    ],
+  );
+  const tasks = [...carriedOver, ...todayTasks];
 
   return (
     <div>

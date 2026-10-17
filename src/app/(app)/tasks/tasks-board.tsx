@@ -158,6 +158,7 @@ export function TasksBoard({
           <Table>
             <TableHeader>
               <TableRow>
+                <TableHead>{t('common.date')}</TableHead>
                 <TableHead>{t('att.employee')}</TableHead>
                 <TableHead>{t('tasks.taskTitle')}</TableHead>
                 <TableHead>{t('tasks.customer')}</TableHead>
@@ -176,8 +177,17 @@ export function TasksBoard({
                 const taskMeta = [category?.name, timeRange, task.location]
                   .filter(Boolean)
                   .join(' · ');
+                const carriedOver = task.business_date !== date;
                 return (
                   <TableRow key={task.id}>
+                    <TableCell className="whitespace-nowrap text-sm">
+                      {task.business_date}
+                      {carriedOver && (
+                        <Badge variant="destructive" className="ml-1.5 align-middle">
+                          {t('tasks.overdue')}
+                        </Badge>
+                      )}
+                    </TableCell>
                     <TableCell>
                       <div className="font-medium">
                         {employee ? employeeName(employee) : task.employee_id}
@@ -236,7 +246,7 @@ export function TasksBoard({
               {filtered.length === 0 && (
                 <TableRow>
                   <TableCell
-                    colSpan={canManage ? 6 : 5}
+                    colSpan={canManage ? 7 : 6}
                     className="text-center text-muted-foreground"
                   >
                     {t('tasks.noTasks')}

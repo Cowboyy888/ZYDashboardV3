@@ -176,6 +176,7 @@ export const dictionary = {
   'tasks.completed': { en: 'Completed', zh: '已完成' },
   'tasks.remaining': { en: 'Remaining', zh: '剩余' },
   'tasks.overdue': { en: 'Overdue', zh: '逾期' },
+  'tasks.carriedOverFrom': { en: 'from', zh: '来自' },
   'tasks.completionRate': { en: 'Completion rate', zh: '完成率' },
   'tasks.markComplete': { en: 'Mark complete', zh: '标记完成' },
   'tasks.saveNumbers': { en: 'Save numbers', zh: '保存数据' },

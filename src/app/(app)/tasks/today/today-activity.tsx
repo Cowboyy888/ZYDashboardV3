@@ -155,6 +155,11 @@ export function TodayActivity({
                         }
                       >
                         {task.status === 'completed' ? '✓' : '○'} {task.title}
+                        {task.business_date !== today && (
+                          <span className="ml-1.5 text-xs font-medium text-destructive">
+                            ({t('tasks.overdue')} {t('tasks.carriedOverFrom')} {task.business_date})
+                          </span>
+                        )}
                       </span>
                       {canManage && task.status !== 'completed' && task.status !== 'cancelled' && (
                         <ActionForm action={changeTaskStatus} className="space-y-0">
