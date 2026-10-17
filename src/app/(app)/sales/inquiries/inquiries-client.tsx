@@ -780,7 +780,9 @@ function InquiryForm({
   const [quoted, setQuoted] = useState(row?.quoted_price?.toString() ?? '');
   const [target, setTarget] = useState(row?.target_price?.toString() ?? '');
   const [finalP, setFinalP] = useState(row?.final_price?.toString() ?? '');
-  const [cost, setCost] = useState(row?.factory_cost?.toString() ?? '');
+  // No longer collected on this form — keeps whatever an existing row
+  // already had (for the profit preview below) without a way to change it.
+  const cost = row?.factory_cost?.toString() ?? '';
   const [area, setArea] = useState(row?.area_per_sheet?.toString() ?? '');
   const [qty, setQty] = useState(row?.quantity?.toString() ?? '');
 
@@ -934,18 +936,11 @@ function InquiryForm({
       </div>
 
       {/* Pricing ($/m²) */}
+      {/* Factory cost is no longer collected here; a hidden field preserves
+          whatever an existing row already had instead of wiping it out on
+          an unrelated edit. */}
+      <input type="hidden" name="factoryCost" value={cost} />
       <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
-        <div className="space-y-1.5">
-          <Label htmlFor="if-cost">{t('inq.cost')}</Label>
-          <Input
-            id="if-cost"
-            name="factoryCost"
-            type="number"
-            step="0.0001"
-            value={cost}
-            onChange={(e) => setCost(e.target.value)}
-          />
-        </div>
         <div className="space-y-1.5">
           <Label htmlFor="if-quoted">{t('inq.quoted')}</Label>
           <Input
