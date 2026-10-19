@@ -11,12 +11,18 @@
 5. **schema** — `scripts/validate-schema.mjs` (static; also applies migrations to
    `SUPABASE_DB_URL` if set and `psql` is available)
 6. **build** — `next build`
-7. **e2e** — Playwright critical flows, **only when `PLAYWRIGHT=1`** (requires a
-   built, running, Supabase-configured app + installed browsers)
+7. **e2e** — Playwright critical flows. Runs automatically whenever
+   `NEXT_PUBLIC_SUPABASE_URL` is reachable and `SUPABASE_SERVICE_ROLE_KEY` is
+   set (no flag needed); otherwise it's skipped with a message. Set
+   `REQUIRE_E2E=1` to make a not-ready Supabase a hard failure instead of a
+   skip (see `scripts/verify.mjs`).
 
-CI runs steps 1–6 (no database needed). Playwright is opt-in so a credential-less
-CI stays green; run it locally/staging with `PLAYWRIGHT=1 npm run verify` after
-`npx playwright install`.
+CI's `verify` job has no database, so e2e auto-skips there and the job stays
+green on steps 1–6 alone. A second CI job, `e2e`, boots a real local Supabase
+(`supabase start` + `db reset`), exports its env, installs the Playwright
+browser, then runs the full `npm run verify` with `REQUIRE_E2E=1` so it fails
+loudly instead of silently skipping — see `.github/workflows/ci.yml`. Locally,
+just have `supabase start` running before `npm run verify`.
 
 ## Test layers
 
@@ -24,9 +30,13 @@ CI stays green; run it locally/staging with `PLAYWRIGHT=1 npm run verify` after
 - **Integration** (`tests/integration`): multi-step domain scenarios (full ledger
   flow, report rendering, Telegram idempotency with the mock client + in-memory
   store).
-- **E2E** (`tests/e2e`): unauthenticated smoke flows (routing, login/setup render)
-  that pass with or without a backend. Authenticated flows are added per module as
-  a Supabase test project is wired up.
+- **E2E** (`tests/e2e`): 14 spec files (22 scenarios) as of 2026-10-16 — a
+  couple of unauthenticated smoke flows (routing, login/setup render) that
+  pass with or without a backend, plus authenticated flows per module
+  (attendance, sales, purchasing, payroll, deposit invoices, inventory
+  report/SKU, product families, login history, telegram settings, transfer,
+  employee create, report preview) that sign in as a seeded test Owner via
+  `tests/e2e/global-setup.ts` against local Supabase.
 
 ## Acceptance criteria → tests
 

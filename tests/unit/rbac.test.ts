@@ -211,6 +211,67 @@ describe('products:create — narrow ADD-only grant for whoever manages prices',
   });
 });
 
+describe('tasks:view / tasks:manage — Team Task & Activity Tracking (0056)', () => {
+  it('sales admin and marketing admin can manage tasks and daily metrics', () => {
+    for (const role of ['sales_admin', 'marketing_admin'] as Role[]) {
+      expect(hasPermission(role, 'tasks:view')).toBe(true);
+      expect(hasPermission(role, 'tasks:manage')).toBe(true);
+    }
+  });
+
+  it('system admin can view tasks but not create/edit them (view-only, same posture as sales/purchasing)', () => {
+    expect(hasPermission('system_admin', 'tasks:view')).toBe(true);
+    expect(hasPermission('system_admin', 'tasks:manage')).toBe(false);
+  });
+
+  it('marketing admin holds no permission beyond EVERYONE + tasks — the narrowest role', () => {
+    const everyoneOnly: Role = 'marketing_admin';
+    expect(hasPermission(everyoneOnly, 'dashboard:view')).toBe(true);
+    expect(hasPermission(everyoneOnly, 'reports:view')).toBe(true);
+    for (const permission of [
+      'employees:view',
+      'employee_sensitive:view',
+      'sales:view',
+      'sales:manage',
+      'inventory:view',
+      'payroll:view',
+      'purchasing:view',
+      'settings:manage',
+      'users:manage',
+    ] as const) {
+      expect(hasPermission(everyoneOnly, permission)).toBe(false);
+    }
+  });
+
+  it('attendance/warehouse/payroll/viewer have no tasks access at all', () => {
+    for (const role of [
+      'attendance_admin',
+      'warehouse_admin',
+      'payroll_admin',
+      'viewer',
+    ] as Role[]) {
+      expect(hasPermission(role, 'tasks:view')).toBe(false);
+      expect(hasPermission(role, 'tasks:manage')).toBe(false);
+    }
+  });
+});
+
+describe('role set integrity — fails if a role is accidentally removed or renamed', () => {
+  it('holds exactly the 8 documented roles, including Marketing Admin', () => {
+    const expected: Role[] = [
+      'owner',
+      'system_admin',
+      'attendance_admin',
+      'warehouse_admin',
+      'sales_admin',
+      'marketing_admin',
+      'payroll_admin',
+      'viewer',
+    ];
+    expect([...ROLES].sort()).toEqual([...expected].sort());
+  });
+});
+
 describe('equipment maintenance — factory-floor operational data, same posture as Purchasing', () => {
   it('warehouse admin runs it day to day; system admin oversees read-only', () => {
     expect(hasPermission('warehouse_admin', 'maintenance:view')).toBe(true);

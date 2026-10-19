@@ -13,8 +13,8 @@
 | Core inventory | ✅ Complete | Append-only ledger, transfers, negative guard + Owner override, dashboard, report |
 | Attendance groups & grouped report | ✅ Complete | Editable groups (add/rename/reorder/archive/reactivate); employee group + number/display/title/label; exact 中粤钢铁 grouped Telegram format generated from records |
 | Bilingual UI (EN / 中文) | ✅ Complete | Default English; EN \| 中文 segmented switch in header (desktop + mobile); real dictionaries; cookie + profile persistence; action/validation messages localised; Telegram report stays Chinese with a future-ready report-language setting |
-| Purchasing / Sales / Payroll / Reports | ⏳ Placeholder | Navigation entries only; scoped for passes 2–4 |
-| Verification | ✅ `npm run verify` green | 68 unit/integration tests + 7 Playwright specs (attendance, transfer, report-preview, employee-create ×2, 2 smoke); build succeeds |
+| Purchasing / Sales / Payroll / Reports | ✅ Built (passes 2–9+) | Scoped as first-pass placeholders at the time this row was written; all four have since been built — see `docs/product-spec.md`'s "Roadmap (later passes)" for each pass's actual scope. Reports specifically: per-module PDF/Excel export exists for 9+ document types (quotations, sales orders, purchase orders, deposit invoices, payment receipts, inventory, inquiries, price records, overtime, payroll) via `/api/export/*`; there is no single centralized, cross-domain filterable "Reports hub" — see "Deferred / future work" below. |
+| Verification | ✅ `npm run verify` green | 489 unit/integration tests across 45 files + 14 Playwright spec files (22 scenarios: attendance, transfer, report-preview, employee-create, deposit-invoice, inventory-report, inventory-sku, login-history, payroll, product-family, purchasing, sales, telegram-settings, smoke); build succeeds. Counts as of 2026-10-16 — re-check before citing, this log is not auto-updated. |
 
 ### Phase-1 acceptance fixes (post-review)
 
@@ -65,8 +65,10 @@
   stored for the future but does not change the current format.
 - **First signup = Owner.** Simplest safe bootstrap; subsequent users are Viewers
   promoted via Settings → Users.
-- **Placeholders for later passes.** Purchasing/Sales/Payroll/Reports are routed
-  and permission-gated but intentionally not implemented in pass 1.
+- **Purchasing/Sales/Payroll/Reports, built in later passes.** Routed and
+  permission-gated from pass 1, intentionally left unimplemented then, and
+  since built out in passes 2–4 (and refined well beyond that) — see
+  `docs/product-spec.md`'s roadmap for the actual scope of each.
 
 ## Assumptions
 
@@ -83,9 +85,20 @@
 
 ## Deferred / future work
 
-- Passes 2–4 (Purchasing, Sales, Payroll) per `docs/product-spec.md`.
-- Full filterable Reports module with CSV/export.
+- ~~Passes 2–4 (Purchasing, Sales, Payroll)~~ — built; see
+  `docs/product-spec.md`.
+- A single centralized, cross-domain filterable Reports hub with CSV export.
+  (Per-module PDF/Excel export already exists extensively — see the
+  Verification row above — this item is specifically about a unified
+  reports *section*, not export capability in general, which is not a gap.)
 - Regenerate fully-typed Supabase client (`supabase gen types`) to replace the
-  hand-maintained row types in `src/lib/db/types.ts`.
-- Authenticated Playwright flows once a Supabase test project + CI secrets exist
-  (the e2e job is scaffolded but gated `if: false`).
+  hand-maintained row types in `src/lib/db/types.ts`. Still accurate — row
+  types are still hand-maintained.
+- ~~Authenticated Playwright flows once a Supabase test project + CI secrets
+  exist (the e2e job is scaffolded but gated `if: false`)~~ — built;
+  `.github/workflows/ci.yml`'s `e2e` job boots a real local Supabase and runs
+  the full Playwright suite with `REQUIRE_E2E=1` on every push/PR to `main`.
+- Team Task & Activity Tracking's own deferred list (calendar view, task
+  templates, notifications, PDF/Excel weekly report, week-over-week
+  comparison, a dedicated `field_visits` table) — see
+  `docs/DEVELOPMENT_ROADMAP.md`.

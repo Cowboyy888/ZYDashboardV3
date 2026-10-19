@@ -19,6 +19,7 @@
     "test:watch": "vitest",
     "test:e2e": "playwright test",
     "db:validate": "node scripts/validate-schema.mjs",
+    "db:drift": "node scripts/check-migration-drift.mjs",
     "verify": "node scripts/verify.mjs"
   },
   "dependencies": {

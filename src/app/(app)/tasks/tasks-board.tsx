@@ -349,6 +349,12 @@ function TaskForm({
 
   const categoryOptions = categories.filter((c) => c.department_id === departmentId);
 
+  const err = (k: string) =>
+    state?.fieldErrors?.[k] ? (
+      <p className="text-xs text-destructive">{m(state.fieldErrors[k])}</p>
+    ) : null;
+  const errClass = (k: string) => (state?.fieldErrors?.[k] ? 'border-destructive' : '');
+
   return (
     <form ref={formRef} action={formAction} className="space-y-3">
       {row && <input type="hidden" name="id" value={row.id} />}
@@ -356,7 +362,13 @@ function TaskForm({
       <div className="grid gap-3 sm:grid-cols-2">
         <div className="space-y-1.5">
           <Label htmlFor="tf-employee">{t('att.employee')}</Label>
-          <NativeSelect id="tf-employee" name="employeeId" defaultValue={row?.employee_id} required>
+          <NativeSelect
+            id="tf-employee"
+            name="employeeId"
+            defaultValue={row?.employee_id}
+            className={errClass('employeeId')}
+            required
+          >
             <option value="">{t('common.select')}</option>
             {employees.map((e) => (
               <option key={e.id} value={e.id}>
@@ -364,6 +376,7 @@ function TaskForm({
               </option>
             ))}
           </NativeSelect>
+          {err('employeeId')}
         </div>
         <div className="space-y-1.5">
           <Label htmlFor="tf-date">{t('common.date')}</Label>
@@ -372,8 +385,10 @@ function TaskForm({
             name="businessDate"
             type="date"
             defaultValue={row?.business_date ?? defaultDate}
+            className={errClass('businessDate')}
             required
           />
+          {err('businessDate')}
         </div>
         <div className="space-y-1.5">
           <Label htmlFor="tf-dept">{t('tasks.department')}</Label>
@@ -382,6 +397,7 @@ function TaskForm({
             name="departmentId"
             defaultValue={row?.department_id}
             onChange={(e) => setDepartmentId(e.target.value)}
+            className={errClass('departmentId')}
             required
           >
             <option value="">{t('common.select')}</option>
@@ -391,6 +407,7 @@ function TaskForm({
               </option>
             ))}
           </NativeSelect>
+          {err('departmentId')}
         </div>
         <div className="space-y-1.5">
           <Label htmlFor="tf-category">{t('tasks.category')}</Label>
@@ -407,7 +424,14 @@ function TaskForm({
 
       <div className="space-y-1.5">
         <Label htmlFor="tf-title">{t('tasks.taskTitle')}</Label>
-        <Input id="tf-title" name="title" defaultValue={row?.title} required />
+        <Input
+          id="tf-title"
+          name="title"
+          defaultValue={row?.title}
+          className={errClass('title')}
+          required
+        />
+        {err('title')}
       </div>
 
       <div className="space-y-1.5">
@@ -433,11 +457,20 @@ function TaskForm({
             name="plannedStart"
             type="time"
             defaultValue={row?.planned_start ?? ''}
+            className={errClass('plannedStart')}
           />
+          {err('plannedStart')}
         </div>
         <div className="space-y-1.5">
           <Label htmlFor="tf-end">{t('tasks.plannedEnd')}</Label>
-          <Input id="tf-end" name="plannedEnd" type="time" defaultValue={row?.planned_end ?? ''} />
+          <Input
+            id="tf-end"
+            name="plannedEnd"
+            type="time"
+            defaultValue={row?.planned_end ?? ''}
+            className={errClass('plannedEnd')}
+          />
+          {err('plannedEnd')}
         </div>
       </div>
 

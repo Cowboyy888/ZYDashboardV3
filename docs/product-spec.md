@@ -231,6 +231,67 @@ Seeded opening stock (Storage Room): 拔丝料 10厘 = 10 捆; 拔丝料 6厘 = 
   isn't built here. Reuses `audit:view`, no new permission — see
   `docs/data-dictionary.md` and `docs/test-plan.md` for the schema and tests.
 
+## Later passes (built, summarized — see `docs/data-dictionary.md` for exact scope)
+
+The numbered-pass narrative above was kept current through the Eighth pass
+(Login History, ~migration 0024). The repo is now at **migration 0059** —
+roughly 35 further migrations of feature work. Rather than retroactively
+assigning ordinal pass numbers I can't fully verify match the original
+numbering (`docs/data-dictionary.md` already labels a few of these precisely
+as "Ninth pass"/"Tenth pass" where that's confirmed — SO/receipt number
+format changes, `customers.customer_code`), this section summarizes what
+exists by area. Treat `docs/data-dictionary.md` and the migration files
+themselves as the authoritative, precise source; this is an index into them,
+not a replacement.
+
+- **Sales CRM / pipeline (built):** `sales_inquiries` + `inquiry_followups` —
+  a pre-sale quotation tracker (customer, quoted/target/final price, status,
+  follow-up date/notes, next action) with a running follow-up log per
+  inquiry. `construction_projects` and `competitor_prices` track field-sales
+  site pipeline and competitor pricing observations. Editable Customer Types
+  (Settings → Customer Types), applied to both customers and inquiries.
+- **Sales targets / KPI / commission (built):** `sales_targets` (monthly
+  per-employee revenue + activity targets), `kpi_scorecards` (configurable
+  weighted scorecards — recently simplified in the UI to surface only
+  Target/Actual per line, with weight/label locked behind an "Edit setup"
+  toggle), and `commission_bands`/`commission_entries` (margin-banded
+  commission calculation). All under Sales → Targets/KPI.
+- **Price Records (built):** a dedicated price-list/history module
+  (`price_records`, `price_types`) with PDF/Excel export.
+- **Equipment Maintenance (built):** `equipment_maintenance` — scheduled/
+  logged maintenance against machinery, under its own nav section.
+- **Quotations (extended):** gained a salesperson field and a Customer
+  filter scoped to customers who actually have quotations.
+- **RLS performance (fixed):** ~103 RLS policies were re-written to wrap
+  `auth_role()`/`auth.uid()` calls in `(select ...)` for Postgres InitPlan
+  caching (evaluated once per query instead of once per row) — see
+  `supabase/migrations/0053_optimize_rls_performance.sql`.
+- **Attendance Telegram reporting (extended):** the single attendance
+  Telegram destination was split into independent Office/Factory
+  destinations (each with its own chat ID, enabled switch, and per-location
+  "Send now" button), zero-scheduled group lines are hidden from the report
+  body, and an initially-added third "Unclassified" destination was
+  shipped and then removed again once confirmed every employee is already
+  classified. The Attendance marking board (`/attendance`) mirrors the same
+  Office/Factory split for the marking UI itself.
+- **Team Task & Activity Tracking (built, MVP):** daily task tracking across
+  Marketing/B2B Sales/Field Sales/Sales Assistant, plus a daily activity
+  ledger (`daily_metrics`) that weekly/monthly numbers are always summed
+  from. Pages: Team Tasks, Today's Team Activity, Weekly Team Performance, a
+  Tasks tab on Employee Detail, Settings → Departments & Task Categories.
+  Deliberately deferred: calendar view, task templates, notifications,
+  PDF/Excel weekly report, week-over-week comparison, a dedicated
+  `field_visits` table. No employee self-service — `employees` has no link
+  to `profiles` anywhere in this schema, so a manager/admin enters tasks and
+  numbers for the team, same as Attendance. See
+  `docs/DEVELOPMENT_ROADMAP.md` for what's planned next here.
+- **Marketing Admin role (built):** a role scoped narrowly to Team Tasks
+  (`tasks:view`/`tasks:manage`), not the rest of Sales Admin's grants.
+  Selectable in Settings → Users.
+- **Employee Department (extended):** changed from free text to a select
+  sourced from the Team Tasks department list, with a fallback that still
+  shows an employee's pre-existing custom value if it predates the list.
+
 ## Explicit non-goals (v1)
 
 - No automatic raw-material consumption from production (documented future BOM).

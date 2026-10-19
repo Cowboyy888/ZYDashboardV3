@@ -68,8 +68,14 @@ export function TaskCategoriesManager({
   categories: TaskCategoryRow[];
   metricTypes: TaskMetricTypeRow[];
 }) {
-  const { t } = useT();
+  const { t, m } = useT();
   const departmentName = (id: string | null) => departments.find((d) => d.id === id)?.name ?? '—';
+  const fieldError = (state: ActionState, key: string) =>
+    state?.fieldErrors?.[key] ? (
+      <p className="text-xs text-destructive">{m(state.fieldErrors[key])}</p>
+    ) : null;
+  const fieldErrClass = (state: ActionState, key: string) =>
+    state?.fieldErrors?.[key] ? 'border-destructive' : '';
 
   return (
     <Tabs defaultValue="departments">
@@ -87,11 +93,22 @@ export function TaskCategoriesManager({
             </CardHeader>
             <CardContent>
               <ActionForm action={createTaskDepartment}>
-                <div className="space-y-1.5">
-                  <Label htmlFor="dept-name">{t('common.name')}</Label>
-                  <Input id="dept-name" name="name" placeholder="Marketing" required />
-                </div>
-                <SubmitButton>{t('common.add')}</SubmitButton>
+                {(state) => (
+                  <>
+                    <div className="space-y-1.5">
+                      <Label htmlFor="dept-name">{t('common.name')}</Label>
+                      <Input
+                        id="dept-name"
+                        name="name"
+                        placeholder="Marketing"
+                        className={fieldErrClass(state, 'name')}
+                        required
+                      />
+                      {fieldError(state, 'name')}
+                    </div>
+                    <SubmitButton>{t('common.add')}</SubmitButton>
+                  </>
+                )}
               </ActionForm>
             </CardContent>
           </Card>
@@ -139,24 +156,41 @@ export function TaskCategoriesManager({
             </CardHeader>
             <CardContent>
               <ActionForm action={createTaskCategory}>
-                <div className="space-y-1.5">
-                  <Label htmlFor="cat-dept">{t('tasks.department')}</Label>
-                  <NativeSelect id="cat-dept" name="departmentId" required>
-                    <option value="">{t('common.select')}</option>
-                    {departments
-                      .filter((d) => d.is_active)
-                      .map((d) => (
-                        <option key={d.id} value={d.id}>
-                          {d.name}
-                        </option>
-                      ))}
-                  </NativeSelect>
-                </div>
-                <div className="space-y-1.5">
-                  <Label htmlFor="cat-name">{t('common.name')}</Label>
-                  <Input id="cat-name" name="name" placeholder="Visit construction site" required />
-                </div>
-                <SubmitButton>{t('common.add')}</SubmitButton>
+                {(state) => (
+                  <>
+                    <div className="space-y-1.5">
+                      <Label htmlFor="cat-dept">{t('tasks.department')}</Label>
+                      <NativeSelect
+                        id="cat-dept"
+                        name="departmentId"
+                        className={fieldErrClass(state, 'departmentId')}
+                        required
+                      >
+                        <option value="">{t('common.select')}</option>
+                        {departments
+                          .filter((d) => d.is_active)
+                          .map((d) => (
+                            <option key={d.id} value={d.id}>
+                              {d.name}
+                            </option>
+                          ))}
+                      </NativeSelect>
+                      {fieldError(state, 'departmentId')}
+                    </div>
+                    <div className="space-y-1.5">
+                      <Label htmlFor="cat-name">{t('common.name')}</Label>
+                      <Input
+                        id="cat-name"
+                        name="name"
+                        placeholder="Visit construction site"
+                        className={fieldErrClass(state, 'name')}
+                        required
+                      />
+                      {fieldError(state, 'name')}
+                    </div>
+                    <SubmitButton>{t('common.add')}</SubmitButton>
+                  </>
+                )}
               </ActionForm>
             </CardContent>
           </Card>
@@ -208,33 +242,58 @@ export function TaskCategoriesManager({
             </CardHeader>
             <CardContent>
               <ActionForm action={createTaskMetricType}>
-                <div className="space-y-1.5">
-                  <Label htmlFor="m-key">{t('tasks.metricKey')}</Label>
-                  <Input id="m-key" name="key" placeholder="posts_published" required />
-                  <p className="text-xs text-muted-foreground">{t('set.taskMetricKeyHint')}</p>
-                </div>
-                <div className="space-y-1.5">
-                  <Label htmlFor="m-dept">{t('tasks.department')}</Label>
-                  <NativeSelect id="m-dept" name="departmentId">
-                    <option value="">{t('set.taskMetricSharedAllDepts')}</option>
-                    {departments
-                      .filter((d) => d.is_active)
-                      .map((d) => (
-                        <option key={d.id} value={d.id}>
-                          {d.name}
-                        </option>
-                      ))}
-                  </NativeSelect>
-                </div>
-                <div className="space-y-1.5">
-                  <Label htmlFor="m-en">{t('common.labelEn')}</Label>
-                  <Input id="m-en" name="labelEn" placeholder="Posts published" required />
-                </div>
-                <div className="space-y-1.5">
-                  <Label htmlFor="m-zh">{t('common.labelZh')}</Label>
-                  <Input id="m-zh" name="labelZh" placeholder="发布帖子" required />
-                </div>
-                <SubmitButton>{t('common.add')}</SubmitButton>
+                {(state) => (
+                  <>
+                    <div className="space-y-1.5">
+                      <Label htmlFor="m-key">{t('tasks.metricKey')}</Label>
+                      <Input
+                        id="m-key"
+                        name="key"
+                        placeholder="posts_published"
+                        className={fieldErrClass(state, 'key')}
+                        required
+                      />
+                      <p className="text-xs text-muted-foreground">{t('set.taskMetricKeyHint')}</p>
+                      {fieldError(state, 'key')}
+                    </div>
+                    <div className="space-y-1.5">
+                      <Label htmlFor="m-dept">{t('tasks.department')}</Label>
+                      <NativeSelect id="m-dept" name="departmentId">
+                        <option value="">{t('set.taskMetricSharedAllDepts')}</option>
+                        {departments
+                          .filter((d) => d.is_active)
+                          .map((d) => (
+                            <option key={d.id} value={d.id}>
+                              {d.name}
+                            </option>
+                          ))}
+                      </NativeSelect>
+                    </div>
+                    <div className="space-y-1.5">
+                      <Label htmlFor="m-en">{t('common.labelEn')}</Label>
+                      <Input
+                        id="m-en"
+                        name="labelEn"
+                        placeholder="Posts published"
+                        className={fieldErrClass(state, 'labelEn')}
+                        required
+                      />
+                      {fieldError(state, 'labelEn')}
+                    </div>
+                    <div className="space-y-1.5">
+                      <Label htmlFor="m-zh">{t('common.labelZh')}</Label>
+                      <Input
+                        id="m-zh"
+                        name="labelZh"
+                        placeholder="发布帖子"
+                        className={fieldErrClass(state, 'labelZh')}
+                        required
+                      />
+                      {fieldError(state, 'labelZh')}
+                    </div>
+                    <SubmitButton>{t('common.add')}</SubmitButton>
+                  </>
+                )}
               </ActionForm>
             </CardContent>
           </Card>

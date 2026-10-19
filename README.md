@@ -5,13 +5,16 @@ an **append-only stock ledger**, and **Telegram reporting** — bilingual
 (**English default / 中文**, switchable in-app via an `EN | 中文` control),
 Khmer-name aware, `dd/mm/yyyy` dates, all schedules in **Asia/Bangkok**.
 
-> **Status: First pass (Operations MVP).** Purchasing, Sales, Payroll, and full
-> Reports are scoped for later passes and appear as navigation placeholders. See
-> `docs/product-spec.md` and `docs/decisions.md`.
+> **Status: In active daily use.** What started as a first-pass Operations MVP
+> (attendance, inventory, Telegram) has grown through many passes since —
+> Purchasing, Sales/CRM, Payroll, Team Task tracking, and per-module PDF/Excel
+> reports are all built and in production use, not placeholders. See
+> `docs/product-spec.md` for the full pass-by-pass history and
+> `docs/decisions.md` for completion status.
 
 ## Stack
 
-- **Next.js 15** (App Router) · **TypeScript** · **Tailwind CSS** · **shadcn/ui**
+- **Next.js 16** (App Router) · **TypeScript** · **Tailwind CSS** · **shadcn/ui**
 - **Supabase**: PostgreSQL · Auth · Storage · Row Level Security
 - **Zod** validation · **Vitest** (unit/integration) · **Playwright** (e2e)
 - **Telegram Bot API** behind a mockable adapter
@@ -72,7 +75,7 @@ are sent; everything is still testable). To send real messages, follow
 | `npm run test` | Vitest unit + integration tests |
 | `npm run test:e2e` | Playwright critical flows (needs a running app) |
 | `npm run db:validate` | Static schema validation (optionally applies to `SUPABASE_DB_URL`) |
-| **`npm run verify`** | **The full gate:** format · lint · typecheck · tests · schema · build (+ e2e when `PLAYWRIGHT=1`) |
+| **`npm run verify`** | **The full gate:** format · lint · typecheck · tests · schema · build · e2e (e2e runs automatically whenever a local Supabase is reachable; set `REQUIRE_E2E=1` to make it a hard failure instead of an auto-skip) |
 
 ## Project layout
 
