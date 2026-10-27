@@ -51,6 +51,7 @@ import type {
   TaskRow,
   DailyMetricRow,
   TelegramSettingsRow,
+  WireMeshDrawingRow,
 } from './types';
 
 /**
@@ -1074,6 +1075,37 @@ export async function getQuotations(): Promise<QuotationRow[]> {
   } catch (e) {
     console.error('[queries] getQuotations', e);
     return [];
+  }
+}
+
+// --- Wire mesh order drawings -------------------------------------------------
+
+export async function getWireMeshDrawings(): Promise<WireMeshDrawingRow[]> {
+  try {
+    const supabase = await client();
+    const { data } = await supabase
+      .from('wire_mesh_drawings')
+      .select('*')
+      .order('updated_at', { ascending: false });
+    return (data as WireMeshDrawingRow[]) ?? [];
+  } catch (e) {
+    console.error('[queries] getWireMeshDrawings', e);
+    return [];
+  }
+}
+
+export async function getWireMeshDrawing(id: string): Promise<WireMeshDrawingRow | null> {
+  try {
+    const supabase = await client();
+    const { data } = await supabase
+      .from('wire_mesh_drawings')
+      .select('*')
+      .eq('id', id)
+      .maybeSingle();
+    return (data as WireMeshDrawingRow) ?? null;
+  } catch (e) {
+    console.error('[queries] getWireMeshDrawing', e);
+    return null;
   }
 }
 

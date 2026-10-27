@@ -262,6 +262,10 @@ not a replacement.
   logged maintenance against machinery, under its own nav section.
 - **Quotations (extended):** gained a salesperson field and a Customer
   filter scoped to customers who actually have quotations.
+- **Wire Mesh Order Drawings (built):** Sales can save a printable wire-mesh
+  grid linked to a quotation or Sales Order. Outside sheet dimensions, spacing,
+  and edge-overhang-to-wire-centreline inputs derive exact wire counts and area;
+  non-exact spacing fits are rejected instead of rounded.
 - **RLS performance (fixed):** ~103 RLS policies were re-written to wrap
   `auth_role()`/`auth.uid()` calls in `(select ...)` for Postgres InitPlan
   caching (evaluated once per query instead of once per row) — see

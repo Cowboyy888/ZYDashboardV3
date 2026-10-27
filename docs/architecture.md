@@ -58,6 +58,9 @@ not depend on the app being bug-free.
   (default, no network) and `HttpTelegramClient` (real Bot API), chosen by env.
   Supabase has request-scoped (RLS) and service-role (jobs) clients. This lets the
   whole app run and be tested locally with no credentials.
+- **Wire mesh geometry is derived.** Drawings persist source dimensions,
+  spacing, overhangs, and quantity only. The pure domain calculation rejects
+  non-exact fits and derives counts/areas for both the live SVG and PDF.
 - **Idempotent scheduled reports.** `sendReportOnce` + a `sent_reports` table with
   a unique `report_key` guarantee a scheduled report is sent at most once, even if
   a cron provider retries. Manual "Send now" bypasses the guard (to resend a

@@ -123,7 +123,8 @@ blocked by trigger.
 ### audit_log  *(immutable)*
 `id`, `actor_id`, `actor_email`, `action`, `entity`, `entity_id`,
 `old_value jsonb`, `new_value jsonb`, `created_at`. UPDATE/DELETE blocked by
-triggers. Never store secrets or raw salary values here.
+triggers. Inserts require `actor_id = auth.uid()` so a caller cannot forge an
+event for another user. Never store secrets or raw salary values here.
 
 ### login_events  *(append-only, Eighth pass)*
 `id`, `user_id → profiles (nullable, ON DELETE SET NULL)`, `email`,
@@ -230,6 +231,15 @@ trigger, mirroring `employee_code`; never reused, even after archiving),
 `sales_orders.customer_id` `ON DELETE RESTRICT` — a customer with any sales
 history cannot be hard-deleted (archive instead); `deleteCustomer` pre-checks
 this and the FK is the backstop.
+
+### wire_mesh_drawings  *(Wire Mesh Order Drawing)*
+
+Editable drawings linked to exactly one quotation or Sales Order. Each stores a
+customer-name snapshot, mesh/wire dimensions, spacing, four edge overhangs, and
+sheet quantity. Sheet dimensions are complete outside dimensions; overhangs run
+to the outer wire centreline. The app rejects non-exact spacing fits and derives
+wire counts and m² area from these saved inputs. RLS matches Sales: Owner/System
+Admin/Sales Admin read; Owner/Sales Admin write.
 
 ### sales_orders  *(Third pass; `payment_status` added Fifth pass; `quotation_id` added Sixth pass)*
 `id`, `so_number` (unique — the permanent Order Number, auto-assigned once on

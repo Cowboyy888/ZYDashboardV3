@@ -8,8 +8,8 @@
 2. **lint** — `next lint`
 3. **typecheck** — `tsc --noEmit`
 4. **test** — Vitest unit + integration (`tests/unit`, `tests/integration`)
-5. **schema** — `scripts/validate-schema.mjs` (static; also applies migrations to
-   `SUPABASE_DB_URL` if set and `psql` is available)
+5. **schema** — `scripts/validate-schema.mjs` (static; with `SUPABASE_DB_URL`,
+   it only confirms the database is reachable and never replays migrations)
 6. **build** — `next build`
 7. **e2e** — Playwright critical flows. Runs automatically whenever
    `NEXT_PUBLIC_SUPABASE_URL` is reachable and `SUPABASE_SERVICE_ROLE_KEY` is
@@ -81,6 +81,8 @@ just have `supabase start` running before `npm run verify`.
 | 36 | A final payment can only be recorded once the deposit invoice is fully paid, and any number of partial final payments are allowed until the balance reaches zero | `tests/unit/payment-receipt.test.ts` (`canRecordFinalPayment`); DB trigger `enforce_payment_receipt_rules` (`FINAL_PAYMENT_REQUIRES_PAID_DEPOSIT`); `tests/e2e/deposit-invoice.spec.ts` |
 | 37 | The sum of every payment receipt (deposit + final) against a Sales Order can never exceed its total — enforced for real, not just by the UI | `tests/unit/payment-receipt.test.ts` (`wouldExceedSoTotal`); DB trigger `enforce_payment_receipt_rules` (`PAYMENT_EXCEEDS_SO_TOTAL`); schema check |
 | 38 | Every successful sign-in records one login_events row (who, when, IP, country/city), visible only to Owner/System Admin | `tests/unit/login-event.test.ts` (`parseClientIp`); `tests/e2e/login-history.spec.ts`; RLS on `login_events`; schema check |
+
+| 39 | Wire Mesh drawings require exact spacing fits, derive counts/areas, persist/reopen, and expose printable export | `tests/unit/wire-mesh.test.ts`; `tests/e2e/wire-mesh-drawings.spec.ts`; schema check |
 
 Additional coverage: `tests/unit/datetime.test.ts` (Asia/Bangkok ⇄ UTC,
 dd/mm/yyyy, business-date boundary), `tests/unit/inventory-view.test.ts`

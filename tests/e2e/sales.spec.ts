@@ -72,7 +72,7 @@ test('sales: create, confirm, and partially deliver a sales order', async ({ pag
   // not a lingering message (see deliver-form.tsx).
   await expect(page.getByText(/^Partially Delivered$|^部分发货$/).first()).toBeVisible();
   await expect(page.getByText('40 / 100', { exact: true })).toBeVisible();
-  await expect(page.getByText('Outstanding: 60')).toBeVisible();
+  await expect(page.getByText('Outstanding: 60', { exact: true })).toBeVisible();
 });
 
 test('inquiries omit the requested pricing columns and KPIs', async ({ page }) => {

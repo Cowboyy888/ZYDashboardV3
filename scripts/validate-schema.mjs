@@ -4,14 +4,16 @@
  *
  * Guards against accidental regressions to the migrations/seed that back the
  * app's core invariants. If SUPABASE_DB_URL is set AND `psql` is available, it
- * also applies the migrations to that database for a full syntax check.
+ * performs a read-only connectivity check. It never replays migrations against
+ * that database: a database URL can point at an already-migrated environment,
+ * and historical migrations are not safe to reapply.
  *
  * Exit code 0 = pass, 1 = fail.
  */
 import { readFileSync, readdirSync, existsSync } from 'node:fs';
 import { join, dirname } from 'node:path';
 import { fileURLToPath } from 'node:url';
-import { execSync } from 'node:child_process';
+import { execFileSync } from 'node:child_process';
 
 const root = join(dirname(fileURLToPath(import.meta.url)), '..');
 const migrationsDir = join(root, 'supabase', 'migrations');
@@ -58,6 +60,7 @@ const tables = [
   'sales_orders',
   'sales_order_items',
   'payment_receipts',
+  'wire_mesh_drawings',
   'login_events',
   'payroll_runs',
   'payroll_items',
@@ -106,6 +109,11 @@ check(/add column if not exists report_language/i.test(sql), 'telegram_settings.
 check(/add column if not exists morning_time/i.test(sql), 'telegram_settings.morning_time');
 check(/add column if not exists afternoon_time/i.test(sql), 'telegram_settings.afternoon_time');
 check(/create table if not exists public\.sales_inquiries/i.test(sql), 'sales_inquiries table');
+check(
+  /create table if not exists public\.wire_mesh_drawings/i.test(sql),
+  'wire_mesh_drawings table',
+);
+check(/wire_mesh_drawings_one_reference/i.test(sql), 'wire mesh drawing source-reference guard');
 check(
   /create table if not exists public\.inquiry_sources/i.test(sql),
   'inquiry_sources (lead source) table',
@@ -402,20 +410,23 @@ check(/luowenpanyuan|螺纹盘圆/.test(seed), 'seed contains 螺纹盘圆 famil
 check(/create_draft_sales_order/i.test(seed), 'seed creates sample sales orders');
 check(/public\.customers/i.test(seed), 'seed contains sample customers');
 
-// --- Optional: apply to a real database if configured ------------------------
+// --- Optional: read-only database reachability check -------------------------
+//
+// Applying the entire migration history here is unsafe. Migrations are
+// forward-only and some deliberately redefine policies/tables introduced by
+// earlier files. Replaying only the earlier files on a populated database can
+// silently restore obsolete RLS policies before a later statement fails. Use
+// `supabase db reset` to validate a complete migration chain on a disposable
+// local database instead.
 const dbUrl = process.env.SUPABASE_DB_URL;
 if (dbUrl && failures.length === 0) {
   try {
-    execSync('command -v psql', { stdio: 'ignore', shell: '/bin/bash' });
-    console.log('  → SUPABASE_DB_URL set and psql found; applying migrations for syntax check');
-    for (const f of files) {
-      execSync(`psql "${dbUrl}" -v ON_ERROR_STOP=1 -f "${join(migrationsDir, f)}"`, {
-        stdio: 'inherit',
-      });
-    }
-    ok('migrations applied cleanly to SUPABASE_DB_URL');
+    execFileSync('psql', [dbUrl, '-v', 'ON_ERROR_STOP=1', '-t', '-A', '-c', 'select 1;'], {
+      stdio: 'ignore',
+    });
+    ok('SUPABASE_DB_URL reachable; migration replay intentionally disabled');
   } catch {
-    console.log('  (skipped live apply: psql unavailable or connection failed)');
+    console.log('  (skipped live check: psql unavailable or connection failed)');
   }
 }
 

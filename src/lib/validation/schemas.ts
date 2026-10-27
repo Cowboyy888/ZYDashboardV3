@@ -502,6 +502,41 @@ export type QuotationInput = z.infer<typeof quotationSchema>;
 export const quotationUpdateSchema = quotationSchema.extend({ id: z.string().uuid() });
 export type QuotationUpdateInput = z.infer<typeof quotationUpdateSchema>;
 
+// --- Wire mesh order drawings -------------------------------------------------
+
+const positiveMillimetres = z.coerce.number().finite().positive('Must be greater than zero');
+const nonNegativeMillimetres = z.coerce.number().finite().min(0, 'Must be zero or more');
+
+export const wireMeshDrawingSchema = z
+  .object({
+    quotationId: optionalUuid,
+    salesOrderId: optionalUuid,
+    meshSpecification: nonEmpty.max(160),
+    wireDiameterMm: positiveMillimetres,
+    sheetLengthMm: positiveMillimetres,
+    sheetWidthMm: positiveMillimetres,
+    lengthSpacingMm: positiveMillimetres,
+    widthSpacingMm: positiveMillimetres,
+    overhangLeftMm: nonNegativeMillimetres.default(0),
+    overhangRightMm: nonNegativeMillimetres.default(0),
+    overhangTopMm: nonNegativeMillimetres.default(0),
+    overhangBottomMm: nonNegativeMillimetres.default(0),
+    quantity: z.coerce.number().int().positive('Must be a whole number greater than zero'),
+  })
+  .refine(
+    (value) => Number(Boolean(value.quotationId)) + Number(Boolean(value.salesOrderId)) === 1,
+    {
+      message: 'Select exactly one quotation or sales order reference.',
+      path: ['quotationId'],
+    },
+  );
+export type WireMeshDrawingInput = z.infer<typeof wireMeshDrawingSchema>;
+
+export const wireMeshDrawingUpdateSchema = wireMeshDrawingSchema.and(
+  z.object({ id: z.string().uuid() }),
+);
+export type WireMeshDrawingUpdateInput = z.infer<typeof wireMeshDrawingUpdateSchema>;
+
 export const QUOTATION_DOC_KINDS = ['quotation', 'deposit', 'balance'] as const;
 export const issueDocumentSchema = z.object({
   quotationId: z.string().uuid(),

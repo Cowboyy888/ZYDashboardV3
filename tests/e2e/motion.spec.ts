@@ -26,7 +26,7 @@ test('reduced-motion preference makes shared motion immediate', async ({ page })
     return result;
   });
 
-  expect(motion.animationDuration).toBe('0.01ms');
+  expect(['0.01ms', '1e-05s']).toContain(motion.animationDuration);
   expect(motion.animationIterationCount).toBe('1');
-  expect(motion.transitionDuration).toBe('0.01ms');
+  expect(['0.01ms', '1e-05s']).toContain(motion.transitionDuration);
 });

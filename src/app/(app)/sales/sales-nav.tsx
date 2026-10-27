@@ -15,6 +15,7 @@ export function SalesNav({
     | 'inquiries'
     | 'quotations'
     | 'customers'
+    | 'drawings'
     | 'targets'
     | 'kpi'
     | 'prices';
@@ -26,6 +27,7 @@ export function SalesNav({
     { key: 'inquiries' as const, href: '/sales/inquiries', label: t('sal.inquiries') },
     { key: 'quotations' as const, href: '/sales/quotations', label: t('sal.quotations') },
     { key: 'orders' as const, href: '/sales/orders', label: t('sal.orders') },
+    { key: 'drawings' as const, href: '/sales/wire-mesh-drawings', label: t('mesh.nav') },
     { key: 'customers' as const, href: '/sales/customers', label: t('sal.customers') },
     // Below permission checks mirror the same rbac.ts checks each target
     // page's requirePermission() call already enforces server-side — this

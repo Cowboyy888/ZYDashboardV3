@@ -74,7 +74,7 @@ are sent; everything is still testable). To send real messages, follow
 | `npm run typecheck` | `tsc --noEmit` |
 | `npm run test` | Vitest unit + integration tests |
 | `npm run test:e2e` | Playwright critical flows (needs a running app) |
-| `npm run db:validate` | Static schema validation (optionally applies to `SUPABASE_DB_URL`) |
+| `npm run db:validate` | Static schema validation (optionally checks `SUPABASE_DB_URL` connectivity; never replays migrations) |
 | **`npm run verify`** | **The full gate:** format · lint · typecheck · tests · schema · build · e2e (e2e runs automatically whenever a local Supabase is reachable; set `REQUIRE_E2E=1` to make it a hard failure instead of an auto-skip) |
 
 ## Project layout

@@ -8,7 +8,7 @@ async function createUnlinkedQuotation(page: Page, customerName: string, quotati
   await page.locator('input[name="itemUnitPrice"]').fill('10');
   await page.locator('input[name="itemQuantity"]').fill('1');
   await page.getByRole('button', { name: /^(Save|保存)$/ }).click();
-  await expect(page.getByText(customerName, { exact: true }).first()).toBeVisible();
+  await expect(page.getByRole('row', { name: new RegExp(customerName) })).toBeVisible();
 }
 
 test('quotation customer filter includes unlinked quotations and clear filters restores the list', async ({
@@ -27,8 +27,8 @@ test('quotation customer filter includes unlinked quotations and clear filters r
   // available to it.
   await page.locator('#quo-filter-customer').selectOption({ label: firstCustomer });
   await expect(page).toHaveURL(/customerName=Quotation(?:%20|\+)Filter(?:%20|\+)A/);
-  await expect(page.getByText(firstCustomer, { exact: true })).toBeVisible();
-  await expect(page.getByText(secondCustomer, { exact: true })).toHaveCount(0);
+  await expect(page.getByRole('row', { name: new RegExp(firstCustomer) })).toBeVisible();
+  await expect(page.getByRole('row', { name: new RegExp(secondCustomer) })).toHaveCount(0);
 
   // A text search can be combined with the dropdown filter, then clear-all
   // removes every list-filter parameter and restores both rows.
@@ -38,8 +38,8 @@ test('quotation customer filter includes unlinked quotations and clear filters r
   await page.waitForURL(/q=Quotation(?:%20|\+)Filter(?:%20|\+)A/, { timeout: 5_000 });
   await page.getByRole('button', { name: /Clear filters|清除筛选/ }).click();
   await expect(page).toHaveURL(/\/sales\/quotations$/);
-  await expect(page.getByText(firstCustomer, { exact: true })).toBeVisible();
-  await expect(page.getByText(secondCustomer, { exact: true })).toBeVisible();
+  await expect(page.getByRole('row', { name: new RegExp(firstCustomer) })).toBeVisible();
+  await expect(page.getByRole('row', { name: new RegExp(secondCustomer) })).toBeVisible();
 });
 
 test('quotation date range filters the list and clear filters restores it', async ({ page }) => {
@@ -57,11 +57,11 @@ test('quotation date range filters the list and clear filters restores it', asyn
   await page.waitForURL(/dateFrom=2026-01-10/);
   await page.locator('#quo-filter-date-to').fill(firstDate);
   await page.waitForURL(/dateTo=2026-01-10/);
-  await expect(page.getByText(firstCustomer, { exact: true })).toBeVisible();
-  await expect(page.getByText(secondCustomer, { exact: true })).toHaveCount(0);
+  await expect(page.getByRole('row', { name: new RegExp(firstCustomer) })).toBeVisible();
+  await expect(page.getByRole('row', { name: new RegExp(secondCustomer) })).toHaveCount(0);
 
   await page.getByRole('button', { name: /Clear filters|清除筛选/ }).click();
   await expect(page).toHaveURL(/\/sales\/quotations$/);
-  await expect(page.getByText(firstCustomer, { exact: true })).toBeVisible();
-  await expect(page.getByText(secondCustomer, { exact: true })).toBeVisible();
+  await expect(page.getByRole('row', { name: new RegExp(firstCustomer) })).toBeVisible();
+  await expect(page.getByRole('row', { name: new RegExp(secondCustomer) })).toBeVisible();
 });

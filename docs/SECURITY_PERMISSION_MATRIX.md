@@ -186,14 +186,11 @@ their next `supabase db reset`. This is almost certainly the real
 explanation for more than one "the database looks wrong" moment earlier in
 this project's history that was written off as drift — it was this.
 
-**Recommended fix (not applied — flagging per this audit's own rules
-about not making unrelated changes unilaterally):** make the live-apply
-check whether the target database already has migrations recorded in
-`supabase_migrations.schema_migrations` and skip (or only apply genuinely
-pending files) when it does, and make a mid-loop failure surface as a loud
-warning instead of a silently-swallowed "skipped" — right now a real syntax
-error in a migration and "this database already has everything" look
-identical from the console output.
+**Resolved (2026-10-27):** `scripts/validate-schema.mjs` now performs only a
+read-only reachability check when `SUPABASE_DB_URL` is configured; it never
+replays historical migrations. A fresh disposable local database created with
+`supabase db reset` remains the supported way to validate the full migration
+chain.
 
 **Verification note for this document:** every RLS claim and test result
 elsewhere in this audit was produced immediately after a fresh

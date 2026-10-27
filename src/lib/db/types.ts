@@ -721,3 +721,25 @@ export interface DailyMetricRow {
   created_at: string;
   updated_at: string;
 }
+
+export interface WireMeshDrawingRow {
+  id: string;
+  quotation_id: string | null;
+  sales_order_id: string | null;
+  customer_name: string;
+  mesh_specification: string;
+  wire_diameter_mm: number;
+  sheet_length_mm: number;
+  sheet_width_mm: number;
+  length_spacing_mm: number;
+  width_spacing_mm: number;
+  overhang_left_mm: number;
+  overhang_right_mm: number;
+  overhang_top_mm: number;
+  overhang_bottom_mm: number;
+  quantity: number;
+  created_by: string | null;
+  updated_by: string | null;
+  created_at: string;
+  updated_at: string;
+}
