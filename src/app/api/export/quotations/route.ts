@@ -59,6 +59,8 @@ export async function GET(request: Request) {
   const params = new URL(request.url).searchParams;
   const from = params.get('from') || '';
   const to = params.get('to') || '';
+  const customerName = params.get('customerName')?.trim() || '';
+  // Legacy customer-id parameter for previously shared report URLs.
   const customerId = params.get('customer') || '';
 
   const allQuotations = await getQuotations();
@@ -73,7 +75,8 @@ export async function GET(request: Request) {
     if (q.balance_paid_on == null) return false;
     if (from && q.balance_paid_on < from) return false;
     if (to && q.balance_paid_on > to) return false;
-    if (customerId && q.customer_id !== customerId) return false;
+    if (customerName && q.customer_name !== customerName) return false;
+    if (!customerName && customerId && q.customer_id !== customerId) return false;
     return true;
   });
 
@@ -106,9 +109,11 @@ export async function GET(request: Request) {
     from || to
       ? `${from ? formatDDMMYYYY(from) : '…'} – ${to ? formatDDMMYYYY(to) : '…'}`
       : 'All dates';
-  const customerLabel = customerId
-    ? ((await getCustomers(true, [customerId]))[0]?.name ?? null)
-    : null;
+  const customerLabel = customerName
+    ? customerName
+    : customerId
+      ? ((await getCustomers(true, [customerId]))[0]?.name ?? null)
+      : null;
 
   const buffer = await buildXlsxBuffer('Balance Paid', COLUMNS, rows, {
     title: 'QUOTATIONS — BALANCE PAID · 报价单 — 尾款已付',

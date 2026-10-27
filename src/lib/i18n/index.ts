@@ -767,6 +767,7 @@ export const dictionary = {
   'quo.none': { en: 'No quotations yet.', zh: '暂无报价单。' },
   'quo.noneMatch': { en: 'No quotations match your search.', zh: '没有符合搜索条件的报价单。' },
   'quo.searchQuotations': { en: 'Search quotation no. or customer', zh: '搜索报价单号或客户' },
+  'quo.clearFilters': { en: 'Clear filters', zh: '清除筛选' },
   'quo.customer': { en: 'Customer', zh: '客户' },
   'quo.linkCustomer': { en: 'Link to customer record', zh: '关联客户档案' },
   'quo.contact': { en: 'Contact / Tel', zh: '联系电话' },

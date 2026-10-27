@@ -1077,19 +1077,25 @@ export async function getQuotations(): Promise<QuotationRow[]> {
   }
 }
 
-/** Distinct customer ids that have at least one quotation — scopes the
- * Quotations list's Customer filter to customers actually worth filtering
- * by, independent of pagination (unlike the page of quotations itself). */
-export async function getQuotationCustomerIds(): Promise<string[]> {
+/**
+ * Distinct customer names used by quotations — scopes the Quotations list's
+ * Customer filter independently of pagination. `customer_id` is deliberately
+ * optional on quotations, so filtering by it would hide valid quotations that
+ * were entered with a customer name but not linked to a master customer row.
+ */
+export async function getQuotationCustomerNames(): Promise<string[]> {
   try {
     const supabase = await client();
-    const { data } = await supabase
-      .from('quotations')
-      .select('customer_id')
-      .not('customer_id', 'is', null);
-    return [...new Set((data ?? []).map((r) => r.customer_id as string))];
+    const { data } = await supabase.from('quotations').select('customer_name');
+    return [
+      ...new Set(
+        (data ?? [])
+          .map((r) => r.customer_name?.trim())
+          .filter((name): name is string => Boolean(name)),
+      ),
+    ].sort((a, b) => a.localeCompare(b));
   } catch (e) {
-    console.error('[queries] getQuotationCustomerIds', e);
+    console.error('[queries] getQuotationCustomerNames', e);
     return [];
   }
 }
@@ -1106,12 +1112,14 @@ export async function getQuotationsPage({
   pageSize = DEFAULT_PAGE_SIZE,
   search,
   salespersonId,
+  customerName,
   customerId,
 }: {
   page: number;
   pageSize?: number;
   search?: string;
   salespersonId?: string;
+  customerName?: string;
   customerId?: string;
 }): Promise<PageResult<QuotationRow>> {
   try {
@@ -1121,6 +1129,7 @@ export async function getQuotationsPage({
     let q = supabase.from('quotations').select('*', { count: 'exact' });
 
     if (salespersonId) q = q.eq('salesperson_id', salespersonId);
+    if (customerName) q = q.eq('customer_name', customerName);
     if (customerId) q = q.eq('customer_id', customerId);
 
     const term = search ? sanitizeSearchTerm(search) : '';

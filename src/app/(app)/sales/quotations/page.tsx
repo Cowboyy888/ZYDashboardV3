@@ -4,7 +4,7 @@ import {
   getQuotationsPage,
   getQuotationItems,
   getCustomers,
-  getQuotationCustomerIds,
+  getQuotationCustomerNames,
   getSalesOrdersByQuotationIds,
   getInvoiceSettings,
   getEmployees,
@@ -23,12 +23,19 @@ export const dynamic = 'force-dynamic';
 export default async function QuotationsPage({
   searchParams,
 }: {
-  searchParams: Promise<{ page?: string; q?: string; salesperson?: string; customer?: string }>;
+  searchParams: Promise<{
+    page?: string;
+    q?: string;
+    salesperson?: string;
+    customerName?: string;
+    /** Legacy customer-id query parameter retained for bookmarked list URLs. */
+    customer?: string;
+  }>;
 }) {
   const user = await requirePermission('sales:view');
   const locale = await getLocale();
   const t = translator(locale);
-  const { page: pageParam, q, salesperson, customer } = await searchParams;
+  const { page: pageParam, q, salesperson, customerName, customer } = await searchParams;
   const page = Math.max(1, Number(pageParam) || 1);
 
   const { rows: quotations, total } = await getQuotationsPage({
@@ -36,21 +43,20 @@ export default async function QuotationsPage({
     pageSize: DEFAULT_PAGE_SIZE,
     search: q,
     salespersonId: salesperson,
-    customerId: customer,
+    customerName,
+    customerId: customerName ? undefined : customer,
   });
   const quotationIds = quotations.map((quo) => quo.id);
 
-  const [items, customers, quotationCustomerIds, linkedOrders, invoiceSettings, employees] =
+  const [items, customers, quotationCustomerNames, linkedOrders, invoiceSettings, employees] =
     await Promise.all([
       getQuotationItems(quotationIds),
       getCustomers(true),
-      getQuotationCustomerIds(),
+      getQuotationCustomerNames(),
       getSalesOrdersByQuotationIds(quotationIds),
       getInvoiceSettings(),
       getEmployees(),
     ]);
-  const quotationCustomerIdSet = new Set(quotationCustomerIds);
-
   return (
     <div>
       <PageHeader title={t('quo.title')} description={t('quo.desc')} />
@@ -62,9 +68,7 @@ export default async function QuotationsPage({
         quotations={quotations}
         items={items}
         customers={customers.map((c) => ({ id: c.id, name: c.name }))}
-        customerFilterOptions={customers
-          .filter((c) => quotationCustomerIdSet.has(c.id))
-          .map((c) => ({ id: c.id, name: c.name }))}
+        customerFilterOptions={quotationCustomerNames}
         employees={employees.map((e) => ({
           id: e.id,
           name: e.display_name || e.name_english || e.name_chinese || e.employee_code,
@@ -77,8 +81,8 @@ export default async function QuotationsPage({
           soNumber: o.so_number,
         }))}
         salespersonFilter={salesperson ?? ''}
-        customerFilter={customer ?? ''}
-        isSearching={!!q?.trim() || !!salesperson || !!customer}
+        customerNameFilter={customerName ?? ''}
+        isSearching={!!q?.trim() || !!salesperson || !!customerName || !!customer}
       />
       <div className="mt-4">
         <Pagination
@@ -87,7 +91,7 @@ export default async function QuotationsPage({
           pageSize={DEFAULT_PAGE_SIZE}
           total={total}
           basePath="/sales/quotations"
-          searchParams={{ q, salesperson, customer }}
+          searchParams={{ q, salesperson, customerName, customer }}
           prevLabel={t('common.previous')}
           nextLabel={t('common.next')}
         />

@@ -88,16 +88,14 @@ export function QuotationsClient({
   canManage,
   linkedOrders,
   salespersonFilter = '',
-  customerFilter = '',
+  customerNameFilter = '',
   isSearching = false,
 }: {
   quotations: QuotationRow[];
   items: QuotationItemRow[];
   customers: Opt[];
-  /** Customers who actually have a quotation — scopes the Customer FILTER
-   * dropdown (unlike `customers`, which stays the full list for linking a
-   * quotation to a customer record in the create/edit form). */
-  customerFilterOptions: Opt[];
+  /** Customer names used by quotations, including quotations not linked to a master customer row. */
+  customerFilterOptions: string[];
   employees: Opt[];
   /** Company's CURRENT VAT status (invoice_settings) — informational only on
    * this form; a new quotation snapshots this at creation, see
@@ -107,8 +105,8 @@ export function QuotationsClient({
   linkedOrders: { quotationId: string; soId: string; soNumber: string | null }[];
   /** Current `?salesperson=` filter value, server-derived — drives the list's own query. */
   salespersonFilter?: string;
-  /** Current `?customer=` filter value, server-derived — drives the list's own query. */
-  customerFilter?: string;
+  /** Current `?customerName=` filter value, server-derived — drives the list's own query. */
+  customerNameFilter?: string;
   isSearching?: boolean;
 }) {
   const { t } = useT();
@@ -130,10 +128,10 @@ export function QuotationsClient({
     const params = new URLSearchParams();
     if (downloadFrom) params.set('from', downloadFrom);
     if (downloadTo) params.set('to', downloadTo);
-    if (customerFilter) params.set('customer', customerFilter);
+    if (customerNameFilter) params.set('customerName', customerNameFilter);
     const qs = params.toString();
     return qs ? `/api/export/quotations?${qs}` : '/api/export/quotations';
-  }, [downloadFrom, downloadTo, customerFilter]);
+  }, [downloadFrom, downloadTo, customerNameFilter]);
 
   function onSalespersonFilterChange(next: string) {
     const params = new URLSearchParams(searchParams.toString());
@@ -146,11 +144,29 @@ export function QuotationsClient({
 
   function onCustomerFilterChange(next: string) {
     const params = new URLSearchParams(searchParams.toString());
-    if (next) params.set('customer', next);
-    else params.delete('customer');
+    if (next) params.set('customerName', next);
+    else params.delete('customerName');
+    // `customer` formerly contained a linked customer id. Remove it whenever
+    // the current filter changes so a legacy bookmarked value cannot combine
+    // with the name-based filter.
+    params.delete('customer');
     params.delete('page');
     const qs = params.toString();
     router.push(qs ? `${pathname}?${qs}` : pathname);
+  }
+
+  const hasActiveFilters = Boolean(
+    searchParams.get('q')?.trim() ||
+    salespersonFilter ||
+    customerNameFilter ||
+    searchParams.get('customer'),
+  );
+
+  function clearFilters() {
+    // The quotation list owns all of this route's query parameters, so the
+    // bare pathname reliably resets search, both dropdowns, pagination, and
+    // the legacy customer-id parameter in one navigation.
+    router.push(pathname);
   }
 
   const itemsByQuotation = useMemo(() => {
@@ -175,14 +191,14 @@ export function QuotationsClient({
             <Label htmlFor="quo-filter-customer">{t('quo.customer')}</Label>
             <NativeSelect
               id="quo-filter-customer"
-              value={customerFilter}
+              value={customerNameFilter}
               onChange={(e) => onCustomerFilterChange(e.target.value)}
               className="w-48"
             >
               <option value="">{t('common.all')}</option>
-              {customerFilterOptions.map((c) => (
-                <option key={c.id} value={c.id}>
-                  {c.name}
+              {customerFilterOptions.map((name) => (
+                <option key={name} value={name}>
+                  {name}
                 </option>
               ))}
             </NativeSelect>
@@ -232,6 +248,11 @@ export function QuotationsClient({
               <Download className="h-4 w-4" /> {t('quo.downloadBalancePaid')}
             </a>
           </Button>
+          {hasActiveFilters && (
+            <Button type="button" variant="ghost" onClick={clearFilters}>
+              {t('quo.clearFilters')}
+            </Button>
+          )}
           {canManage && (
             <Button
               variant={showCreate ? 'secondary' : 'default'}
