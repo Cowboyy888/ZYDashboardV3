@@ -74,3 +74,16 @@ test('sales: create, confirm, and partially deliver a sales order', async ({ pag
   await expect(page.getByText('40 / 100', { exact: true })).toBeVisible();
   await expect(page.getByText('Outstanding: 60')).toBeVisible();
 });
+
+test('inquiries omit the requested pricing columns and KPIs', async ({ page }) => {
+  await page.goto('/sales/inquiries');
+
+  await expect(
+    page.getByRole('columnheader', { name: /Diff \(\$\/m²\)|价差\(\$\/m²\)/ }),
+  ).toHaveCount(0);
+  await expect(
+    page.getByRole('columnheader', { name: /Est\. profit \(\$\)|预估利润\(\$\)/ }),
+  ).toHaveCount(0);
+  await expect(page.getByText(/Quotation value|报价总额/)).toHaveCount(0);
+  await expect(page.getByText(/Won profit|成交利润/)).toHaveCount(0);
+});

@@ -863,11 +863,9 @@ export const dictionary = {
   'inq.remarks': { en: 'Remarks', zh: '备注' },
   // KPIs
   'inq.kpiTotal': { en: 'Inquiries', zh: '询价数' },
-  'inq.kpiValue': { en: 'Quotation value', zh: '报价总额' },
   'inq.kpiWon': { en: 'Won', zh: '成交' },
   'inq.kpiLost': { en: 'Lost', zh: '流失' },
   'inq.kpiConversion': { en: 'Conversion', zh: '成交率' },
-  'inq.kpiProfit': { en: 'Won profit', zh: '成交利润' },
   'inq.kpiPending': { en: 'Pending', zh: '待跟进' },
   // Follow-ups
   'inq.addFollowup': { en: 'Record a follow-up', zh: '记录跟进' },

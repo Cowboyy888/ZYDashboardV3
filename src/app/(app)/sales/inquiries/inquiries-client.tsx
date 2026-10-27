@@ -208,11 +208,9 @@ export function InquiriesClient({
 
   const kpis: Array<{ label: string; value: string }> = [
     { label: t('inq.kpiTotal'), value: String(summary.totalInquiries) },
-    { label: t('inq.kpiValue'), value: `$${fmt(summary.totalQuotationValue)}` },
     { label: t('inq.kpiWon'), value: String(summary.wonOrders) },
     { label: t('inq.kpiLost'), value: String(summary.lostOrders) },
     { label: t('inq.kpiConversion'), value: `${(summary.conversionRate * 100).toFixed(0)}%` },
-    { label: t('inq.kpiProfit'), value: `$${fmt(summary.wonProfit)}` },
     { label: t('inq.kpiPending'), value: String(summary.pendingFollowups) },
   ];
 
@@ -380,8 +378,6 @@ export function InquiriesClient({
                   <TableHead className="text-right">{t('inq.qty')}</TableHead>
                   <TableHead className="text-right">{t('inq.quoted')}</TableHead>
                   <TableHead className="text-right">{t('inq.target')}</TableHead>
-                  <TableHead className="text-right">{t('inq.diff')}</TableHead>
-                  <TableHead className="text-right">{t('inq.profit')}</TableHead>
                   <TableHead>{t('common.status')}</TableHead>
                   {canManage && <TableHead className="text-right">{t('common.actions')}</TableHead>}
                 </TableRow>
@@ -415,12 +411,6 @@ export function InquiriesClient({
                     <TableCell className="text-right tabular-nums">{fmt(i.quantity, 0)}</TableCell>
                     <TableCell className="text-right tabular-nums">{fmt(i.quoted_price)}</TableCell>
                     <TableCell className="text-right tabular-nums">{fmt(i.target_price)}</TableCell>
-                    <TableCell className="text-right tabular-nums">
-                      {fmt(i.price_difference)}
-                    </TableCell>
-                    <TableCell className="text-right tabular-nums">
-                      {i.estimated_profit == null ? '—' : `$${fmt(i.estimated_profit)}`}
-                    </TableCell>
                     <TableCell>{statusBadge(i.status_id)}</TableCell>
                     {canManage && (
                       <TableCell className="text-right">
@@ -444,7 +434,7 @@ export function InquiriesClient({
                 {filteredInquiries.length === 0 && (
                   <TableRow>
                     <TableCell
-                      colSpan={canManage ? 13 : 12}
+                      colSpan={canManage ? 11 : 10}
                       className="text-center text-muted-foreground"
                     >
                       {inquiries.length === 0 ? t('inq.none') : t('inq.noMatches')}
