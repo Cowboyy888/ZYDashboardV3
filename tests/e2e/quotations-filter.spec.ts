@@ -1,8 +1,9 @@
 import { test, expect, type Page } from '@playwright/test';
 
-async function createUnlinkedQuotation(page: Page, customerName: string) {
+async function createUnlinkedQuotation(page: Page, customerName: string, quotationDate?: string) {
   await page.getByRole('button', { name: /New quotation|新增报价单/ }).click();
   await page.locator('#q-customer').fill(customerName);
+  if (quotationDate) await page.locator('#q-date').fill(quotationDate);
   await page.locator('input[name="itemDescription"]').fill('Filter regression test item');
   await page.locator('input[name="itemUnitPrice"]').fill('10');
   await page.locator('input[name="itemQuantity"]').fill('1');
@@ -35,6 +36,30 @@ test('quotation customer filter includes unlinked quotations and clear filters r
     .getByPlaceholder(/Search quotation no\. or customer|搜索报价单号或客户/)
     .fill(firstCustomer);
   await page.waitForURL(/q=Quotation(?:%20|\+)Filter(?:%20|\+)A/, { timeout: 5_000 });
+  await page.getByRole('button', { name: /Clear filters|清除筛选/ }).click();
+  await expect(page).toHaveURL(/\/sales\/quotations$/);
+  await expect(page.getByText(firstCustomer, { exact: true })).toBeVisible();
+  await expect(page.getByText(secondCustomer, { exact: true })).toBeVisible();
+});
+
+test('quotation date range filters the list and clear filters restores it', async ({ page }) => {
+  const stamp = Date.now();
+  const firstCustomer = `Quotation Date A ${stamp}`;
+  const secondCustomer = `Quotation Date B ${stamp}`;
+  const firstDate = '2026-01-10';
+  const secondDate = '2026-01-11';
+
+  await page.goto('/sales/quotations');
+  await createUnlinkedQuotation(page, firstCustomer, firstDate);
+  await createUnlinkedQuotation(page, secondCustomer, secondDate);
+
+  await page.locator('#quo-filter-date-from').fill(firstDate);
+  await page.waitForURL(/dateFrom=2026-01-10/);
+  await page.locator('#quo-filter-date-to').fill(firstDate);
+  await page.waitForURL(/dateTo=2026-01-10/);
+  await expect(page.getByText(firstCustomer, { exact: true })).toBeVisible();
+  await expect(page.getByText(secondCustomer, { exact: true })).toHaveCount(0);
+
   await page.getByRole('button', { name: /Clear filters|清除筛选/ }).click();
   await expect(page).toHaveURL(/\/sales\/quotations$/);
   await expect(page.getByText(firstCustomer, { exact: true })).toBeVisible();

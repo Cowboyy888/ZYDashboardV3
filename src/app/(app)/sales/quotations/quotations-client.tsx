@@ -89,6 +89,8 @@ export function QuotationsClient({
   linkedOrders,
   salespersonFilter = '',
   customerNameFilter = '',
+  quotationDateFrom = '',
+  quotationDateTo = '',
   isSearching = false,
 }: {
   quotations: QuotationRow[];
@@ -107,6 +109,9 @@ export function QuotationsClient({
   salespersonFilter?: string;
   /** Current `?customerName=` filter value, server-derived — drives the list's own query. */
   customerNameFilter?: string;
+  /** Current quotation-date bounds, server-derived — drive the list's own query. */
+  quotationDateFrom?: string;
+  quotationDateTo?: string;
   isSearching?: boolean;
 }) {
   const { t } = useT();
@@ -155,10 +160,21 @@ export function QuotationsClient({
     router.push(qs ? `${pathname}?${qs}` : pathname);
   }
 
+  function onQuotationDateFilterChange(key: 'dateFrom' | 'dateTo', next: string) {
+    const params = new URLSearchParams(searchParams.toString());
+    if (next) params.set(key, next);
+    else params.delete(key);
+    params.delete('page');
+    const qs = params.toString();
+    router.push(qs ? `${pathname}?${qs}` : pathname);
+  }
+
   const hasActiveFilters = Boolean(
     searchParams.get('q')?.trim() ||
     salespersonFilter ||
     customerNameFilter ||
+    quotationDateFrom ||
+    quotationDateTo ||
     searchParams.get('customer'),
   );
 
@@ -219,10 +235,32 @@ export function QuotationsClient({
               ))}
             </NativeSelect>
           </div>
+          <div className="space-y-1.5">
+            <Label htmlFor="quo-filter-date-from">{t('quo.quotationDateFrom')}</Label>
+            <Input
+              id="quo-filter-date-from"
+              type="date"
+              value={quotationDateFrom}
+              max={quotationDateTo || undefined}
+              onChange={(e) => onQuotationDateFilterChange('dateFrom', e.target.value)}
+              className="w-40"
+            />
+          </div>
+          <div className="space-y-1.5">
+            <Label htmlFor="quo-filter-date-to">{t('quo.quotationDateTo')}</Label>
+            <Input
+              id="quo-filter-date-to"
+              type="date"
+              value={quotationDateTo}
+              min={quotationDateFrom || undefined}
+              onChange={(e) => onQuotationDateFilterChange('dateTo', e.target.value)}
+              className="w-40"
+            />
+          </div>
         </div>
         <div className="flex flex-wrap items-end justify-end gap-2">
           <div className="space-y-1.5">
-            <Label htmlFor="quo-download-from">{t('common.dateFrom')}</Label>
+            <Label htmlFor="quo-download-from">{t('quo.balancePaidDateFrom')}</Label>
             <Input
               id="quo-download-from"
               type="date"
@@ -233,7 +271,7 @@ export function QuotationsClient({
             />
           </div>
           <div className="space-y-1.5">
-            <Label htmlFor="quo-download-to">{t('common.dateTo')}</Label>
+            <Label htmlFor="quo-download-to">{t('quo.balancePaidDateTo')}</Label>
             <Input
               id="quo-download-to"
               type="date"

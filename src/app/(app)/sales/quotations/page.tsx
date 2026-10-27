@@ -28,6 +28,8 @@ export default async function QuotationsPage({
     q?: string;
     salesperson?: string;
     customerName?: string;
+    dateFrom?: string;
+    dateTo?: string;
     /** Legacy customer-id query parameter retained for bookmarked list URLs. */
     customer?: string;
   }>;
@@ -35,7 +37,15 @@ export default async function QuotationsPage({
   const user = await requirePermission('sales:view');
   const locale = await getLocale();
   const t = translator(locale);
-  const { page: pageParam, q, salesperson, customerName, customer } = await searchParams;
+  const {
+    page: pageParam,
+    q,
+    salesperson,
+    customerName,
+    dateFrom,
+    dateTo,
+    customer,
+  } = await searchParams;
   const page = Math.max(1, Number(pageParam) || 1);
 
   const { rows: quotations, total } = await getQuotationsPage({
@@ -45,6 +55,8 @@ export default async function QuotationsPage({
     salespersonId: salesperson,
     customerName,
     customerId: customerName ? undefined : customer,
+    dateFrom,
+    dateTo,
   });
   const quotationIds = quotations.map((quo) => quo.id);
 
@@ -82,7 +94,11 @@ export default async function QuotationsPage({
         }))}
         salespersonFilter={salesperson ?? ''}
         customerNameFilter={customerName ?? ''}
-        isSearching={!!q?.trim() || !!salesperson || !!customerName || !!customer}
+        quotationDateFrom={dateFrom ?? ''}
+        quotationDateTo={dateTo ?? ''}
+        isSearching={
+          !!q?.trim() || !!salesperson || !!customerName || !!customer || !!dateFrom || !!dateTo
+        }
       />
       <div className="mt-4">
         <Pagination
@@ -91,7 +107,7 @@ export default async function QuotationsPage({
           pageSize={DEFAULT_PAGE_SIZE}
           total={total}
           basePath="/sales/quotations"
-          searchParams={{ q, salesperson, customerName, customer }}
+          searchParams={{ q, salesperson, customerName, customer, dateFrom, dateTo }}
           prevLabel={t('common.previous')}
           nextLabel={t('common.next')}
         />

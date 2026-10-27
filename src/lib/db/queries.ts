@@ -1114,6 +1114,8 @@ export async function getQuotationsPage({
   salespersonId,
   customerName,
   customerId,
+  dateFrom,
+  dateTo,
 }: {
   page: number;
   pageSize?: number;
@@ -1121,6 +1123,9 @@ export async function getQuotationsPage({
   salespersonId?: string;
   customerName?: string;
   customerId?: string;
+  /** Inclusive quotation-date bounds (YYYY-MM-DD). */
+  dateFrom?: string;
+  dateTo?: string;
 }): Promise<PageResult<QuotationRow>> {
   try {
     const supabase = await client();
@@ -1131,6 +1136,8 @@ export async function getQuotationsPage({
     if (salespersonId) q = q.eq('salesperson_id', salespersonId);
     if (customerName) q = q.eq('customer_name', customerName);
     if (customerId) q = q.eq('customer_id', customerId);
+    if (dateFrom) q = q.gte('quotation_date', dateFrom);
+    if (dateTo) q = q.lte('quotation_date', dateTo);
 
     const term = search ? sanitizeSearchTerm(search) : '';
     if (term) {
