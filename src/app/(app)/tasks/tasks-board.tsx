@@ -23,6 +23,7 @@ import { SubmitButton } from '@/components/forms/submit-button';
 import { Button } from '@/components/ui/button';
 import { useT } from '@/components/i18n-provider';
 import { createTask, updateTask, changeTaskStatus, cancelTask } from '@/lib/actions/tasks';
+import { formatDDMMYYYY } from '@/lib/domain/datetime';
 import {
   TASK_PRIORITIES,
   TASK_PRIORITY_LABELS,
@@ -67,7 +68,7 @@ function employeeName(e: EmployeeRow): string {
   return e.display_name || e.name_english || e.name_chinese || e.employee_code;
 }
 
-function TaskDateNav({ date }: { date: string }) {
+function TaskDateNav({ date }: { date?: string }) {
   const router = useRouter();
   const { t } = useT();
   return (
@@ -76,6 +77,7 @@ function TaskDateNav({ date }: { date: string }) {
         {t('common.date')}
       </Label>
       <Input
+        key={date ?? 'all'}
         id="tasks-date"
         type="date"
         defaultValue={date}
@@ -84,12 +86,18 @@ function TaskDateNav({ date }: { date: string }) {
           if (e.target.value) router.push(`/tasks?date=${e.target.value}`);
         }}
       />
+      {date && (
+        <Button type="button" variant="outline" size="sm" onClick={() => router.push('/tasks')}>
+          {t('tasks.allDates')}
+        </Button>
+      )}
     </div>
   );
 }
 
 export function TasksBoard({
-  date,
+  defaultDate,
+  selectedDate,
   employees,
   departments,
   categories,
@@ -97,7 +105,8 @@ export function TasksBoard({
   tasks,
   canManage,
 }: {
-  date: string;
+  defaultDate: string;
+  selectedDate?: string;
   employees: EmployeeRow[];
   departments: TaskDepartmentRow[];
   categories: TaskCategoryRow[];
@@ -124,22 +133,25 @@ export function TasksBoard({
 
   // Mirrors what's currently on screen, so the PDF always matches the filters above.
   const pdfHref = useMemo(() => {
-    const params = new URLSearchParams({ date });
+    if (!selectedDate) return null;
+    const params = new URLSearchParams({ date: selectedDate });
     if (departmentFilter !== 'all') params.set('department', departmentFilter);
     if (statusFilter) params.set('status', statusFilter);
     return `/api/export/tasks/pdf?${params.toString()}`;
-  }, [date, departmentFilter, statusFilter]);
+  }, [selectedDate, departmentFilter, statusFilter]);
 
   return (
     <div className="space-y-4">
       <div className="flex flex-wrap items-center justify-between gap-3">
-        <TaskDateNav date={date} />
+        <TaskDateNav date={selectedDate} />
         <div className="flex items-center gap-2">
-          <Button asChild variant="outline">
-            <a href={pdfHref} target="_blank" rel="noopener noreferrer">
-              <FileText className="h-4 w-4" /> {t('tasks.downloadPdf')}
-            </a>
-          </Button>
+          {pdfHref && (
+            <Button asChild variant="outline">
+              <a href={pdfHref} target="_blank" rel="noopener noreferrer">
+                <FileText className="h-4 w-4" /> {t('tasks.downloadPdf')}
+              </a>
+            </Button>
+          )}
           {canManage && <Button onClick={() => setShowCreate(true)}>{t('tasks.newTask')}</Button>}
         </div>
       </div>
@@ -193,11 +205,12 @@ export function TasksBoard({
                 const taskMeta = [category?.name, timeRange, task.location]
                   .filter(Boolean)
                   .join(' · ');
-                const carriedOver = task.business_date !== date;
+                const carriedOver =
+                  selectedDate === defaultDate && task.business_date !== selectedDate;
                 return (
                   <TableRow key={task.id}>
                     <TableCell className="whitespace-nowrap text-sm">
-                      {task.business_date}
+                      {formatDDMMYYYY(task.business_date)}
                       {carriedOver && (
                         <Badge variant="destructive" className="ml-1.5 align-middle">
                           {t('tasks.overdue')}
@@ -283,7 +296,7 @@ export function TasksBoard({
               </DialogHeader>
               <TaskForm
                 action={createTask}
-                defaultDate={date}
+                defaultDate={defaultDate}
                 employees={employees}
                 departments={departments}
                 categories={categories}
@@ -302,7 +315,7 @@ export function TasksBoard({
                 <TaskForm
                   action={updateTask}
                   row={editing}
-                  defaultDate={date}
+                  defaultDate={defaultDate}
                   employees={employees}
                   departments={departments}
                   categories={categories}

@@ -75,7 +75,7 @@ function enterStyle(delayMs = 0): CSSProperties {
 
 /** Hover affordance for the section cards that link out to a detail page. */
 const LINK_CARD_CLASS =
-  'block transition-all duration-200 hover:-translate-y-0.5 hover:border-primary/40 hover:shadow-md';
+  'block transition-[transform,border-color,box-shadow] duration-200 ease-out hover:-translate-y-0.5 hover:border-primary/40 hover:shadow-md';
 
 export default async function DashboardPage() {
   const user = await requireUser();

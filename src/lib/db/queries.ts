@@ -1655,6 +1655,24 @@ export async function getTasksForRange(
   }
 }
 
+/** All team tasks, newest business date first, for the Team Tasks board. */
+export async function getTasks(employeeId?: string): Promise<TaskRow[]> {
+  try {
+    const supabase = await client();
+    let q = supabase
+      .from('tasks')
+      .select('*')
+      .order('business_date', { ascending: false })
+      .order('created_at', { ascending: false });
+    if (employeeId) q = q.eq('employee_id', employeeId);
+    const { data } = await q;
+    return (data as TaskRow[]) ?? [];
+  } catch (e) {
+    console.error('[queries] getTasks', e);
+    return [];
+  }
+}
+
 /**
  * Still-open tasks (planned/in_progress) from before `beforeDate` — so an
  * incomplete task keeps showing up on today's board instead of silently

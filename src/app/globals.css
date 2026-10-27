@@ -89,6 +89,22 @@
   background: linear-gradient(180deg, hsl(var(--primary)) 0%, hsl(358 78% 43%) 100%);
 }
 
+/* Keep the operational UI stable for people who request less motion. This
+   applies to every spinner, Radix transition, and decorative animation,
+   including future ones, while motion-safe utilities preserve their normal
+   behaviour for everyone else. */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-delay: 0ms !important;
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    scroll-behavior: auto !important;
+    transition-duration: 0.01ms !important;
+  }
+}
+
 /* Printed documents (e.g. sales order letterhead) must keep their brand-red
    bars — browsers otherwise strip background colors from print by default. */
 @media print {

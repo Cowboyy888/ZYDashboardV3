@@ -50,7 +50,7 @@ export function StatCard({
       className={cn(
         'group',
         href &&
-          'h-full transition-all duration-200 hover:-translate-y-0.5 hover:border-primary/40 hover:shadow-md',
+          'h-full transition-[transform,border-color,box-shadow] duration-200 ease-out hover:-translate-y-0.5 hover:border-primary/40 hover:shadow-md',
         !href && className,
       )}
       style={!href ? style : undefined}
@@ -63,7 +63,7 @@ export function StatCard({
           {icon && (
             <div
               className={cn(
-                'shrink-0 rounded-md p-1.5 transition-shadow duration-300 motion-safe:animate-zy-pop-in',
+                'shrink-0 rounded-md p-1.5 transition-shadow duration-200 ease-out motion-safe:animate-zy-pop-in',
                 chipClass,
                 glowClass,
               )}

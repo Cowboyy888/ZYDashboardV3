@@ -6,6 +6,7 @@ import {
   getTaskDepartments,
   getTaskCategories,
   getCustomers,
+  getTasks,
   getTasksForRange,
   getOpenTasksBefore,
 } from '@/lib/db/queries';
@@ -25,28 +26,28 @@ export default async function TasksPage({
   const locale = await getLocale();
   const t = translator(locale);
   const { date: dateParam } = await searchParams;
-  const date = /^\d{4}-\d{2}-\d{2}$/.test(dateParam ?? '') ? dateParam! : businessDate();
-  const isToday = date === businessDate();
+  const selectedDate = /^\d{4}-\d{2}-\d{2}$/.test(dateParam ?? '') ? dateParam : undefined;
+  const today = businessDate();
 
-  const [employees, departments, categories, customers, dayTasks, carriedOver] = await Promise.all([
-    getEmployees(),
-    getTaskDepartments(),
-    getTaskCategories(),
-    getCustomers(),
-    getTasksForRange(date, date),
-    // Still-incomplete tasks from earlier dates, carried onto today's board
-    // so nothing silently disappears once its original date passes. Only
-    // makes sense when looking at "right now" — a past date shows exactly
-    // what that day actually looked like.
-    isToday ? getOpenTasksBefore(date) : Promise.resolve([]),
-  ]);
-  const tasks = [...carriedOver, ...dayTasks];
+  const [employees, departments, categories, customers, selectedTasks, carriedOver] =
+    await Promise.all([
+      getEmployees(),
+      getTaskDepartments(),
+      getTaskCategories(),
+      getCustomers(),
+      selectedDate ? getTasksForRange(selectedDate, selectedDate) : getTasks(),
+      // Still-incomplete tasks from earlier dates, carried onto today's board
+      // when a manager deliberately filters to today.
+      selectedDate === today ? getOpenTasksBefore(selectedDate) : Promise.resolve([]),
+    ]);
+  const tasks = selectedDate === today ? [...carriedOver, ...selectedTasks] : selectedTasks;
 
   return (
     <div>
       <PageHeader title={t('tasks.teamTasks')} description={t('tasks.teamTasksDesc')} />
       <TasksBoard
-        date={date}
+        defaultDate={today}
+        selectedDate={selectedDate}
         employees={employees}
         departments={departments}
         categories={categories}

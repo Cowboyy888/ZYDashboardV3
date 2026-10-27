@@ -29,7 +29,7 @@ function prefersReducedMotion(): boolean {
  */
 export function AnimatedNumber({
   value,
-  duration = 800,
+  duration = 600,
   suffix = '',
 }: {
   value: number;
@@ -95,7 +95,7 @@ export function AnimatedBar({
   return (
     <div className="mt-2 h-1.5 w-full overflow-hidden rounded-full bg-muted">
       <div
-        className={`h-full w-full origin-left rounded-full transition-transform duration-700 ease-out ${className}`}
+        className={`h-full w-full origin-left rounded-full transition-transform duration-500 ease-out ${className}`}
         style={{ transform: `scaleX(${width / 100})` }}
       />
     </div>

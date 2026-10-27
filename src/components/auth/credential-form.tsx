@@ -104,7 +104,7 @@ export function CredentialForm({ mode }: { mode: 'signin' | 'signup' }) {
       <FormError key={errorNonce} error={error} className="motion-safe:animate-zy-shake" />
       <Button
         type="submit"
-        className="w-full transition-all active:scale-[0.98]"
+        className="w-full transition-[transform,background-color,box-shadow] duration-150 ease-out motion-safe:active:scale-[0.98]"
         disabled={pending}
       >
         {pending && <Loader2 className="h-4 w-4 animate-spin" />}

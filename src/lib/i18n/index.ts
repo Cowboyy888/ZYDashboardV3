@@ -172,6 +172,7 @@ export const dictionary = {
   'tasks.metricKey': { en: 'Metric key', zh: '指标标识' },
   'tasks.allDepartments': { en: 'All departments', zh: '所有部门' },
   'tasks.allStatuses': { en: 'All statuses', zh: '所有状态' },
+  'tasks.allDates': { en: 'All dates', zh: '所有日期' },
   'tasks.noTasks': { en: 'No tasks for this selection.', zh: '没有符合条件的任务。' },
   'tasks.planned': { en: 'Planned', zh: '计划' },
   'tasks.completed': { en: 'Completed', zh: '已完成' },
