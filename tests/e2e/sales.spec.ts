@@ -87,3 +87,13 @@ test('inquiries omit the requested pricing columns and KPIs', async ({ page }) =
   await expect(page.getByText(/Quotation value|报价总额/)).toHaveCount(0);
   await expect(page.getByText(/Won profit|成交利润/)).toHaveCount(0);
 });
+
+test('new inquiry accepts one specification input', async ({ page }) => {
+  await page.goto('/sales/inquiries');
+  await page.getByRole('button', { name: /New inquiry|新增询价/ }).click();
+
+  const dialog = page.getByRole('dialog');
+  await expect(dialog.locator('input[name="specification"]')).toHaveCount(1);
+  await expect(dialog.locator('input[name="diameter"]')).toHaveCount(0);
+  await expect(dialog.locator('input[name="meshOpening"]')).toHaveCount(0);
+});

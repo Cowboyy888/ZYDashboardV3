@@ -887,18 +887,13 @@ function InquiryForm({
             placeholder={t('inq.specification')}
             defaultValue={row?.specification ?? ''}
           />
-          <Input
-            name="diameter"
-            placeholder={t('inq.diameter')}
-            aria-label={t('inq.diameter')}
-            defaultValue={row?.diameter ?? ''}
-          />
-          <Input
-            name="meshOpening"
-            placeholder={t('inq.meshOpening')}
-            aria-label={t('inq.meshOpening')}
-            defaultValue={row?.mesh_opening ?? ''}
-          />
+          {row && (
+            <>
+              <input type="hidden" name="diameter" value={row.diameter ?? ''} />
+              <input type="hidden" name="meshOpening" value={row.mesh_opening ?? ''} />
+              <input type="hidden" name="sheetSize" value={row.sheet_size ?? ''} />
+            </>
+          )}
         </div>
         <div className="space-y-1.5">
           <Label htmlFor="if-area">{t('inq.area')}</Label>

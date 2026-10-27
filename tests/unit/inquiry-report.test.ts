@@ -80,6 +80,7 @@ describe('toReportRow', () => {
     expect(row.product).toBe('钢筋网');
     expect(row.specCombined).toBe('7.2mm@200*200 3.2m*6m');
     expect(row.status).toBe('成交');
+    expect(row.cost).toBeUndefined();
     expect(row.diff).toBe(0.13);
     expect(row.profit).toBe(99);
   });
@@ -119,6 +120,7 @@ describe('toReportRow', () => {
     const keys = INQUIRY_REPORT_COLUMNS.map((c) => c.key);
     expect(keys).toContain('quoted');
     expect(keys).toContain('profit');
+    expect(keys).not.toContain('cost');
     // Every free-text/detail field on the inquiry form belongs in the report —
     // this is the regression guard for that: add a field to SalesInquiryRow
     // display-side, and this list needs a matching entry (or a deliberate
@@ -209,6 +211,17 @@ describe('buildInquiryReportHtml', () => {
     // Excel still has them — this is a PDF-only removal.
     expect(INQUIRY_REPORT_COLUMNS.map((c) => c.key)).toContain('diff');
     expect(INQUIRY_REPORT_COLUMNS.map((c) => c.key)).toContain('profit');
+  });
+
+  it('does not show the Cost column in either report format', () => {
+    const html = buildInquiryReportHtml({
+      generatedOn: '21/07/2026',
+      summary,
+      rows: [toReportRow(inquiry(), resolvers)],
+    });
+    expect(html).not.toContain('Cost ($/m²) 成本');
+    expect(INQUIRY_REPORT_COLUMNS.map((c) => c.key)).not.toContain('cost');
+    expect(INQUIRY_PDF_COLUMNS.map((c) => c.key)).not.toContain('cost');
   });
 
   it('escapes HTML-special characters in data', () => {
