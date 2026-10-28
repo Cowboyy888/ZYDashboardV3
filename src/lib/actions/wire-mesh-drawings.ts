@@ -17,6 +17,7 @@ function formData(form: FormData) {
   return {
     quotationId: form.get('quotationId'),
     salesOrderId: form.get('salesOrderId'),
+    customerName: form.get('customerName'),
     meshSpecification: form.get('meshSpecification'),
     wireDiameterMm: form.get('wireDiameterMm'),
     sheetLengthMm: form.get('sheetLengthMm'),
@@ -31,11 +32,11 @@ function formData(form: FormData) {
   };
 }
 
-function columns(input: WireMeshDrawingInput, customerName: string) {
+function columns(input: WireMeshDrawingInput) {
   return {
     quotation_id: input.quotationId ?? null,
     sales_order_id: input.salesOrderId ?? null,
-    customer_name: customerName,
+    customer_name: input.customerName,
     mesh_specification: input.meshSpecification,
     wire_diameter_mm: input.wireDiameterMm,
     sheet_length_mm: input.sheetLengthMm,
@@ -50,30 +51,24 @@ function columns(input: WireMeshDrawingInput, customerName: string) {
   };
 }
 
-async function customerNameForReference(
+async function referenceExists(
   supabase: Awaited<ReturnType<typeof createSupabaseServerClient>>,
   input: WireMeshDrawingInput,
 ) {
   if (input.quotationId) {
     const { data } = await supabase
       .from('quotations')
-      .select('customer_name')
+      .select('id')
       .eq('id', input.quotationId)
       .maybeSingle();
-    return data?.customer_name ?? null;
+    return Boolean(data);
   }
-  const { data: order } = await supabase
+  const { data } = await supabase
     .from('sales_orders')
-    .select('customer_id')
+    .select('id')
     .eq('id', input.salesOrderId!)
     .maybeSingle();
-  if (!order) return null;
-  const { data: customer } = await supabase
-    .from('customers')
-    .select('name')
-    .eq('id', order.customer_id)
-    .maybeSingle();
-  return customer?.name ?? null;
+  return Boolean(data);
 }
 
 export async function saveWireMeshDrawing(
@@ -93,9 +88,9 @@ export async function saveWireMeshDrawing(
   if (calculation.errors.length) return fail(calculation.errors[0]!);
 
   const supabase = await createSupabaseServerClient();
-  const customerName = await customerNameForReference(supabase, input);
-  if (!customerName) return fail('The selected quotation or sales order was not found.');
-  const row = columns(input, customerName);
+  if (!(await referenceExists(supabase, input)))
+    return fail('The selected quotation or sales order was not found.');
+  const row = columns(input);
   const query = id
     ? supabase
         .from('wire_mesh_drawings')

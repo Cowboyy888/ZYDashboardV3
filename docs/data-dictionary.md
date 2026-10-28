@@ -239,7 +239,10 @@ customer-name snapshot, mesh/wire dimensions, spacing, four edge overhangs, and
 sheet quantity. Sheet dimensions are complete outside dimensions; overhangs run
 to the outer wire centreline. The app rejects non-exact spacing fits and derives
 wire counts and m² area from these saved inputs. RLS matches Sales: Owner/System
-Admin/Sales Admin read; Owner/Sales Admin write.
+Admin/Sales Admin read; Owner/Sales Admin write. A new drawing pre-fills only
+compatible values available on the selected source line (for example, quote
+wire diameter/total sheets or order SKU size/diameter/quantity); its customer
+snapshot and every prefilled value remain editable before saving.
 
 ### sales_orders  *(Third pass; `payment_status` added Fifth pass; `quotation_id` added Sixth pass)*
 `id`, `so_number` (unique — the permanent Order Number, auto-assigned once on

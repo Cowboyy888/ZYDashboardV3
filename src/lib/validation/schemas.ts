@@ -511,6 +511,7 @@ export const wireMeshDrawingSchema = z
   .object({
     quotationId: optionalUuid,
     salesOrderId: optionalUuid,
+    customerName: nonEmpty.max(120),
     meshSpecification: nonEmpty.max(160),
     wireDiameterMm: positiveMillimetres,
     sheetLengthMm: positiveMillimetres,

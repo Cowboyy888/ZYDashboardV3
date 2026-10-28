@@ -18,6 +18,7 @@ import {
 import { useT } from '@/components/i18n-provider';
 import { saveWireMeshDrawing } from '@/lib/actions/wire-mesh-drawings';
 import { calculateWireMesh, type WireMeshInput } from '@/lib/domain/wire-mesh';
+import type { WireMeshDrawingPrefill } from '@/lib/domain/wire-mesh-prefill';
 import { formatDDMMYYYY } from '@/lib/domain/datetime';
 import { WireMeshPreview } from '@/components/wire-mesh-preview';
 import type { WireMeshDrawingRow } from '@/lib/db/types';
@@ -29,6 +30,7 @@ export type DrawingReference = {
   id: string;
   label: string;
   customerName: string;
+  prefill: WireMeshDrawingPrefill;
 };
 
 function inputFor(row?: WireMeshDrawingRow): WireMeshInput {
@@ -191,6 +193,11 @@ function DrawingForm({
       : '';
   const [referenceKey, setReferenceKey] = useState(initialReference);
   const [values, setValues] = useState(inputFor(row));
+  const [customerName, setCustomerName] = useState(row?.customer_name ?? '');
+  const [meshSpecification, setMeshSpecification] = useState(row?.mesh_specification ?? '');
+  const [wireDiameterMm, setWireDiameterMm] = useState<string | number>(
+    row?.wire_diameter_mm ?? '',
+  );
   const [state, formAction, pending] = useActionState<ActionState, FormData>(
     saveWireMeshDrawing,
     null,
@@ -202,6 +209,23 @@ function DrawingForm({
   }, [state, onDone]);
   const update = (key: keyof WireMeshInput, value: string) =>
     setValues((current) => ({ ...current, [key]: Number(value) }));
+  const applyReference = (key: string) => {
+    setReferenceKey(key);
+    const selected = references.find((item) => item.key === key);
+    if (!selected) return;
+    const prefill = selected.prefill;
+    setCustomerName(prefill.customerName);
+    setMeshSpecification(prefill.meshSpecification ?? '');
+    setWireDiameterMm(prefill.wireDiameterMm ?? '');
+    setValues((current) => ({
+      ...current,
+      sheetLengthMm: prefill.sheetLengthMm ?? current.sheetLengthMm,
+      sheetWidthMm: prefill.sheetWidthMm ?? current.sheetWidthMm,
+      lengthSpacingMm: prefill.lengthSpacingMm ?? current.lengthSpacingMm,
+      widthSpacingMm: prefill.widthSpacingMm ?? current.widthSpacingMm,
+      quantity: prefill.quantity ?? current.quantity,
+    }));
+  };
   const field = (id: string, key: keyof WireMeshInput, label: string, min = 0) => (
     <div className="space-y-1">
       <Label htmlFor={id}>{label}</Label>
@@ -236,7 +260,7 @@ function DrawingForm({
           <NativeSelect
             id="wm-reference"
             value={referenceKey}
-            onChange={(event) => setReferenceKey(event.target.value)}
+            onChange={(event) => applyReference(event.target.value)}
             required
           >
             <option value="">{t('common.select')}</option>
@@ -249,17 +273,22 @@ function DrawingForm({
           </NativeSelect>
         </div>
         <div className="space-y-1">
-          <Label>{t('sal.customer')}</Label>
-          <div className="flex h-10 items-center rounded-md border bg-muted px-3 text-sm">
-            {reference?.customerName ?? '—'}
-          </div>
+          <Label htmlFor="wm-customer">{t('sal.customer')}</Label>
+          <Input
+            id="wm-customer"
+            name="customerName"
+            value={customerName}
+            onChange={(event) => setCustomerName(event.target.value)}
+            required
+          />
         </div>
         <div className="space-y-1">
           <Label htmlFor="wm-spec">{t('mesh.specification')}</Label>
           <Input
             id="wm-spec"
             name="meshSpecification"
-            defaultValue={row?.mesh_specification}
+            value={meshSpecification}
+            onChange={(event) => setMeshSpecification(event.target.value)}
             required
           />
         </div>
@@ -271,11 +300,13 @@ function DrawingForm({
             type="number"
             min="0.001"
             step="0.001"
-            defaultValue={row?.wire_diameter_mm}
+            value={wireDiameterMm}
+            onChange={(event) => setWireDiameterMm(event.target.value)}
             required
           />
         </div>
       </div>
+      {reference && <p className="text-sm text-muted-foreground">{t('mesh.prefillHint')}</p>}
       <div className="grid gap-3 md:grid-cols-2">
         <fieldset className="grid gap-3 rounded-md border p-3 sm:grid-cols-2">
           <legend className="px-1 text-sm font-medium">{t('mesh.sheetDimensions')}</legend>

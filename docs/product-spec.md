@@ -265,7 +265,9 @@ not a replacement.
 - **Wire Mesh Order Drawings (built):** Sales can save a printable wire-mesh
   grid linked to a quotation or Sales Order. Outside sheet dimensions, spacing,
   and edge-overhang-to-wire-centreline inputs derive exact wire counts and area;
-  non-exact spacing fits are rejected instead of rounded.
+  non-exact spacing fits are rejected instead of rounded. When a reference is
+  selected, compatible line-item values are prefilled for review and may be
+  edited before saving the drawing.
 - **RLS performance (fixed):** ~103 RLS policies were re-written to wrap
   `auth_role()`/`auth.uid()` calls in `(select ...)` for Postgres InitPlan
   caching (evaluated once per query instead of once per row) — see

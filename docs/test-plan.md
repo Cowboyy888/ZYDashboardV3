@@ -82,7 +82,7 @@ just have `supabase start` running before `npm run verify`.
 | 37 | The sum of every payment receipt (deposit + final) against a Sales Order can never exceed its total — enforced for real, not just by the UI | `tests/unit/payment-receipt.test.ts` (`wouldExceedSoTotal`); DB trigger `enforce_payment_receipt_rules` (`PAYMENT_EXCEEDS_SO_TOTAL`); schema check |
 | 38 | Every successful sign-in records one login_events row (who, when, IP, country/city), visible only to Owner/System Admin | `tests/unit/login-event.test.ts` (`parseClientIp`); `tests/e2e/login-history.spec.ts`; RLS on `login_events`; schema check |
 
-| 39 | Wire Mesh drawings require exact spacing fits, derive counts/areas, persist/reopen, and expose printable export | `tests/unit/wire-mesh.test.ts`; `tests/e2e/wire-mesh-drawings.spec.ts`; schema check |
+| 39 | Wire Mesh drawings prefill compatible quotation/order data for review, require exact spacing fits, derive counts/areas, persist/reopen, and expose printable export | `tests/unit/wire-mesh.test.ts`; `tests/unit/wire-mesh-prefill.test.ts`; `tests/e2e/wire-mesh-drawings.spec.ts`; schema check |
 
 Additional coverage: `tests/unit/datetime.test.ts` (Asia/Bangkok ⇄ UTC,
 dd/mm/yyyy, business-date boundary), `tests/unit/inventory-view.test.ts`

@@ -753,6 +753,10 @@ export const dictionary = {
   'mesh.newDrawing': { en: 'New drawing', zh: '新建图纸' },
   'mesh.editDrawing': { en: 'Edit drawing', zh: '编辑图纸' },
   'mesh.noDrawings': { en: 'No wire mesh drawings yet.', zh: '暂无钢筋网图纸。' },
+  'mesh.prefillHint': {
+    en: 'Available values from the selected quotation or order are prefilled. Review and edit before saving.',
+    zh: '系统会预填所选报价单或订单中可用的数据；请在保存前核对并编辑。',
+  },
   'mesh.reference': { en: 'Quotation / order reference', zh: '报价单 / 订单参考' },
   'mesh.specification': { en: 'Mesh specification', zh: '网片规格' },
   'mesh.wireDiameter': { en: 'Wire diameter (mm)', zh: '钢丝直径（毫米）' },
