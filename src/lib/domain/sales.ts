@@ -9,7 +9,7 @@
  */
 import { addDays, type BusinessDate } from './datetime';
 import { round3 } from './stock-ledger';
-import { CURRENCIES, CURRENCY_LABELS, isCurrency, type Currency } from './purchasing';
+import { CURRENCIES, CURRENCY_LABELS, isCurrency, type Currency } from './currency';
 
 export { CURRENCIES, CURRENCY_LABELS, isCurrency, type Currency };
 

@@ -16,7 +16,7 @@ import { fail, ok, zodFieldErrors, type ActionState } from './types';
 
 const PERMISSION_FOR: Record<MovementType, Permission> = {
   opening_balance: 'stock:opening',
-  purchase_receipt: 'stock:production', // receiving handled in purchasing pass; guard as warehouse op
+  purchase_receipt: 'stock:production', // historical type; validation rejects new receipts
   production_output: 'stock:production',
   sale_delivery: 'stock:out',
   other_stock_out: 'stock:out',

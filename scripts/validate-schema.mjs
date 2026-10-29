@@ -52,10 +52,6 @@ const tables = [
   'audit_log',
   'sent_reports',
   'telegram_settings',
-  'suppliers',
-  'purchase_orders',
-  'purchase_order_items',
-  'purchase_order_manual_items',
   'customers',
   'sales_orders',
   'sales_order_items',
@@ -175,49 +171,26 @@ check(/add column if not exists name_english/i.test(sql), 'product_families.name
 check(/add column if not exists description/i.test(sql), 'product_families.description');
 check(/function public\.product_family_usage/i.test(sql), 'product family history/usage function');
 
-// --- Purchasing (Second pass) -------------------------------------------------
-check(
-  /add column if not exists purchase_order_item_id/i.test(sql),
-  'stock_movements.purchase_order_item_id',
+// --- Purchasing removal -------------------------------------------------------
+const retirement = readFileSync(
+  join(migrationsDir, '20261029035331_remove_purchasing.sql'),
+  'utf8',
 );
+for (const table of [
+  'suppliers',
+  'purchase_orders',
+  'purchase_order_items',
+  'purchase_order_manual_items',
+  'purchase_order_seq',
+]) {
+  check(retirement.includes(`drop table public.${table};`), `retired purchasing table: ${table}`);
+}
+check(
+  retirement.includes("'purchasing.retired'"),
+  'purchasing source records snapshotted to audit log',
+);
+check(retirement.includes('PURCHASING_REMOVED'), 'new purchase receipts blocked');
 check(/add column if not exists batch_reference/i.test(sql), 'stock_movements.batch_reference');
-check(
-  /create or replace view public\.purchase_order_item_received/i.test(sql),
-  'derived received-qty view (never a stored total)',
-);
-check(
-  /create table if not exists public\.purchase_order_seq/i.test(sql),
-  'purchase_order_seq table',
-);
-check(/function public\.assign_po_number/i.test(sql), 'PO number assignment trigger fn');
-check(/'PO-' \|\| y \|\| '-' \|\| lpad/i.test(sql), 'PO-YYYY-#### number format');
-check(
-  /function public\.enforce_po_header_immutable/i.test(sql),
-  'PO header immutable-after-issue guard',
-);
-check(
-  /function public\.enforce_po_item_immutable/i.test(sql),
-  'PO item immutable-after-issue guard',
-);
-check(
-  /function public\.enforce_purchase_receipt_rules/i.test(sql),
-  'over-receipt / cancelled-PO guard function',
-);
-check(/OVER_RECEIPT_BLOCKED/i.test(sql), 'over-receipt block message');
-check(/OVER_RECEIPT_OVERRIDE_FORBIDDEN/i.test(sql), 'owner-only over-receipt override enforcement');
-check(/CANCELLED_PO_BLOCKED/i.test(sql), 'cancelled-PO receiving block message');
-check(/DRAFT_PO_BLOCKED/i.test(sql), 'draft-PO receiving block message');
-check(
-  /function public\.create_draft_purchase_order/i.test(sql),
-  'atomic create-draft-PO-with-items function',
-);
-check(/function public\.post_purchase_receipt/i.test(sql), 'atomic post-purchase-receipt function');
-check(
-  /suppliers_select[\s\S]*?auth_role\(\) in \('owner', 'system_admin', 'warehouse_admin'\)/i.test(
-    sql,
-  ),
-  'suppliers/PO visibility (and therefore costs) restricted to owner/system_admin/warehouse_admin',
-);
 
 // --- Sales (Third pass) --------------------------------------------------------
 check(

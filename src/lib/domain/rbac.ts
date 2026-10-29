@@ -65,8 +65,6 @@ export type Permission =
   | 'stock:adjust'
   | 'stock:transfer'
   | 'stock:override_negative'
-  | 'purchasing:view'
-  | 'purchasing:manage'
   | 'sales:view'
   | 'sales:manage'
   | 'inquiries:view'
@@ -118,7 +116,6 @@ const ROLE_PERMISSIONS: Record<Role, Permission[]> = {
     'products:create',
     'locations:manage',
     'inventory:view',
-    'purchasing:view',
     'maintenance:view',
     'sales:view',
     'inquiries:view',
@@ -150,8 +147,6 @@ const ROLE_PERMISSIONS: Record<Role, Permission[]> = {
     'stock:out',
     'stock:adjust',
     'stock:transfer',
-    'purchasing:view',
-    'purchasing:manage',
     'maintenance:view',
     'maintenance:manage',
     'telegram:send',

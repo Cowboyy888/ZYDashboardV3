@@ -105,3 +105,26 @@ Chinese names. Add remaining specifications in **Settings → Products**.
 - **Report not sent, status `no_chat`** → set a chat id in Settings → Telegram.
 - **Movement rejected as negative** → insufficient stock; an Owner may override
   with a reason, otherwise correct the quantity.
+
+## Removing Purchasing
+
+Deploy the application change and apply migration
+`20261029035331_remove_purchasing.sql` in a maintenance window: it takes exclusive
+locks while snapshotting purchasing records and removing their tables. Take a
+normal database backup first. The migration transaction rolls back in full if
+any step fails. Do not edit or replay historical migrations against a live DB.
+Verify that the five purchasing tables and both purchasing RPCs are absent,
+that `/purchasing` and its API/export routes return 404 after deployment, and
+that stock balances and stock-movement counts match the pre-migration values.
+Historical source records are available to Owner/System Admin in audit_log
+under `purchasing.retired`, keyed by original table and UUID. The shared private
+attachments bucket is retained because Sales uses it too.
+
+The migration was verified by replaying all prior migrations in isolated
+PostgreSQL 17 with minimal Supabase auth/storage stubs, then the current seed,
+`tests/sql/purchasing-removal-fixture.sql`, the retirement migration, and
+`tests/sql/purchasing-removal.sql` in that order (`psql -v ON_ERROR_STOP=1`).
+The SQL checks assert source snapshots, unchanged stock rows/balances, removed
+tables/RPCs, blocked new receipts/links, allowed production entries, immutable
+audit snapshots, retained family/SKU history guards, and snapshot RLS. These fixture scripts are only for
+a disposable test database. Full browser tests still require local Supabase.

@@ -4,7 +4,7 @@ import { cva } from 'class-variance-authority';
  * Split out from button.tsx (which imports @radix-ui/react-slot for `asChild`)
  * so Server Components can style a plain <Link>/<a> without pulling Slot into
  * the server module graph — that import breaks Next's page-data-collection
- * phase when it reaches a genuine Server Component (see purchasing/orders/page.tsx).
+ * phase when it reaches a genuine Server Component (see sales/orders/page.tsx).
  */
 export const buttonVariants = cva(
   'inline-flex items-center justify-center gap-2 whitespace-nowrap rounded-md text-sm font-medium ring-offset-background transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 [&_svg]:size-4 [&_svg]:shrink-0',

@@ -114,111 +114,6 @@ from public.employees e
 on conflict (employee_id) do nothing;
 
 -- =============================================================================
--- Purchasing (Second pass): suppliers + sample purchase orders across every
--- status, so Suppliers / Purchase Orders / Goods Receiving / the Purchasing
--- dashboard all have something to show out of the box.
--- =============================================================================
-insert into public.suppliers (name, name_chinese, contact_person, phone, default_currency, payment_terms)
-select * from (values
-  ('Guangzhou Steel Supply Co.', '广州钢材供应有限公司', 'Mr. Chen', '+86 138 0000 1111', 'CNY', 'Net 30'),
-  ('Cambodia Metal Traders',      null,                    'Sokha',    '+855 12 345 678',    'USD', 'Net 15'),
-  ('Sihanoukville Wire Ltd.',     null,                    'Dara',     '+855 11 222 333',    'KHR', 'Prepaid')
-) as v(name, name_chinese, contact_person, phone, default_currency, payment_terms)
-where not exists (select 1 from public.suppliers s where s.name = v.name);
-
-do $$
-declare
-  sup_gz uuid;
-  sup_kh uuid;
-  sup_wire uuid;
-  loc_storage uuid;
-  loc_warehouse uuid;
-  sku_mesh_normal uuid; -- 钢筋网 9厘|3×6|20孔|Normal
-  sku_wire_10 uuid;     -- 拔丝料 10厘
-  po_id uuid;
-  item_id uuid;
-begin
-  select id into sup_gz   from public.suppliers where name = 'Guangzhou Steel Supply Co.';
-  select id into sup_kh   from public.suppliers where name = 'Cambodia Metal Traders';
-  select id into sup_wire from public.suppliers where name = 'Sihanoukville Wire Ltd.';
-  select id into loc_storage   from public.locations where code = 'storage_room';
-  select id into loc_warehouse from public.locations where code = 'warehouse';
-  select id into sku_mesh_normal from public.skus
-    where family_id = (select id from public.product_families where code = 'gangjinwang')
-      and lower(diameter) = lower('9厘') and lower(size) = lower('3×6') and lower(hole) = lower('20孔')
-      and coalesce(rod_count,'') = '' and condition = 'normal';
-  select id into sku_wire_10 from public.skus
-    where family_id = (select id from public.product_families where code = 'basiliao')
-      and lower(diameter) = lower('10厘') and condition = 'normal';
-
-  -- Skip entirely if this looks like a re-run against a non-empty table.
-  if exists (select 1 from public.purchase_orders limit 1) then
-    return;
-  end if;
-
-  -- 1) Draft — not yet issued.
-  po_id := public.create_draft_purchase_order(
-    sup_gz, date '2026-07-20', date '2026-08-05', 'CNY', 'Draft — awaiting confirmation', null,
-    jsonb_build_array(
-      jsonb_build_object('skuId', sku_mesh_normal, 'locationId', loc_storage, 'unit', '张', 'orderedQty', 500, 'unitCost', 12.5)
-    )
-  );
-
-  -- 2) Ordered, due within the next 7 days (shows in "expected this week" + Telegram).
-  po_id := public.create_draft_purchase_order(
-    sup_kh, date '2026-07-18', date '2026-07-30', 'USD', 'Regular restock', null,
-    jsonb_build_array(
-      jsonb_build_object('skuId', sku_mesh_normal, 'locationId', loc_warehouse, 'unit', '张', 'orderedQty', 300, 'unitCost', 2.10)
-    )
-  );
-  update public.purchase_orders set status = 'ordered', issued_at = now() where id = po_id;
-
-  -- 3) Ordered, overdue (expected date already passed, nothing received yet).
-  po_id := public.create_draft_purchase_order(
-    sup_wire, date '2026-06-25', date '2026-07-10', 'KHR', 'Supplier confirmed late', null,
-    jsonb_build_array(
-      jsonb_build_object('skuId', sku_wire_10, 'locationId', loc_storage, 'unit', '捆', 'orderedQty', 25, 'unitCost', 180000)
-    )
-  );
-  update public.purchase_orders set status = 'ordered', issued_at = now() where id = po_id;
-
-  -- 4) Partially received.
-  po_id := public.create_draft_purchase_order(
-    sup_gz, date '2026-07-10', date '2026-07-22', 'CNY', 'Split delivery expected', null,
-    jsonb_build_array(
-      jsonb_build_object('skuId', sku_mesh_normal, 'locationId', loc_storage, 'unit', '张', 'orderedQty', 400, 'unitCost', 12.0)
-    )
-  );
-  update public.purchase_orders set status = 'ordered', issued_at = now() where id = po_id;
-  select id into item_id from public.purchase_order_items where purchase_order_id = po_id;
-  insert into public.stock_movements (sku_id, location_id, type, quantity, business_date, purchase_order_item_id, batch_reference, notes)
-  values (sku_mesh_normal, loc_storage, 'purchase_receipt', 150, date '2026-07-19', item_id, 'BATCH-001', 'First partial delivery');
-  update public.purchase_orders set status = 'partially_received' where id = po_id;
-
-  -- 5) Fully received.
-  po_id := public.create_draft_purchase_order(
-    sup_kh, date '2026-06-15', date '2026-06-28', 'USD', null, null,
-    jsonb_build_array(
-      jsonb_build_object('skuId', sku_wire_10, 'locationId', loc_warehouse, 'unit', '捆', 'orderedQty', 10, 'unitCost', 45.0)
-    )
-  );
-  update public.purchase_orders set status = 'ordered', issued_at = now() where id = po_id;
-  select id into item_id from public.purchase_order_items where purchase_order_id = po_id;
-  insert into public.stock_movements (sku_id, location_id, type, quantity, business_date, purchase_order_item_id, batch_reference)
-  values (sku_wire_10, loc_warehouse, 'purchase_receipt', 10, date '2026-06-27', item_id, 'BATCH-002');
-  update public.purchase_orders set status = 'received' where id = po_id;
-
-  -- 6) Cancelled.
-  po_id := public.create_draft_purchase_order(
-    sup_wire, date '2026-07-01', date '2026-07-15', 'USD', 'Supplier could not fulfil', null,
-    jsonb_build_array(
-      jsonb_build_object('skuId', sku_mesh_normal, 'locationId', loc_storage, 'unit', '张', 'orderedQty', 100, 'unitCost', 13.0)
-    )
-  );
-  update public.purchase_orders set status = 'cancelled', cancelled_at = now() where id = po_id;
-end $$;
-
--- =============================================================================
 -- Sales (Third pass): customers + sample sales orders across every status, so
 -- Customers / Sales Orders / Delivery / the Sales dashboard all have something
 -- to show out of the box.
@@ -300,17 +195,17 @@ begin
   values (sku_mesh_normal, loc_storage, 'sale_delivery', -120, date '2026-07-19', item_id, 'DO-001', 'First partial delivery');
   update public.sales_orders set status = 'partially_delivered' where id = so_id;
 
-  -- 5) Fully delivered.
+  -- 5) Fully delivered from seeded opening stock (no Purchasing dependency).
   so_id := public.create_draft_sales_order(
     cust_battambang, date '2026-06-15', date '2026-06-28', 'USD', null, null,
     jsonb_build_array(
-      jsonb_build_object('skuId', sku_wire_10, 'locationId', loc_warehouse, 'unit', '捆', 'orderedQty', 8, 'unitPrice', 65.0)
+      jsonb_build_object('skuId', sku_wire_10, 'locationId', loc_storage, 'unit', '捆', 'orderedQty', 8, 'unitPrice', 65.0)
     )
   );
   update public.sales_orders set status = 'confirmed', confirmed_at = now() where id = so_id;
   select id into item_id from public.sales_order_items where sales_order_id = so_id;
   insert into public.stock_movements (sku_id, location_id, type, quantity, business_date, sales_order_item_id, batch_reference)
-  values (sku_wire_10, loc_warehouse, 'sale_delivery', -8, date '2026-06-27', item_id, 'DO-002');
+  values (sku_wire_10, loc_storage, 'sale_delivery', -8, date '2026-06-27', item_id, 'DO-002');
   update public.sales_orders set status = 'delivered' where id = so_id;
 
   -- 6) Cancelled.

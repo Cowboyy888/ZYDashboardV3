@@ -1,6 +1,6 @@
 import 'server-only';
 import { createSupabaseServerClient } from '@/lib/supabase/server';
-import type { Currency } from '@/lib/domain/purchasing';
+import type { Currency } from '@/lib/domain/currency';
 import type { PriceStatus } from '@/lib/domain/price-records';
 import type {
   AttendanceGroupRow,
@@ -35,8 +35,6 @@ import type {
   PriceTypeRow,
   ProductFamilyRow,
   ProfileRow,
-  PurchaseOrderRow,
-  PurchaseOrderManualItemRow,
   SalesInquiryRow,
   SalesOrderItemDeliveredRow,
   SalesOrderItemRow,
@@ -44,7 +42,6 @@ import type {
   SalesTargetRow,
   SkuRow,
   StockMovementRow,
-  SupplierRow,
   TaskCategoryRow,
   TaskDepartmentRow,
   TaskMetricTypeRow,
@@ -146,11 +143,16 @@ export async function getSkusWithOrderHistory(skuIds: string[]): Promise<Set<str
   try {
     const supabase = await client();
     const [po, so] = await Promise.all([
-      supabase.from('purchase_order_items').select('sku_id').in('sku_id', skuIds),
+      supabase
+        .from('audit_log')
+        .select('old_value')
+        .eq('action', 'purchasing.retired')
+        .eq('entity', 'purchase_order_items')
+        .in('old_value->>sku_id', skuIds),
       supabase.from('sales_order_items').select('sku_id').in('sku_id', skuIds),
     ]);
     const ids = new Set<string>();
-    for (const row of po.data ?? []) ids.add(row.sku_id as string);
+    for (const row of po.data ?? []) ids.add((row.old_value as { sku_id: string }).sku_id);
     for (const row of so.data ?? []) ids.add(row.sku_id as string);
     return ids;
   } catch (e) {
@@ -414,61 +416,6 @@ export async function getLoginEvents(limit = 100): Promise<LoginEventRow[]> {
   }
 }
 
-// --- Purchasing (Second pass) -------------------------------------------------
-
-export async function getSuppliers(includeArchived = false): Promise<SupplierRow[]> {
-  try {
-    const supabase = await client();
-    let q = supabase.from('suppliers').select('*').order('name');
-    if (!includeArchived) q = q.eq('is_active', true);
-    const { data } = await q;
-    return (data as SupplierRow[]) ?? [];
-  } catch (e) {
-    console.error('[queries] getSuppliers', e);
-    return [];
-  }
-}
-
-export async function getSupplier(id: string): Promise<SupplierRow | null> {
-  try {
-    const supabase = await client();
-    const { data } = await supabase.from('suppliers').select('*').eq('id', id).maybeSingle();
-    return (data as SupplierRow) ?? null;
-  } catch (e) {
-    console.error('[queries] getSupplier', e);
-    return null;
-  }
-}
-
-/** Count-only (no row data transferred) — for the dashboard's "Open POs" tile. */
-export async function getOpenPurchaseOrderCount(): Promise<number> {
-  try {
-    const supabase = await client();
-    const { count } = await supabase
-      .from('purchase_orders')
-      .select('id', { count: 'exact', head: true })
-      .eq('status', 'ordered');
-    return count ?? 0;
-  } catch (e) {
-    console.error('[queries] getOpenPurchaseOrderCount', e);
-    return 0;
-  }
-}
-
-export async function getPurchaseOrders(): Promise<PurchaseOrderRow[]> {
-  try {
-    const supabase = await client();
-    const { data } = await supabase
-      .from('purchase_orders')
-      .select('*')
-      .order('created_at', { ascending: false });
-    return (data as PurchaseOrderRow[]) ?? [];
-  } catch (e) {
-    console.error('[queries] getPurchaseOrders', e);
-    return [];
-  }
-}
-
 /** Every maintenance record — soonest next-due date first (nulls last), so the
  * most urgent machines surface at the top without any client-side sorting. */
 export async function getEquipmentMaintenance(): Promise<EquipmentMaintenanceRow[]> {
@@ -482,78 +429,6 @@ export async function getEquipmentMaintenance(): Promise<EquipmentMaintenanceRow
     return (data as EquipmentMaintenanceRow[]) ?? [];
   } catch (e) {
     console.error('[queries] getEquipmentMaintenance', e);
-    return [];
-  }
-}
-
-/**
- * Paginated + searchable purchase_orders — the list page's real query.
- * getPurchaseOrders() (unfiltered, above) stays for callers that genuinely
- * need every order (exports). Same shape as getSalesOrdersPage: search
- * matches po_number directly, plus supplier name via a resolve-then-filter
- * step, both folded into one .or() so pagination's count/range stays over a
- * single query.
- */
-export async function getPurchaseOrdersPage({
-  page,
-  pageSize = DEFAULT_PAGE_SIZE,
-  search,
-}: {
-  page: number;
-  pageSize?: number;
-  search?: string;
-}): Promise<PageResult<PurchaseOrderRow>> {
-  try {
-    const supabase = await client();
-    const from = (page - 1) * pageSize;
-    const to = from + pageSize - 1;
-    let q = supabase.from('purchase_orders').select('*', { count: 'exact' });
-
-    const term = search ? sanitizeSearchTerm(search) : '';
-    if (term) {
-      const { data: matches } = await supabase
-        .from('suppliers')
-        .select('id')
-        .ilike('name', `%${term}%`);
-      const supplierIds = (matches ?? []).map((s) => s.id);
-      const orParts = [`po_number.ilike.%${term}%`];
-      if (supplierIds.length > 0) orParts.push(`supplier_id.in.(${supplierIds.join(',')})`);
-      q = q.or(orParts.join(','));
-    }
-
-    const { data, count } = await q.order('created_at', { ascending: false }).range(from, to);
-    return { rows: (data as PurchaseOrderRow[]) ?? [], total: count ?? 0 };
-  } catch (e) {
-    console.error('[queries] getPurchaseOrdersPage', e);
-    return { rows: [], total: 0 };
-  }
-}
-
-export async function getPurchaseOrder(id: string): Promise<PurchaseOrderRow | null> {
-  try {
-    const supabase = await client();
-    const { data } = await supabase.from('purchase_orders').select('*').eq('id', id).maybeSingle();
-    return (data as PurchaseOrderRow) ?? null;
-  } catch (e) {
-    console.error('[queries] getPurchaseOrder', e);
-    return null;
-  }
-}
-
-/** Free-text product lines — mirrors getPurchaseOrderItems' shape, no sku_id. */
-export async function getPurchaseOrderManualItems(
-  purchaseOrderId?: string | string[],
-): Promise<PurchaseOrderManualItemRow[]> {
-  if (Array.isArray(purchaseOrderId) && purchaseOrderId.length === 0) return [];
-  try {
-    const supabase = await client();
-    let q = supabase.from('purchase_order_manual_items').select('*').order('created_at');
-    if (Array.isArray(purchaseOrderId)) q = q.in('purchase_order_id', purchaseOrderId);
-    else if (purchaseOrderId) q = q.eq('purchase_order_id', purchaseOrderId);
-    const { data } = await q;
-    return (data as PurchaseOrderManualItemRow[]) ?? [];
-  } catch (e) {
-    console.error('[queries] getPurchaseOrderManualItems', e);
     return [];
   }
 }

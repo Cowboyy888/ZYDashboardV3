@@ -7,10 +7,10 @@ Khmer-name aware, `dd/mm/yyyy` dates, all schedules in **Asia/Bangkok**.
 
 > **Status: In active daily use.** What started as a first-pass Operations MVP
 > (attendance, inventory, Telegram) has grown through many passes since —
-> Purchasing, Sales/CRM, Payroll, Team Task tracking, and per-module PDF/Excel
+> Sales/CRM, Payroll, Team Task tracking, and per-module PDF/Excel
 > reports are all built and in production use, not placeholders. See
 > `docs/product-spec.md` for the full pass-by-pass history and
-> `docs/decisions.md` for completion status.
+> `docs/decisions.md` for completion status. Purchasing was removed on 29/10/2026.
 
 ## Stack
 

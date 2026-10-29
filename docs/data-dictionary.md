@@ -13,11 +13,7 @@ whenever the schema changes (AGENTS.md rule 5).
   records).
 - **Movement types**: `opening_balance`, `purchase_receipt`, `production_output`,
   `sale_delivery`, `other_stock_out`, `adjustment`, `transfer_out`, `transfer_in`.
-- **Purchase order status**: `draft`, `ordered`, `cancelled` (the app-level enum —
-  purchase orders are header-only records, no receiving, so there is no
-  receipt-derived state. The DB CHECK constraint still permits the legacy
-  `partially_received`/`received` values for backward compatibility with any
-  historical rows, but the app never sets them). **Sales order status**:
+- **Purchase order status**: removed with Purchasing. `purchase_receipt` remains a historical movement type; new rows are blocked. **Sales order status**:
   `draft`, `confirmed`, `partially_delivered`, `delivered`, `cancelled`
   (unchanged — Sales still tracks line items and delivery). **Currencies**:
   `USD`, `KHR`, `CNY` (one per PO/SO, no conversion).
@@ -59,18 +55,14 @@ enforced by `skus_signature_uidx` over the (case/space-normalised) attribute set
 ### stock_movements  *(append-only ledger)*
 `id`, `sku_id → skus`, `location_id → locations`, `type`, `quantity numeric(14,3)`
 (**signed**), `business_date date`, `transfer_group_id`, `override_reason`,
-`notes`, `attachment_path`, `purchase_order_item_id → purchase_order_items`
-(nullable — set only for `purchase_receipt` rows), `batch_reference`,
+`notes`, `attachment_path`, `purchase_order_item_id`
+(nullable historical UUID, resolved through audit snapshots), `batch_reference`,
 `sales_order_item_id → sales_order_items` (nullable — set only for
 `sale_delivery` rows), `created_by → profiles`, `created_at`.
 - `stock_movements_sign_chk`: inbound types `> 0`, outbound `< 0`, `adjustment ≠ 0`
   — `sale_delivery` is outbound, so it is always stored **negative**.
 - Trigger `enforce_stock_rules` blocks negative balances unless Owner + reason.
-- Trigger `enforce_purchase_receipt_rules` (Second pass) still exists in the DB
-  but is **dormant** — Purchasing was simplified to header-only records with no
-  structured receiving, so nothing in the app posts `purchase_receipt` rows or
-  calls this trigger's path anymore. Left in place rather than dropped, since
-  migrations are additive-only.
+- Trigger `prevent_retired_purchase_receipt` rejects new purchase receipts and purchase-item links; historical rows remain unchanged.
 - Trigger `enforce_sale_delivery_rules` (Third pass) is the mirror image and
   IS still active: blocks delivering against a draft/cancelled SO, and blocks
   over-delivery (delivered > ordered on that item) unless Owner + a recorded
@@ -78,12 +70,8 @@ enforced by `skus_signature_uidx` over the (case/space-normalised) attribute set
 - Triggers block UPDATE and DELETE (append-only).
 - **View `stock_balances`** = `SUM(quantity)` grouped by `sku_id, location_id`
   (`security_invoker`, so RLS applies).
-- **View `purchase_order_item_received`** still exists in the DB but is
-  **dormant** for the same reason as `enforce_purchase_receipt_rules` above —
-  nothing queries it anymore now that Purchasing has no line items.
-- **View `sales_order_item_delivered`** = `SUM(-quantity)` of `sale_delivery` rows
-  (negated back to a positive count) grouped by `sales_order_item_id` —
-  delivered/outstanding quantity is likewise never stored.
+- The former `purchase_order_item_received` view is removed.
+- **View `sales_order_item_delivered`** derives `SUM(-quantity)` of sales deliveries per sales-order item, with `security_invoker` so RLS applies.
 
 ### attendance_groups
 Editable groups that structure the attendance report (老板助理, 工厂主管, …).
@@ -154,72 +142,27 @@ Asia/Bangkok, checked by `telegram_settings_times_chk`; the scheduler reads
 them dynamically. `report_language` (`'en'`/`'zh'`, default `'zh'` — future-ready;
 the attendance report is currently always sent in Chinese), `updated_at`.
 
-### suppliers  *(editable master data, Second pass)*
-`id`, `name`, `name_chinese`, `name_english`, `contact_person`, `phone`,
-`address`, `tax_id`, `payment_terms`, `default_currency` (`USD`/`KHR`/`CNY`),
-`notes`, `is_active`, `created_at`, `updated_at`. Referenced by
-`purchase_orders.supplier_id` `ON DELETE RESTRICT` — a supplier with any
-purchase history cannot be hard-deleted (archive instead); `deleteSupplier`
-pre-checks this and the FK is the backstop.
+### Purchasing (removed 29/10/2026)
 
-### purchase_orders  *(header-only record — no line items, no receiving)*
-`id`, `po_number` (unique, auto `PO-YYYY-####` — atomic per-calendar-year
-counter via `purchase_order_seq` + `assign_po_number` trigger), `supplier_id →
-suppliers`, `order_date`, `currency`, `status`, `notes`, `attachment_path`,
-`created_by → profiles`, `issued_at`, `cancelled_at`, `created_at`,
-`updated_at`.
-- One currency per PO; no exchange-rate conversion.
-- Trigger `enforce_po_header_immutable`: once `status <> 'draft'`, `supplier_id`
-  /`currency`/`order_date` can no longer change (`notes`, `attachment_path`,
-  `status` remain editable).
-- `status` is a plain stored field, set only by the app on Issue/Cancel — no
-  receiving, so nothing recomputes it afterward.
-- **Editable while Draft** — `updatePurchaseOrderHeader`
-  (`src/lib/actions/purchasing.ts`) lets a Draft PO's supplier/currency/order
-  date/notes be corrected via `EditPoDialog`, mirroring Payroll's
-  `EditRunDialog`/`updatePayrollRunDates` pattern exactly. Attachment is not
-  re-editable in this dialog (the upload widget has no way to show/preserve
-  an existing file) — create a new PO if the wrong file was attached. The DB
-  trigger above is the actual enforcement; the action just checks
-  `status === 'draft'` first for a friendly message.
-- The table still has an `expected_arrival_date` column (nullable) and an
-  `expected_arrival_idx` index — the Overdue/Expected Arrival Date feature
-  (and its `isOverdue`/`isDueWithinDays` domain helpers) was removed from the
-  app, but the column was left in place rather than dropped (migrations are
-  additive-only, and dropping it would destroy any historical values already
-  recorded on existing production orders). Nothing reads or writes it
-  anymore — same posture as `purchase_order_items` below.
+Migration `20261029035331_remove_purchasing.sql` removes `suppliers`,
+`purchase_orders`, `purchase_order_items`, `purchase_order_manual_items`, and
+`purchase_order_seq`, their policies/triggers, the received-quantity view, and
+purchasing RPCs. Historical migrations remain unchanged for replay.
 
-### purchase_order_items  *(dormant — table remains in the DB, unused by the app)*
-Purchasing was simplified to header-only records; nothing creates, reads, or
-deletes rows in this table anymore. A catalog-linked (SKU/location, qty,
-unit cost) version of this feature was reactivated and then reverted at the
-user's request within the same session — the app went back to not using
-this table at all. Left in the schema rather than dropped (migrations are
-additive-only) — see `purchase_orders` above for what a PO actually is now.
-Historical columns, for reference only: `id`, `purchase_order_id →
-purchase_orders` (cascade), `sku_id → skus`, `location_id → locations`,
-`unit`, `ordered_qty`, `unit_cost`, `line_total`. Trigger
-`enforce_po_item_immutable` (UPDATE + DELETE) is likewise dormant.
+Before removal, each supplier, order, and line is copied into the existing
+append-only `audit_log`: `action = purchasing.retired`, `entity` = original
+table, `entity_id` = original UUID, `old_value` = complete source row,
+`new_value = { removed: true }`. The migration actor is identified by
+`actor_email = migration:remove_purchasing` with null `actor_id`. Existing audit
+RLS remains unchanged (Owner/System Admin); costs are never made public.
 
-### purchase_order_manual_items  *(active — free text, NO catalog connection)*
-What Purchasing actually uses to record what's being bought: `id`,
-`purchase_order_id → purchase_orders` (cascade), `product_name` (required,
-free text), `quantity` (nullable), `unit` (nullable, free text), `unit_price`
-(nullable), `line_total` (**generated column**, `quantity * unit_price`,
-null when either input is null — never separately stored). Deliberately has
-**no `sku_id`, no `location_id`, no FK to `skus`/`product_families` at
-all** — the user explicitly asked for a manual product field with no
-connection to the family/SKU catalog, so this is a plain descriptive table,
-not an inventory-affecting one (never referenced by `stock_movements`).
-- **No immutability trigger** — freely addable/removable at any PO status
-  (`addPurchaseOrderManualItem`/`removePurchaseOrderManualItem`,
-  `src/lib/actions/purchasing.ts`), same editability posture as the header's
-  own `notes`/`attachment_path` fields, since these lines are plain
-  description text, not a binding commercial commitment the way the
-  catalog-linked line items above were.
-- RLS matches `purchase_orders`/`suppliers` exactly (owner/system_admin/
-  warehouse_admin select; owner/warehouse_admin write).
+`stock_movements.purchase_order_item_id` remains as a historical UUID without
+its former FK. Resolve it via the audit snapshot of `purchase_order_items`,
+then the snapshotted order and supplier. Movement quantities, batch references,
+and balances are unchanged. A new insert trigger rejects new purchase receipts
+and non-null purchase-item links. Attachments stay in the shared private bucket.
+Product-family usage and guarded SKU deletion consult the archived line
+snapshots so historical source relationships remain protected.
 
 ### customers  *(editable master data, Third pass; `customer_code` added Tenth pass)*
 `id`, `customer_code` (unique — permanent human-readable ID, format `CUS-####`,
@@ -543,7 +486,7 @@ breakdown both read.
 | login_events | owner/system_admin | insert: own row only (`user_id = auth.uid()`) · no update/delete |
 | sent_reports | owner/system_admin | insert: owner/system_admin (+ service role) |
 | telegram_settings | owner/system_admin | owner/system_admin |
-| suppliers / purchase_orders / purchase_order_manual_items | owner/system_admin/warehouse | owner/warehouse (system_admin is view-only). `purchase_order_items` has the same RLS but is dormant — the app no longer writes to it. |
+| Purchasing tables | Removed; historical snapshots use existing audit_log RLS | No purchasing writes |
 | customers / sales_orders / sales_order_items | owner/system_admin/sales (`customers` read additionally: marketing, read-only — needed for the Team Tasks customer picker, see 0059) | owner/sales (system_admin is view-only — this is also what keeps prices, which live on these same rows, out of every other role) |
 | deposit_invoices / payment_receipts | owner/system_admin/sales | owner/sales (system_admin is view-only, same reasoning as sales_orders) |
 | payroll_runs / payroll_items / payroll_item_lines | owner/system_admin/payroll | owner/payroll (system_admin is view-only — approving a run additionally requires Owner specifically, enforced by a DB trigger) |
@@ -569,13 +512,7 @@ warehouse/sales/admins/viewer, write by warehouse/sales/admins.
   First-Owner setup is allowed only while this is false; public self-signup is
   disabled (`enable_signup=false` in config.toml), so later users are created
   only by an Owner via the service-role admin API (Settings → Users).
-- `assign_po_number()` — atomic `PO-YYYY-####` counter, resets per calendar year.
-- `enforce_po_header_immutable()` — locks PO commercial terms once issued
-  (Draft is the only editable state). Its sibling `enforce_po_item_immutable()`,
-  and the RPCs `create_draft_purchase_order(...)`/`post_purchase_receipt(...)`,
-  are **dormant** — nothing in the app calls them now that Purchasing is
-  header-only; `createDraftPurchaseOrder` does a plain insert into
-  `purchase_orders` instead.
+- Purchasing numbering, mutation, and receiving RPCs were removed; see Purchasing above.
 - `assign_so_number()` — atomic `ZYS-{YYYY}Y-###` counter (via
   `order_number_seq`), resets per calendar year. Redefined in Ninth pass
   (`0033`) to emit the new format; `sales_order_seq`, the original

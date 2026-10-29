@@ -13,11 +13,10 @@ Role-based access control (see `docs/data-dictionary.md` for the full matrix):
 
 - **Owner** — full access, approvals, the only role that may override negative stock.
 - **System Admin** — settings, users, employees, product master data, Telegram
-  config; views (not manage) suppliers/purchase orders, including costs.
+  config.
 - **Attendance Admin** — daily attendance entry & correction; send attendance reports.
 - **Warehouse Admin** — inventory: opening/production/stock-out/adjustment/
-  transfer; suppliers and purchase orders (create, issue, cancel — header-only
-  records, no receiving), no approval workflow.
+  transfer.
 - **Sales Admin** — customers, sales orders (create, confirm, deliver), no
   approval workflow; read inventory.
 - **Payroll Admin** — generates/manages payroll runs, deduction/advance lines
@@ -51,9 +50,7 @@ Role-based access control (see `docs/data-dictionary.md` for the full matrix):
 6. **Verification** — automated tests for the acceptance criteria; `npm run
    verify` green.
 
-Full Reports remains a **navigation placeholder** in this pass. Purchasing
-(Second pass), Sales (Third pass), and Payroll (Fourth pass, below) are now
-built.
+Full Reports remains a **navigation placeholder** in this pass. Sales and Payroll are built; Purchasing has been removed.
 
 ## Inventory model (core)
 
@@ -88,30 +85,7 @@ Seeded opening stock (Storage Room): 拔丝料 10厘 = 10 捆; 拔丝料 6厘 = 
 
 ## Roadmap (later passes)
 
-- **Second pass — Purchasing (built, later simplified to header-only):**
-  suppliers, purchase orders (USD/KHR/CNY, `PO-YYYY-####`, Draft → Ordered →
-  Cancelled). Purchase orders are records that an order was placed — supplier,
-  dates, currency, notes, attachment — plus free-text product lines
-  (`purchase_order_manual_items`: product name, quantity, unit, unit price —
-  no SKU/family catalog connection at all, no inventory effect); no
-  structured, catalog-linked quantities/costs and no structured receiving —
-  nothing about a purchase updates inventory automatically. (A catalog-linked
-  line-items version, mirroring Sales below — real SKU/location picks, qty,
-  unit cost — plus goods receiving and an over-receipt guard were originally
-  built, then deliberately removed at the user's request; a second attempt at
-  catalog-linked line items was built and reverted again within the same
-  session, this time replaced with the free-text version above since a
-  connection to the product catalog was explicitly not wanted. The
-  underlying DB tables/triggers/RPCs for the catalog-linked version and for
-  receiving remain in the schema, dormant, since migrations are
-  additive-only; see `docs/data-dictionary.md`.) Costs restricted to
-  Owner/System Admin/Warehouse Admin. The Telegram inventory report does not
-  include supplier/PO information — see `docs/data-dictionary.md` and
-  `docs/test-plan.md` for the schema and tests. Overdue/Expected Arrival Date
-  tracking (a per-PO ETA field plus an overdue badge/dashboard stat,
-  mirroring Sales' delivery-date tracking) was also built and then removed
-  at the user's request — same dormant-column posture as above
-  (`expected_arrival_date` stays in the `purchase_orders` table, unused).
+- **Purchasing — removed (29/10/2026):** no dashboard cards, navigation, supplier/PO pages, exports, PDFs, or server actions. Migration `20261029035331_remove_purchasing.sql` snapshots existing purchasing source records to the restricted audit log, then removes purchasing tables and RPCs. Historical stock receipts remain in balances; new purchase receipts are blocked.
 - **Third pass — Sales (built):** customers, sales orders (USD/KHR/CNY,
   `SO-YYYY-####`, Draft → Confirmed → Partially Delivered/Delivered/Cancelled),
   delivery from a location (creates `sale_delivery`, immutable ledger,

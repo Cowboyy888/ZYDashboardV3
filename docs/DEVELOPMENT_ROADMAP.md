@@ -1,5 +1,9 @@
 # Development Roadmap — Zysteel Operations
 
+**29/10/2026 update:** Purchasing has been removed at the user’s request.
+Purchasing-specific preservation constraints below describe the earlier audit
+scope and are superseded by the retirement migration and audit snapshots.
+
 Source: Phase 1 audit (2026-10-16), verified against the live `npm run verify`
 run and the actual repo state, not assumptions. This is a living document —
 update the checklist and phase status as work lands, same convention as

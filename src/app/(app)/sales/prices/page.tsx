@@ -13,9 +13,9 @@ import {
   type PriceRecordFilters,
 } from '@/lib/db/queries';
 import type { PriceStatus } from '@/lib/domain/price-records';
-import type { Currency } from '@/lib/domain/purchasing';
+import type { Currency } from '@/lib/domain/currency';
 import { PRICE_STATUSES } from '@/lib/domain/price-records';
-import { CURRENCIES } from '@/lib/domain/purchasing';
+import { CURRENCIES } from '@/lib/domain/currency';
 import { buildSkuLabel } from '@/lib/domain/products';
 import { getLocale } from '@/lib/i18n/locale';
 import { translator } from '@/lib/i18n';

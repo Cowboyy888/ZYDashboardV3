@@ -12,7 +12,7 @@ import type { Role } from '@/lib/domain/rbac';
 import type { ConditionCode } from '@/lib/domain/products';
 import type { MovementType } from '@/lib/domain/stock-ledger';
 import type { AttendanceStatus, Shift } from '@/lib/domain/attendance';
-import type { Currency, PoStatus } from '@/lib/domain/purchasing';
+import type { Currency } from '@/lib/domain/currency';
 import type { SoStatus } from '@/lib/domain/sales';
 import type { PayrollStatus, DeductionKind } from '@/lib/domain/payroll';
 import type { DepositInvoiceStatus, SoPaymentStatus } from '@/lib/domain/deposit-invoice';
@@ -364,57 +364,6 @@ export interface TelegramSettingsRow {
   inventory_last_error: string | null;
   inventory_last_sent_at: string | null;
   updated_at: string;
-}
-
-// --- Purchasing (Second pass) ------------------------------------------------
-
-export interface SupplierRow {
-  id: string;
-  name: string;
-  name_chinese: string | null;
-  name_english: string | null;
-  contact_person: string | null;
-  phone: string | null;
-  address: string | null;
-  tax_id: string | null;
-  payment_terms: string | null;
-  default_currency: Currency;
-  notes: string | null;
-  is_active: boolean;
-  created_at: string;
-  updated_at: string;
-}
-
-// Note: the underlying table still has an `expected_arrival_date` column
-// (nullable, never dropped — historical values are preserved), but the app
-// no longer reads or writes it: the Overdue/Expected Arrival feature was
-// removed. Omitted here deliberately since nothing in the app uses it.
-export interface PurchaseOrderRow {
-  id: string;
-  po_number: string | null;
-  supplier_id: string;
-  order_date: string;
-  currency: Currency;
-  status: PoStatus;
-  notes: string | null;
-  attachment_path: string | null;
-  created_by: string | null;
-  issued_at: string | null;
-  cancelled_at: string | null;
-  created_at: string;
-  updated_at: string;
-}
-
-/** Free-text product line on a PO — no sku_id, no catalog connection. */
-export interface PurchaseOrderManualItemRow {
-  id: string;
-  purchase_order_id: string;
-  product_name: string;
-  quantity: number | null;
-  unit: string | null;
-  unit_price: number | null;
-  line_total: number | null;
-  created_at: string;
 }
 
 // --- Sales (Third pass) -------------------------------------------------------

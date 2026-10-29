@@ -4,7 +4,7 @@ import { buildCjkFontFaceCss } from './fonts/cjk-subset';
 /**
  * Renders one of this app's self-contained branded report HTML documents
  * (inquiry-report-html.ts, quotation-doc-html.ts, deposit-invoice-html.ts,
- * sales-order-html.ts, purchase-order-html.ts) to a real PDF file, server-side.
+ * sales-order-html.ts) to a real PDF file, server-side.
  *
  * Replaces the old "open a popup, document.write the HTML, let the user hit
  * Print / Save as PDF" flow: iOS Safari's native print sheet (AirPrint) has

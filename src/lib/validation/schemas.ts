@@ -3,7 +3,7 @@ import { CONDITIONS } from '@/lib/domain/products';
 import { MOVEMENT_TYPES } from '@/lib/domain/stock-ledger';
 import { SHIFTS, ATTENDANCE_STATUSES } from '@/lib/domain/attendance';
 import { ROLES } from '@/lib/domain/rbac';
-import { CURRENCIES } from '@/lib/domain/purchasing';
+import { CURRENCIES } from '@/lib/domain/currency';
 import { DEDUCTION_KINDS } from '@/lib/domain/payroll';
 import { WORK_LOCATIONS } from '@/lib/domain/employees';
 import { TASK_PRIORITIES, TASK_STATUSES } from '@/lib/domain/tasks';
@@ -99,7 +99,9 @@ export const movementSchema = z
   .object({
     skuId: z.string().uuid(),
     locationId: z.string().uuid(),
-    type: z.enum(MOVEMENT_TYPES),
+    type: z
+      .enum(MOVEMENT_TYPES)
+      .refine((type) => type !== 'purchase_receipt', 'Purchasing has been removed'),
     businessDate: isoDate,
     /** Positive magnitude for all types except adjustment (signed). */
     quantity: z.coerce.number().refine((n) => n !== 0, 'Quantity cannot be zero'),
@@ -305,53 +307,6 @@ export const userRoleSchema = z.object({
   userId: z.string().uuid(),
   role: z.enum(ROLES),
 });
-
-// --- Purchasing (Second pass) -------------------------------------------------
-
-export const supplierSchema = z.object({
-  name: nonEmpty,
-  nameChinese: optionalText,
-  nameEnglish: optionalText,
-  contactPerson: optionalText,
-  phone: optionalText,
-  address: optionalText,
-  taxId: optionalText,
-  paymentTerms: optionalText,
-  defaultCurrency: z.enum(CURRENCIES).default('USD'),
-  notes: optionalText,
-});
-export type SupplierInput = z.infer<typeof supplierSchema>;
-
-export const supplierUpdateSchema = supplierSchema.extend({ id: z.string().uuid() });
-
-export const createPurchaseOrderSchema = z.object({
-  supplierId: z.string().uuid(),
-  orderDate: isoDate,
-  currency: z.enum(CURRENCIES),
-  notes: optionalText,
-  attachmentPath: optionalText,
-});
-export type CreatePurchaseOrderInput = z.infer<typeof createPurchaseOrderSchema>;
-
-/** Draft-only header edit (supplier/currency/order date/notes) — attachment is not re-editable here. */
-export const updatePurchaseOrderSchema = createPurchaseOrderSchema
-  .omit({ attachmentPath: true })
-  .extend({ id: z.string().uuid() });
-export type UpdatePurchaseOrderInput = z.infer<typeof updatePurchaseOrderSchema>;
-
-/**
- * A free-text product line on a Purchase Order — no sku_id, no connection
- * to the product/family catalog. Quantity/unit/unit price are all optional;
- * only the product name is required.
- */
-export const addPurchaseOrderManualItemSchema = z.object({
-  purchaseOrderId: z.string().uuid(),
-  productName: nonEmpty.max(200),
-  quantity: optionalNumber,
-  unit: optionalText,
-  unitPrice: optionalNumber,
-});
-export type AddPurchaseOrderManualItemInput = z.infer<typeof addPurchaseOrderManualItemSchema>;
 
 // --- Sales (Third pass) --------------------------------------------------------
 

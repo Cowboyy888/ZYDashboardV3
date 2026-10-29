@@ -451,8 +451,8 @@ export async function toggleSku(_prev: ActionState, formData: FormData): Promise
  * archived AND its current balance has fully netted to zero — an active spec,
  * or one still holding real stock anywhere, is always "Archive it instead."
  * Purchase order AND sales order history are never discarded here regardless
- * of stock level — skus is referenced by purchase_order_items and
- * sales_order_items with their own ON DELETE RESTRICT, and a completed
+ * of stock level — historical purchase lines are preserved in audit snapshots,
+ * while sales_order_items retains its ON DELETE RESTRICT FK. A completed
  * order's own line items are a different, more sensitive record than the
  * stock ledger. Checked BEFORE touching stock_movements — discovering one of
  * these only after the ledger rows are already gone would destroy history
@@ -480,9 +480,11 @@ export async function deleteSku(_prev: ActionState, formData: FormData): Promise
   const [movements, poItems, soItems, balances] = await Promise.all([
     supabase.from('stock_movements').select('id', { count: 'exact', head: true }).eq('sku_id', id),
     supabase
-      .from('purchase_order_items')
+      .from('audit_log')
       .select('id', { count: 'exact', head: true })
-      .eq('sku_id', id),
+      .eq('action', 'purchasing.retired')
+      .eq('entity', 'purchase_order_items')
+      .eq('old_value->>sku_id', id),
     supabase
       .from('sales_order_items')
       .select('id', { count: 'exact', head: true })

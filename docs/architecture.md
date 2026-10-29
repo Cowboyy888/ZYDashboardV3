@@ -98,3 +98,13 @@ outcome in `sent_reports`.
 - **Deployed:** any Node host for Next.js + a Supabase project; set env per
   `.env.example`; wire the three `/api/cron/*` endpoints to a scheduler and
   provide a real Telegram token. See the runbooks.
+
+## Purchasing retirement (29/10/2026)
+
+Purchasing routes, navigation, actions, queries, and reports are removed. Shared
+currency rules live in `src/lib/domain/currency.ts`; Sales attachments use
+`src/components/attachment-field.tsx`. The retirement migration snapshots source
+rows to the restricted append-only audit log before dropping operational tables
+and RPCs. Historical stock rows remain intact and traceable by their original
+purchase-item UUID; a trigger blocks new purchase receipts. Existing SKU and
+family-history guards resolve historical lines through those snapshots.

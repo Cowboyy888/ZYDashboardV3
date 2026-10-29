@@ -33,7 +33,7 @@ just have `supabase start` running before `npm run verify`.
 - **E2E** (`tests/e2e`): 14 spec files (22 scenarios) as of 2026-10-16 — a
   couple of unauthenticated smoke flows (routing, login/setup render) that
   pass with or without a backend, plus authenticated flows per module
-  (attendance, sales, purchasing, payroll, deposit invoices, inventory
+  (attendance, sales, payroll, deposit invoices, inventory
   report/SKU, product families, login history, telegram settings, transfer,
   employee create, report preview) that sign in as a seeded test Owner via
   `tests/e2e/global-setup.ts` against local Supabase.
@@ -43,7 +43,7 @@ just have `supabase start` running before `npm run verify`.
 | # | Criterion | Covered by |
 | --- | --- | --- |
 | 1 | Admin creates a product specification | `tests/unit/products.test.ts` (label + uniqueness signature); action `createSku` |
-| 2 | Receive purchased stock into Storage Room | `tests/unit/stock-ledger.test.ts` (purchase_receipt increases only that SKU/location) |
+| 2 | Historical purchased stock remains in Storage Room balances after retirement | `tests/unit/stock-ledger.test.ts` (purchase_receipt increases only that SKU/location) |
 | 3 | Transfer Storage→Warehouse; company total unchanged | `tests/unit/stock-ledger.test.ts` + `tests/integration/stock-flows.test.ts` (invariant) |
 | 4 | Production increases only the selected 钢筋网 SKU | `tests/unit/stock-ledger.test.ts`; `tests/integration/stock-flows.test.ts` |
 | 5 | Confirmed sale delivery decreases only the correct SKU + location | `tests/unit/stock-ledger.test.ts` |
@@ -52,9 +52,9 @@ just have `supabase start` running before `npm run verify`.
 | 8 | Telegram scheduled send does not duplicate a report | `tests/integration/telegram-idempotency.test.ts` |
 | 9 | Payroll draft reads attendance & respects the confirmed pay rules | `tests/unit/payroll.test.ts`; `tests/integration/payroll-flows.test.ts`; DB function `create_draft_payroll_run` |
 | 10 | Unauthorized users cannot access salary / private photos | `tests/unit/rbac.test.ts` (sensitive-data matrix); RLS on `employee_private` + private Storage buckets; schema check |
-| 11 | Create, edit while Draft, issue, and cancel a purchase order (header-only: supplier, dates, currency, notes — no line items, no receiving); editing is no longer offered once issued | `tests/e2e/purchasing.spec.ts` |
-| 12 | A cancelled purchase order cannot be issued or re-cancelled | `tests/unit/purchasing.test.ts` (`canCancel`); DB trigger `enforce_po_header_immutable`; schema check |
-| 13 | Purchase order costs (if ever repopulated — `purchase_order_items` is currently dormant) visible only to Owner/System Admin/Warehouse Admin | `tests/unit/rbac.test.ts`; RLS on `suppliers`/`purchase_orders`/`purchase_order_manual_items`; schema check |
+| 11 | Purchasing navigation and dashboard cards removed | `tests/integration/purchasing-removal.test.ts`; `tests/e2e/purchasing-removal.spec.ts`; PostgreSQL migration verification |
+| 12 | Purchasing pages, export/PDF endpoints and actions removed | `tests/integration/purchasing-removal.test.ts`; `tests/e2e/purchasing-removal.spec.ts`; PostgreSQL migration verification |
+| 13 | Purchasing tables/RPCs removed after restricted audit snapshots; ledger preserved | `tests/integration/purchasing-removal.test.ts`; `tests/e2e/purchasing-removal.spec.ts`; PostgreSQL migration verification |
 | 14 | Telegram inventory report never includes supplier/PO/cost information | `tests/integration/reports-render.test.ts` |
 | 15 | Create a sales order (draft, header + line items) | `tests/integration/sales-flows.test.ts` |
 | 16 | Partial delivery updates status/outstanding, keeps SO open | `tests/unit/sales.test.ts`; `tests/integration/sales-flows.test.ts` |
@@ -75,7 +75,7 @@ just have `supabase start` running before `npm run verify`.
 | 31 | A deposit invoice may only be generated for a confirmed SO, and only one active invoice per SO | `tests/unit/deposit-invoice.test.ts` (`canGenerateDepositInvoice`); partial unique index on `deposit_invoices`; schema check |
 | 32 | Deposit amount / remaining balance = total × percentage (and its complement) — generated columns, never hand-entered | `tests/unit/deposit-invoice.test.ts` (`computeDepositAmount`/`computeRemainingBalance`); generated columns on `deposit_invoices`; schema check |
 | 33 | A deposit invoice's status derives from its payments ledger, never set directly, and mirrors onto the sales order's `payment_status` | `tests/unit/deposit-invoice.test.ts` (`computeDepositInvoiceStatus`); DB triggers `recompute_deposit_invoice_status`/`mirror_deposit_invoice_status`; `tests/e2e/deposit-invoice.spec.ts` |
-| 34 | A Purchase Order's free-text product lines (product name, quantity, unit, unit price — no SKU/family catalog connection) are addable/removable at any PO status, including after Issue | `tests/e2e/purchasing.spec.ts` |
+| 34 | New purchase receipts rejected; historical receipt arithmetic preserved | `tests/integration/purchasing-removal.test.ts`; `tests/e2e/purchasing-removal.spec.ts`; PostgreSQL migration verification |
 | 35 | One Sales Order keeps one permanent `so_number` (format `ZYS-{YYYY}Y-###`), but can carry multiple payment receipts (deposit and/or final), each with its own unique, globally-sequential `receipt_number` (format `ZYS-R-######`, never resets per year) and clearly tagged type — all linked to the same SO, no new SO or order number ever created by a payment | `tests/unit/payment-receipt.test.ts`; `tests/e2e/deposit-invoice.spec.ts` (asserts the `ZYS-{YYYY}Y-###`/`ZYS-R-######` formats); DB functions `assign_so_number`/`assign_receipt_number`; schema check |
 | 35a | Sales Orders list can be filtered by order number, customer name, or date | `src/app/(app)/sales/orders/orders-list.tsx` (client-side filter, same pattern as `employees-client.tsx`) — manual/browser verification, no automated test |
 | 36 | A final payment can only be recorded once the deposit invoice is fully paid, and any number of partial final payments are allowed until the balance reaches zero | `tests/unit/payment-receipt.test.ts` (`canRecordFinalPayment`); DB trigger `enforce_payment_receipt_rules` (`FINAL_PAYMENT_REQUIRES_PAID_DEPOSIT`); `tests/e2e/deposit-invoice.spec.ts` |
@@ -97,12 +97,7 @@ The domain tests assert the rules; the database enforces them independently:
 - `prevent_update` / `prevent_delete` — ledger & audit log append-only;
   attendance/stock never hard-deleted.
 - RLS on `employee_private` + private buckets — salary/photos restricted.
-- `enforce_po_header_immutable` — a PO's commercial terms lock once issued
-  (Draft only). (`enforce_purchase_receipt_rules`/`enforce_po_item_immutable`
-  still exist but are dormant — Purchasing has no line items or receiving.)
-- RLS on `suppliers`/`purchase_orders` — restricted to
-  owner/system_admin/warehouse_admin, which is also what keeps purchase costs
-  out of every other role.
+- Purchasing tables/RPCs are removed after audit snapshots; `prevent_retired_purchase_receipt` blocks new receipts while historical ledger rows stay intact.
 - `enforce_sale_delivery_rules` — no delivering against a draft/cancelled SO;
   no over-delivery without Owner override + reason.
 - `enforce_so_header_immutable` / `enforce_so_item_immutable` — a SO's

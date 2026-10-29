@@ -4,7 +4,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { SubmitButton } from '@/components/forms/submit-button';
 import { FormError } from '@/components/forms/form-error';
-import { AttachmentField } from '@/components/purchasing/attachment-field';
+import { AttachmentField } from '@/components/attachment-field';
 import { useT } from '@/components/i18n-provider';
 import { deliverGoods } from '@/lib/actions/sales';
 import type { ActionState } from '@/lib/actions/types';

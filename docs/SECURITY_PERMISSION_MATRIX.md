@@ -105,16 +105,15 @@ Owner-only both in `rbac.ts` (sentinel) and at the DB level
 (`enforce_payroll_run_immutable()` requires `auth_role() = 'owner'` for the
 draft→approved transition). Confirmed matching.
 
-### Purchasing / suppliers
+### Purchasing / suppliers — removed 29/10/2026
 
-| Role | Purchasing V | Purchasing E (create/receive) | Suppliers V | Suppliers E |
-| --- | --- | --- | --- | --- |
-| warehouse_admin | ● | ● | ● | ● |
-| system_admin | ● | ○ | ● | ○ |
-| others | ○ | ○ | ○ | ○ |
-
-Matches exactly. `purchase_order_items` RLS exists but the table is
-documented dormant in `docs/data-dictionary.md` already — not a new finding.
+Application permissions and routes are removed. Migration
+`20261029035331_remove_purchasing.sql` snapshots source rows into the existing
+restricted audit log before dropping purchasing tables, policies, and RPCs.
+Historical purchasing costs remain readable only to Owner/System Admin through
+audit snapshots. Stock and shared private attachments are preserved. The
+findings below describe the earlier audit state; purchasing-specific references
+are superseded by this removal.
 
 ### Reports / administration / audit logs
 

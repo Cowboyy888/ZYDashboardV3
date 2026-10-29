@@ -6,7 +6,7 @@ import { Button } from '@/components/ui/button';
 /**
  * Uploads a file to the shared private `attachments` bucket immediately on
  * selection and stores the resulting path in a hidden field, so it can ride
- * along with a form whose parent record (PO / receipt) doesn't exist yet.
+ * along with a form whose parent record (sales order / delivery) doesn't exist yet.
  */
 export function AttachmentField({
   name,

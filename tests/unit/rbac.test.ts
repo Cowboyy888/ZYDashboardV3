@@ -105,29 +105,6 @@ describe('role permission matrix', () => {
   });
 });
 
-describe('acceptance — purchase order costs visible only to Owner/System Admin/Warehouse Admin', () => {
-  it('only those three roles hold purchasing:view (and therefore ever see cost fields)', () => {
-    const allowed: Role[] = ['owner', 'system_admin', 'warehouse_admin'];
-    for (const role of ROLES) {
-      expect(hasPermission(role, 'purchasing:view')).toBe(allowed.includes(role));
-    }
-  });
-
-  it('only Owner and Warehouse Admin can create/issue/receive purchase orders; System Admin is view-only', () => {
-    expect(hasPermission('owner', 'purchasing:manage')).toBe(true);
-    expect(hasPermission('warehouse_admin', 'purchasing:manage')).toBe(true);
-    expect(hasPermission('system_admin', 'purchasing:view')).toBe(true);
-    expect(hasPermission('system_admin', 'purchasing:manage')).toBe(false);
-  });
-
-  it('attendance/sales/payroll/viewer have no purchasing access at all', () => {
-    for (const role of ['attendance_admin', 'sales_admin', 'payroll_admin', 'viewer'] as Role[]) {
-      expect(hasPermission(role, 'purchasing:view')).toBe(false);
-      expect(hasPermission(role, 'purchasing:manage')).toBe(false);
-    }
-  });
-});
-
 describe('acceptance — sales order prices visible only to Owner/System Admin/Sales Admin', () => {
   it('only those three roles hold sales:view (and therefore ever see price fields)', () => {
     const allowed: Role[] = ['owner', 'system_admin', 'sales_admin'];
@@ -235,7 +212,6 @@ describe('tasks:view / tasks:manage — Team Task & Activity Tracking (0056)', (
       'sales:manage',
       'inventory:view',
       'payroll:view',
-      'purchasing:view',
       'settings:manage',
       'users:manage',
     ] as const) {

@@ -7,7 +7,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { NativeSelect } from '@/components/ui/native-select';
-import { AttachmentField } from '@/components/purchasing/attachment-field';
+import { AttachmentField } from '@/components/attachment-field';
 import { useT } from '@/components/i18n-provider';
 import { FormError } from '@/components/forms/form-error';
 import { createDraftSalesOrder } from '@/lib/actions/sales';

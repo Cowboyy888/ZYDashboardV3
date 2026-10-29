@@ -9,7 +9,6 @@ import {
   TrendingUp,
   Factory,
   ShoppingCart,
-  ClipboardList,
   Truck,
   Wallet,
   Inbox,
@@ -36,7 +35,6 @@ import {
   getLocations,
   getBalances,
   getProductionCountForDate,
-  getOpenPurchaseOrderCount,
   getSalesOrderTodayCount,
   getPendingDeliveryOrderCount,
   getDraftPayrollRunCount,
@@ -85,7 +83,6 @@ export default async function DashboardPage() {
   const monthStart = today.slice(0, 8) + '01';
 
   const canSales = hasPermission(user.role, 'sales:view');
-  const canPurchasing = hasPermission(user.role, 'purchasing:view');
   const canPayroll = hasPermission(user.role, 'payroll:view');
   const canInquiries = hasPermission(user.role, 'inquiries:view');
   const canLogProduction = hasPermission(user.role, 'stock:production');
@@ -100,7 +97,6 @@ export default async function DashboardPage() {
     locations,
     balances,
     productionToday,
-    openPoCount,
     salesTodayCount,
     pendingDeliveryCount,
     payrollApprovalCount,
@@ -115,7 +111,6 @@ export default async function DashboardPage() {
     getLocations(),
     getBalances(),
     getProductionCountForDate(today),
-    canPurchasing ? getOpenPurchaseOrderCount() : Promise.resolve(0),
     canSales ? getSalesOrderTodayCount(today) : Promise.resolve(0),
     canSales ? getPendingDeliveryOrderCount() : Promise.resolve(0),
     canPayroll ? getDraftPayrollRunCount() : Promise.resolve(0),
@@ -408,7 +403,7 @@ export default async function DashboardPage() {
         </Card>
       </Link>
 
-      {(canSales || canPurchasing || canPayroll || canInquiries) && (
+      {(canSales || canPayroll || canInquiries) && (
         <div className="mt-4 grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
           {canSales && (
             <StatCard
@@ -430,17 +425,6 @@ export default async function DashboardPage() {
               label={t('dash.openInquiries')}
               value={<AnimatedNumber value={openInquiryCount} />}
               tone={openInquiryCount > 0 ? 'warning' : 'success'}
-            />
-          )}
-          {canPurchasing && (
-            <StatCard
-              className={ENTER_CLASS}
-              style={enterStyle(420)}
-              href="/purchasing/orders"
-              icon={<ClipboardList className="h-4 w-4" />}
-              label={t('dash.openPOs')}
-              value={<AnimatedNumber value={openPoCount} />}
-              tone={openPoCount > 0 ? 'warning' : 'success'}
             />
           )}
           {canSales && (

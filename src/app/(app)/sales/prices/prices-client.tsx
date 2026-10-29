@@ -32,7 +32,7 @@ import {
   updatePriceRecord,
   deactivatePriceRecord,
 } from '@/lib/actions/price-records';
-import { CURRENCIES, CURRENCY_LABELS } from '@/lib/domain/purchasing';
+import { CURRENCIES, CURRENCY_LABELS } from '@/lib/domain/currency';
 import { PRICE_STATUSES } from '@/lib/domain/price-records';
 import { CONDITIONS, CONDITION_LABELS, selectableFamilies } from '@/lib/domain/products';
 import { formatDDMMYYYY } from '@/lib/domain/datetime';

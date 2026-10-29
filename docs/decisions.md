@@ -102,3 +102,13 @@
   templates, notifications, PDF/Excel weekly report, week-over-week
   comparison, a dedicated `field_visits` table) — see
   `docs/DEVELOPMENT_ROADMAP.md`.
+
+## 29/10/2026 — Remove Purchasing
+
+Requested removal includes the dashboard, feature routes, and database tables.
+Keep historical migrations unchanged and apply a forward migration. Snapshot
+source rows into the existing restricted audit log before dropping purchasing
+tables/RPCs; retain stock movements, balances, historical purchase-item IDs,
+and private attachment objects. Block new receipts. Preserve historical SKU
+delete guards through the audit snapshots. Shared Sales helpers move out of the
+removed module. No employee, payroll, attendance, or Sales access changes.

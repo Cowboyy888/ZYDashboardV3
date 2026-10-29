@@ -1,8 +1,8 @@
 import type { PriceRecordFilters } from '@/lib/db/queries';
 import type { PriceStatus } from '@/lib/domain/price-records';
-import type { Currency } from '@/lib/domain/purchasing';
+import type { Currency } from '@/lib/domain/currency';
 import { PRICE_STATUSES } from '@/lib/domain/price-records';
-import { CURRENCIES } from '@/lib/domain/purchasing';
+import { CURRENCIES } from '@/lib/domain/currency';
 
 /**
  * Reads the same filter params the Prices list page puts on its download
