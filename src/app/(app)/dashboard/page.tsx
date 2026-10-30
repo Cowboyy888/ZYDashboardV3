@@ -19,17 +19,12 @@ import { hasPermission } from '@/lib/domain/rbac';
 import { getLocale } from '@/lib/i18n/locale';
 import { translator } from '@/lib/i18n';
 import { businessDate, formatDDMMYYYY } from '@/lib/domain/datetime';
-import {
-  summarizeShift,
-  attendanceRate,
-  STATUS_LABELS,
-  type AttendanceRecord,
-} from '@/lib/domain/attendance';
+import { summarizeShift, STATUS_LABELS, type AttendanceRecord } from '@/lib/domain/attendance';
 import { buildInventoryRows, totalsByFamilyUnit } from '@/lib/domain/inventory-view';
 import {
   getEmployees,
   getAttendanceForDate,
-  getAttendanceRange,
+  getAttendanceRateForRange,
   getSkus,
   getFamilies,
   getLocations,
@@ -91,7 +86,7 @@ export default async function DashboardPage() {
   const [
     employees,
     todaysAttendance,
-    monthAttendance,
+    mtdRate,
     skus,
     families,
     locations,
@@ -105,7 +100,7 @@ export default async function DashboardPage() {
   ] = await Promise.all([
     getEmployees(),
     getAttendanceForDate(today),
-    getAttendanceRange(monthStart, today),
+    getAttendanceRateForRange(monthStart, today),
     getSkus(),
     getFamilies(),
     getLocations(),
@@ -127,14 +122,6 @@ export default async function DashboardPage() {
   }));
   const morning = summarizeShift(activeIds, records, today, 'morning');
   const afternoon = summarizeShift(activeIds, records, today, 'afternoon');
-  const mtdRate = attendanceRate(
-    monthAttendance.map((a) => ({
-      employeeId: a.employee_id,
-      businessDate: a.business_date,
-      shift: a.shift,
-      status: a.status,
-    })),
-  );
 
   const rows = buildInventoryRows(skus, families, locations, balances, locale);
   const lowStock = rows.filter((r) => r.isLow);

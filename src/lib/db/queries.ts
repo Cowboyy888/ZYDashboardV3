@@ -1,4 +1,6 @@
 import 'server-only';
+import { attendanceRateFromCounts } from '@/lib/domain/attendance';
+import { addDays, businessDate, startOfBusinessDayUtc } from '@/lib/domain/datetime';
 import { createSupabaseServerClient } from '@/lib/supabase/server';
 import type { Currency } from '@/lib/domain/currency';
 import type { PriceStatus } from '@/lib/domain/price-records';
@@ -308,18 +310,30 @@ export async function getAttendanceForDate(businessDate: string): Promise<Attend
   }
 }
 
-export async function getAttendanceRange(from: string, to: string): Promise<AttendanceRow[]> {
+/** Full-period rate via exact HEAD counts; unaffected by PostgREST's row cap. */
+export async function getAttendanceRateForRange(from: string, to: string): Promise<number> {
   try {
     const supabase = await client();
-    const { data } = await supabase
-      .from('attendance')
-      .select('*')
-      .gte('business_date', from)
-      .lte('business_date', to);
-    return (data as AttendanceRow[]) ?? [];
+    const [attended, resolved] = await Promise.all([
+      supabase
+        .from('attendance')
+        .select('id', { count: 'exact', head: true })
+        .gte('business_date', from)
+        .lte('business_date', to)
+        .in('status', ['present', 'late']),
+      supabase
+        .from('attendance')
+        .select('id', { count: 'exact', head: true })
+        .gte('business_date', from)
+        .lte('business_date', to)
+        .neq('status', 'leave'),
+    ]);
+    if (attended.error) throw attended.error;
+    if (resolved.error) throw resolved.error;
+    return attendanceRateFromCounts(attended.count ?? 0, resolved.count ?? 0);
   } catch (e) {
-    console.error('[queries] getAttendanceRange', e);
-    return [];
+    console.error('[queries] getAttendanceRateForRange', e);
+    return 0;
   }
 }
 
@@ -1433,15 +1447,26 @@ export interface PriceRecordCounts {
 export async function getPriceRecordCounts(): Promise<PriceRecordCounts> {
   try {
     const supabase = await client();
-    const now = new Date();
-    const monthStart = `${now.toISOString().slice(0, 7)}-01`;
-    const today = now.toISOString().slice(0, 10);
-    const in30Days = new Date(now.getTime() + 30 * 86_400_000).toISOString().slice(0, 10);
-    const { data: specialType } = await supabase
-      .from('price_types')
-      .select('id')
-      .eq('name', 'Special Price')
-      .maybeSingle();
+    const today = businessDate();
+    const monthStart = startOfBusinessDayUtc(`${today.slice(0, 7)}-01`).toISOString();
+    const in30Days = addDays(today, 30);
+    // Only this count depends on resolving the editable Special Price type.
+    // Start the other five HEAD requests without waiting for that lookup.
+    async function countSpecialPrices() {
+      const { data: specialType, error } = await supabase
+        .from('price_types')
+        .select('id')
+        .eq('name', 'Special Price')
+        .maybeSingle();
+      if (error) throw error;
+      return specialType
+        ? supabase
+            .from('price_records')
+            .select('id', { count: 'exact', head: true })
+            .eq('status', 'active')
+            .eq('price_type_id', specialType.id)
+        : { count: 0 };
+    }
 
     const [active, expired, customerPrices, specialPrices, changedThisMonth, expiringSoon] =
       await Promise.all([
@@ -1458,13 +1483,7 @@ export async function getPriceRecordCounts(): Promise<PriceRecordCounts> {
           .select('id', { count: 'exact', head: true })
           .eq('status', 'active')
           .not('customer_id', 'is', null),
-        specialType
-          ? supabase
-              .from('price_records')
-              .select('id', { count: 'exact', head: true })
-              .eq('status', 'active')
-              .eq('price_type_id', specialType.id)
-          : Promise.resolve({ count: 0 }),
+        countSpecialPrices(),
         supabase
           .from('price_records')
           .select('id', { count: 'exact', head: true })

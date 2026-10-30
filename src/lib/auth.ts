@@ -1,4 +1,5 @@
 import 'server-only';
+import { cache } from 'react';
 import { redirect } from 'next/navigation';
 import { createSupabaseServerClient } from '@/lib/supabase/server';
 import { isSupabaseConfigured } from '@/lib/env';
@@ -19,18 +20,12 @@ const sleep = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms));
  * Resolve the signed-in user + their role from the profiles table.
  * Returns null when not signed in or when Supabase is not configured yet.
  *
- * Retries once, after a short pause, on a 401 from either call below —
- * Supabase has an ongoing, acknowledged platform incident (their status
- * page: "newly refreshed JWTs being rejected by the API, resulting in HTTP
- * 401 errors"; ap-southeast-1, this app's own region, is one of the
- * affected regions) where a perfectly valid session intermittently gets a
- * false 401. Their own guidance is "in most cases, waiting and refreshing
- * is successful." Without this, that upstream bug silently redirects a
- * legitimately signed-in user to /login (requireUser) or fails a server
- * action with "Not authenticated" (assertPermission) — not a real auth
- * problem, this exact one.
+ * Memoized by React within each server-render request so the layout and page
+ * share one verified user/profile lookup. No results are shared across users
+ * or requests. Transient auth 401s and profile-query failures retry once,
+ * waiting only between attempts (never after the final failure).
  */
-export async function getCurrentUser(): Promise<CurrentUser | null> {
+export const getCurrentUser = cache(async (): Promise<CurrentUser | null> => {
   if (!isSupabaseConfigured()) return null;
   const supabase = await createSupabaseServerClient();
 
@@ -39,7 +34,7 @@ export async function getCurrentUser(): Promise<CurrentUser | null> {
     const { data, error } = await supabase.auth.getUser();
     user = data.user;
     if (user || error?.status !== 401) break;
-    await sleep(400);
+    if (attempt === 0) await sleep(400);
   }
   if (!user) return null;
 
@@ -56,7 +51,7 @@ export async function getCurrentUser(): Promise<CurrentUser | null> {
     // valid session, so any failure here is inherently suspicious and worth
     // one retry regardless of shape.
     if (profile || !error) break;
-    await sleep(400);
+    if (attempt === 0) await sleep(400);
   }
 
   if (!profile || !isRole(profile.role)) return null;
@@ -69,7 +64,7 @@ export async function getCurrentUser(): Promise<CurrentUser | null> {
     isActive: profile.is_active,
     locale: profile.locale ?? null,
   };
-}
+});
 
 /** Require a signed-in, active user or redirect to the login page. */
 export async function requireUser(): Promise<CurrentUser> {

@@ -121,11 +121,19 @@ export function isShiftComplete(
 
 /**
  * Month-to-date attendance rate: present+late counted as "attended" over all
- * resolved (non-unmarked) records. Returns a 0..1 ratio (0 when no data).
+ * non-leave records (unmarked has no stored record). Returns a 0..1 ratio (0 when no data).
  */
 export function attendanceRate(records: AttendanceRecord[]): number {
-  const resolved = records.filter((r) => r.status !== 'leave');
-  if (resolved.length === 0) return 0;
-  const attended = resolved.filter((r) => r.status === 'present' || r.status === 'late').length;
-  return attended / resolved.length;
+  let resolved = 0;
+  let attended = 0;
+  for (const record of records) {
+    if (record.status !== 'leave') resolved++;
+    if (record.status === 'present' || record.status === 'late') attended++;
+  }
+  return attendanceRateFromCounts(attended, resolved);
+}
+
+/** Same rate for exact database counts, without downloading attendance rows. */
+export function attendanceRateFromCounts(attended: number, resolved: number): number {
+  return resolved === 0 ? 0 : attended / resolved;
 }

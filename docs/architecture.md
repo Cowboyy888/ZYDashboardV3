@@ -108,3 +108,20 @@ rows to the restricted append-only audit log before dropping operational tables
 and RPCs. Historical stock rows remain intact and traceable by their original
 purchase-item UUID; a trigger blocks new purchase receipts. Existing SKU and
 family-history guards resolve historical lines through those snapshots.
+
+## Dashboard query performance (29/10/2026)
+
+The dashboard computes its month-to-date attendance rate from two parallel,
+RLS-respecting exact HEAD counts (present + late / all non-leave records),
+instead of downloading a month of rows. This avoids PostgREST’s 1,000-row cap
+and removes attendance-row payloads from this KPI. The formula is shared with
+the pure attendance domain helper.
+
+`getCurrentUser` uses React’s request-scoped `cache` so Server Components in
+the same render share verified auth/profile lookups. There is no persistent
+or cross-request auth cache; active-user checks and RBAC remain in place.
+Retries wait once between attempts, with no delay after a final failure.
+
+Price-record expiry windows use Bangkok business dates; the monthly timestamp
+cutoff is local midnight converted to UTC. Only the Special Price counter waits
+for its type lookup; five independent HEAD counts start in parallel with it.

@@ -88,6 +88,18 @@ Additional coverage: `tests/unit/datetime.test.ts` (Asia/Bangkok ⇄ UTC,
 dd/mm/yyyy, business-date boundary), `tests/unit/inventory-view.test.ts`
 (Storage/Warehouse/total split + low-stock).
 
+## Dashboard correctness and performance regressions
+
+Acceptance #7 aggregation and #10 access restrictions remain covered. Additional
+regressions in `tests/integration/dashboard-queries.test.ts` exercise the real
+Supabase JS query builder with a controlled HTTP transport: month totals beyond
+1,000 records, empty/error responses, HEAD-only attendance reads, Bangkok month
+boundaries, missing Special Price configuration, and independent counts starting
+while the type lookup is unresolved. `tests/integration/auth-resolution.test.ts`
+covers bounded transient retries, no final retry delay, signed-out sessions,
+invalid roles, and inactive-user redirects. Existing attendance-domain tests
+continue to prove that present/late count and leave is excluded.
+
 ## Database-enforced invariants (belt & suspenders)
 
 The domain tests assert the rules; the database enforces them independently:
