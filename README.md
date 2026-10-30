@@ -104,6 +104,8 @@ scripts/                   # verify.mjs, validate-schema.mjs
 - `docs/product-spec.md` — scope & roadmap
 - `docs/architecture.md` — how it fits together
 - `docs/data-dictionary.md` — tables, columns, movement types, RLS matrix
+- [P5.1 dashboard audit and KPI definitions](docs/DASHBOARD_KPI_DEFINITIONS.md) — sources, formulas, permission gaps, dependencies and next tasks
+- [P9.1 technical audit and first fix](docs/PHASE9_TECHNICAL_AUDIT.md) — prioritized findings, dashboard permission gates and measured request counts
 - `docs/test-plan.md` — acceptance criteria → tests
 - `docs/telegram-runbook.md` — bot setup, scheduling, idempotency
 - `docs/operations-runbook.md` — install, admin bootstrap, daily ops

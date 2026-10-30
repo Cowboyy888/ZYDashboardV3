@@ -1,7 +1,8 @@
 'use server';
 import { revalidatePath } from 'next/cache';
 import { createSupabaseServerClient } from '@/lib/supabase/server';
-import { assertPermission } from '@/lib/auth';
+import { assertPermission, type CurrentUser } from '@/lib/auth';
+import { STOCKOUT_REASON_CODE, stockoutFieldErrors } from '@/lib/domain/inquiry-loss';
 import { writeAudit } from '@/lib/audit';
 import { businessDate } from '@/lib/domain/datetime';
 import {
@@ -66,6 +67,7 @@ function inquiryForm(formData: FormData) {
     contact: formData.get('contact'),
     customerTypeId: formData.get('customerTypeId'),
     sourceId: formData.get('sourceId'),
+    lossReasonId: formData.has('lossReasonId') ? formData.get('lossReasonId') : undefined,
     familyId: formData.get('familyId'),
     specification: formData.get('specification'),
     diameter: formData.get('diameter'),
@@ -86,6 +88,54 @@ function inquiryForm(formData: FormData) {
   };
 }
 
+async function resolveLossReason(
+  supabase: Awaited<ReturnType<typeof createSupabaseServerClient>>,
+  user: CurrentUser,
+  input: InquiryInput,
+  previousId?: string | null,
+): Promise<{ ok: true; id: string | null | undefined } | { ok: false; state: ActionState }> {
+  const selected = input.lossReasonId === undefined ? previousId : input.lossReasonId;
+  if (!selected) return { ok: true, id: selected };
+  if (selected === STOCKOUT_REASON_CODE) {
+    const errors = stockoutFieldErrors(input);
+    if (Object.keys(errors).length)
+      return { ok: false, state: fail('Please check the highlighted fields', errors) };
+    // The code's unique constraint handles simultaneous first-use requests.
+    // Ignore duplicates so a save never overwrites an archived lookup row.
+    const { data, error } = await supabase
+      .from('inquiry_loss_reasons')
+      .upsert(
+        { code: STOCKOUT_REASON_CODE, name: 'Product unavailable / 产品缺货' },
+        { onConflict: 'code', ignoreDuplicates: true },
+      )
+      .select('id')
+      .maybeSingle();
+    if (error) return { ok: false, state: fail(error.message) };
+    if (data)
+      await writeAudit(user, {
+        action: 'inquiry_loss_reason.create',
+        entity: 'inquiry_loss_reasons',
+        entityId: data.id,
+        newValue: { code: STOCKOUT_REASON_CODE },
+      });
+  }
+  const { data: reason, error } = await supabase
+    .from('inquiry_loss_reasons')
+    .select('id, code, is_active')
+    .eq(selected === STOCKOUT_REASON_CODE ? 'code' : 'id', selected)
+    .maybeSingle();
+  if (error) return { ok: false, state: fail(error.message) };
+  if (!reason || (!reason.is_active && reason.id !== previousId)) {
+    return { ok: false, state: fail('Select an active loss reason.') };
+  }
+  if (reason.code === STOCKOUT_REASON_CODE) {
+    const errors = stockoutFieldErrors(input);
+    if (Object.keys(errors).length)
+      return { ok: false, state: fail('Please check the highlighted fields', errors) };
+  }
+  return { ok: true, id: reason.id };
+}
+
 export async function createInquiry(_prev: ActionState, formData: FormData): Promise<ActionState> {
   const user = await assertPermission('inquiries:manage');
   const parsed = inquirySchema.safeParse(inquiryForm(formData));
@@ -93,9 +143,15 @@ export async function createInquiry(_prev: ActionState, formData: FormData): Pro
     return fail('Please check the highlighted fields', zodFieldErrors(parsed.error.issues));
 
   const supabase = await createSupabaseServerClient();
+  const lossReason = await resolveLossReason(supabase, user, parsed.data);
+  if (!lossReason.ok) return lossReason.state;
   const { data, error } = await supabase
     .from('sales_inquiries')
-    .insert({ ...inquiryColumns(parsed.data), created_by: user.id })
+    .insert({
+      ...inquiryColumns(parsed.data),
+      loss_reason_id: lossReason.id ?? null,
+      created_by: user.id,
+    })
     .select('id, inquiry_no')
     .single();
   if (error) return fail(error.message);
@@ -104,7 +160,16 @@ export async function createInquiry(_prev: ActionState, formData: FormData): Pro
     action: 'inquiry.create',
     entity: 'sales_inquiries',
     entityId: data.id,
-    newValue: { inquiry_no: data.inquiry_no, customer: parsed.data.customerName },
+    newValue: {
+      inquiry_no: data.inquiry_no,
+      customer: parsed.data.customerName,
+      customer_id: parsed.data.customerId ?? null,
+      loss_reason_id: lossReason.id ?? null,
+      diameter: parsed.data.diameter ?? null,
+      sheet_size: parsed.data.sheetSize ?? null,
+      mesh_opening: parsed.data.meshOpening ?? null,
+      quantity: parsed.data.quantity ?? null,
+    },
   });
   revalidatePath(INQUIRIES_PATH);
   return ok(`Inquiry ${data.inquiry_no ?? ''} created`, {
@@ -124,17 +189,40 @@ export async function updateInquiry(_prev: ActionState, formData: FormData): Pro
   const { id, ...rest } = parsed.data;
 
   const supabase = await createSupabaseServerClient();
+  const { data: previous, error: readError } = await supabase
+    .from('sales_inquiries')
+    .select('loss_reason_id, customer_id, diameter, sheet_size, mesh_opening, quantity')
+    .eq('id', id)
+    .single();
+  if (readError) return fail(readError.message);
+  const lossReason = await resolveLossReason(supabase, user, rest, previous.loss_reason_id);
+  if (!lossReason.ok) return lossReason.state;
   const { error } = await supabase
     .from('sales_inquiries')
-    .update(inquiryColumns(rest))
-    .eq('id', id);
+    .update({
+      ...inquiryColumns(rest),
+      customer_id: formData.has('customerId') ? (rest.customerId ?? null) : previous.customer_id,
+      ...(lossReason.id !== undefined ? { loss_reason_id: lossReason.id } : {}),
+    })
+    .eq('id', id)
+    .select('id')
+    .single();
   if (error) return fail(error.message);
 
   await writeAudit(user, {
     action: 'inquiry.update',
     entity: 'sales_inquiries',
     entityId: id,
-    newValue: { customer: rest.customerName },
+    oldValue: previous,
+    newValue: {
+      customer: rest.customerName,
+      customer_id: formData.has('customerId') ? (rest.customerId ?? null) : previous.customer_id,
+      loss_reason_id: lossReason.id === undefined ? previous.loss_reason_id : lossReason.id,
+      diameter: rest.diameter ?? null,
+      sheet_size: rest.sheetSize ?? null,
+      mesh_opening: rest.meshOpening ?? null,
+      quantity: rest.quantity ?? null,
+    },
   });
   revalidatePath(INQUIRIES_PATH);
   return ok('Inquiry updated');

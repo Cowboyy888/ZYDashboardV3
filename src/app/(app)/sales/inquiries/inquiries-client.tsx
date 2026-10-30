@@ -57,12 +57,14 @@ import {
   type StatusCategory,
 } from '@/lib/domain/sales-inquiry';
 import type { ActionState } from '@/lib/actions/types';
+import { STOCKOUT_REASON_CODE } from '@/lib/domain/inquiry-loss';
 import type {
   SalesInquiryRow,
   InquiryFollowupRow,
   InquiryCustomerTypeRow,
   InquirySourceRow,
   InquiryStatusRow,
+  InquiryLossReasonRow,
 } from '@/lib/db/types';
 
 type Opt = { id: string; name: string };
@@ -82,6 +84,7 @@ export function InquiriesClient({
   customerTypes,
   sources,
   statuses,
+  lossReasons,
   employees,
   families,
   canManage,
@@ -91,6 +94,7 @@ export function InquiriesClient({
   customerTypes: InquiryCustomerTypeRow[];
   sources: InquirySourceRow[];
   statuses: InquiryStatusRow[];
+  lossReasons: InquiryLossReasonRow[];
   employees: Opt[];
   families: Opt[];
   canManage: boolean;
@@ -101,6 +105,9 @@ export function InquiriesClient({
   const familyName = useMemo(() => new Map(families.map((f) => [f.id, f.name])), [families]);
   const sourceName = useMemo(() => new Map(sources.map((s) => [s.id, s.name])), [sources]);
   const statusById = useMemo(() => new Map(statuses.map((s) => [s.id, s])), [statuses]);
+  const lossReasonById = useMemo(() => new Map(lossReasons.map((r) => [r.id, r])), [lossReasons]);
+  const lossReasonName = (reason: InquiryLossReasonRow) =>
+    reason.code === STOCKOUT_REASON_CODE ? t('inq.stockUnavailable') : reason.name;
   const inquiryById = useMemo(() => new Map(inquiries.map((i) => [i.id, i])), [inquiries]);
   const activeTypes = customerTypes.filter((c) => c.is_active);
   const activeSources = sources.filter((s) => s.is_active);
@@ -411,11 +418,23 @@ export function InquiriesClient({
                     <TableCell className="text-right tabular-nums">{fmt(i.quantity, 0)}</TableCell>
                     <TableCell className="text-right tabular-nums">{fmt(i.quoted_price)}</TableCell>
                     <TableCell className="text-right tabular-nums">{fmt(i.target_price)}</TableCell>
-                    <TableCell>{statusBadge(i.status_id)}</TableCell>
+                    <TableCell>
+                      {statusBadge(i.status_id)}
+                      {i.loss_reason_id && lossReasonById.has(i.loss_reason_id) && (
+                        <div className="mt-1 text-xs text-muted-foreground">
+                          {lossReasonName(lossReasonById.get(i.loss_reason_id)!)}
+                        </div>
+                      )}
+                    </TableCell>
                     {canManage && (
                       <TableCell className="text-right">
                         <div className="flex justify-end gap-1">
-                          <Button variant="ghost" size="sm" onClick={() => setEditing(i)}>
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            aria-label={t('inq.edit')}
+                            onClick={() => setEditing(i)}
+                          >
                             <Pencil className="h-4 w-4" />
                           </Button>
                           <Button
@@ -611,6 +630,7 @@ export function InquiriesClient({
                 customerTypes={activeTypes}
                 sources={activeSources}
                 statuses={activeStatuses}
+                lossReasons={lossReasons}
                 onDone={() => setShowCreate(false)}
               />
             </DialogContent>
@@ -632,6 +652,7 @@ export function InquiriesClient({
                   customerTypes={activeTypes}
                   sources={activeSources}
                   statuses={activeStatuses}
+                  lossReasons={lossReasons}
                   onDone={() => setEditing(null)}
                 />
               )}
@@ -751,6 +772,7 @@ function InquiryForm({
   customerTypes,
   sources,
   statuses,
+  lossReasons,
   onDone,
 }: {
   action: (s: ActionState, f: FormData) => Promise<ActionState>;
@@ -760,6 +782,7 @@ function InquiryForm({
   customerTypes: InquiryCustomerTypeRow[];
   sources: InquirySourceRow[];
   statuses: InquiryStatusRow[];
+  lossReasons: InquiryLossReasonRow[];
   onDone: () => void;
 }) {
   const { t, m } = useT();
@@ -799,12 +822,14 @@ function InquiryForm({
     <div className="space-y-1.5">
       <Label htmlFor={`if-${name}`}>{label}</Label>
       <Input id={`if-${name}`} name={name} type={type} defaultValue={defaultValue ?? ''} />
+      {err(name)}
     </div>
   );
 
   return (
     <form ref={formRef} action={formAction} className="space-y-4">
       {row && <input type="hidden" name="id" value={row.id} />}
+      {row && <input type="hidden" name="customerId" value={row.customer_id ?? ''} />}
 
       {/* Customer + meta */}
       <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
@@ -868,6 +893,9 @@ function InquiryForm({
 
       {/* Product spec */}
       <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
+        {field(t('inq.diameter'), 'diameter', row?.diameter)}
+        {field(t('inq.sheetSize'), 'sheetSize', row?.sheet_size)}
+        {field(t('inq.meshOpening'), 'meshOpening', row?.mesh_opening)}
         <div className="space-y-1.5">
           <Label htmlFor="if-family">{t('inq.product')}</Label>
           <NativeSelect id="if-family" name="familyId" defaultValue={row?.family_id ?? ''}>
@@ -887,13 +915,6 @@ function InquiryForm({
             placeholder={t('inq.specification')}
             defaultValue={row?.specification ?? ''}
           />
-          {row && (
-            <>
-              <input type="hidden" name="diameter" value={row.diameter ?? ''} />
-              <input type="hidden" name="meshOpening" value={row.mesh_opening ?? ''} />
-              <input type="hidden" name="sheetSize" value={row.sheet_size ?? ''} />
-            </>
-          )}
         </div>
         <div className="space-y-1.5">
           <Label htmlFor="if-area">{t('inq.area')}</Label>
@@ -916,6 +937,7 @@ function InquiryForm({
             value={qty}
             onChange={(e) => setQty(e.target.value)}
           />
+          {err('quantity')}
         </div>
         {field(t('inq.delivery'), 'deliveryLocation', row?.delivery_location)}
       </div>
@@ -974,6 +996,28 @@ function InquiryForm({
 
       {/* Status + follow-up */}
       <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+        <div className="space-y-1.5">
+          <Label htmlFor="if-lossReason">{t('inq.lossReason')}</Label>
+          <NativeSelect
+            id="if-lossReason"
+            name="lossReasonId"
+            defaultValue={row?.loss_reason_id ?? ''}
+          >
+            <option value="">{t('common.select')}</option>
+            {!lossReasons.some((r) => r.code === STOCKOUT_REASON_CODE) && (
+              <option value={STOCKOUT_REASON_CODE}>{t('inq.stockUnavailable')}</option>
+            )}
+            {lossReasons
+              .filter((r) => r.is_active || r.id === row?.loss_reason_id)
+              .map((r) => (
+                <option key={r.id} value={r.id} disabled={!r.is_active}>
+                  {r.code === STOCKOUT_REASON_CODE ? t('inq.stockUnavailable') : r.name}
+                </option>
+              ))}
+          </NativeSelect>
+          <p className="text-xs text-muted-foreground">{t('inq.stockoutHint')}</p>
+          {err('lossReasonId')}
+        </div>
         <div className="space-y-1.5">
           <Label htmlFor="if-status">{t('common.status')}</Label>
           <NativeSelect id="if-status" name="statusId" defaultValue={row?.status_id ?? ''}>

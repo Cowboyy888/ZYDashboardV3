@@ -1,5 +1,35 @@
 # Decision Log & Completion Status
 
+## 30/10/2026 — P9 audit and dashboard permission foundation
+
+The user selected P9.1 plus one small verified fix. Gate both source reads and
+rendered dashboard attendance/inventory sections with existing grants. Preserve
+Viewer visibility, stock-production entry checks, calculations, languages and
+RLS. Controlled request counts establish avoided reads, not live latency gains.
+No new module, schema migration, cache, dependency upgrade or deployment. The
+[audit](PHASE9_TECHNICAL_AUDIT.md) leaves dependency advisories, inactive-profile
+RLS, ledger authorization and other integrity findings open for separate fixes.
+
+## P4.1 — production planning boundaries
+
+Use a distinct PRD sequence and one active production plan per sales line; a
+stable create UUID makes retries idempotent. Owner/Warehouse Admin manage drafts,
+Owner approves, System Admin/Sales Admin view. Drafts snapshot existing drawings;
+approved plans lock engineering/quantity data. Hold/cancel reasons and atomic
+audit events preserve history; cancellation replaces deletion. Optional line text
+is a planning reference, not scheduling. No stock output, raw-material deduction,
+QC/completion state or Telegram automation is introduced. See `PRODUCTION_ORDERS.md`.
+
+## 30/10/2026 — Inventory Demand increment 1
+
+Capture explicit product-unavailable demand on existing inquiries before building
+analytics. Reuse migration 0038's loss-reason lookup and FK; create the stable
+reason code only on an authorized save, without overriding existing lookup data.
+Keep customer links and inquiry identity through revisions. This is reported
+unavailability, not a measured historical stock balance, confirmed sale or
+production instruction. No schema/RBAC/RLS change; see `INVENTORY_DEMAND.md` for
+the remaining stockout observation fields and aggregation dependencies.
+
 ## Completion status — First pass (Operations MVP)
 
 | Module | Status | Notes |
@@ -112,3 +142,14 @@ tables/RPCs; retain stock movements, balances, historical purchase-item IDs,
 and private attachment objects. Block new receipts. Preserve historical SKU
 delete guards through the audit snapshots. Shared Sales helpers move out of the
 removed module. No employee, payroll, attendance, or Sales access changes.
+
+## 30/10/2026 — P5.1 dashboard audit and KPI definitions
+
+Document current source behavior and proposed metric contracts in
+[Dashboard KPI Definitions](DASHBOARD_KPI_DEFINITIONS.md) before implementing new
+cards. Do not infer cash amounts from paid flags, combine currencies/units, or
+equate production plans with execution. Unresolved target currency, employee
+attribution, payment coverage and event-history decisions remain prerequisites,
+not approved schema changes. The next bounded recommendation is existing-permission
+gating for dashboard reads and sections. This increment adds no application or
+database behavior and does not proceed to P5.2.

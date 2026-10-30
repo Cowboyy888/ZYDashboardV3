@@ -77,6 +77,8 @@ export default async function DashboardPage() {
   const today = businessDate();
   const monthStart = today.slice(0, 8) + '01';
 
+  const canAttendance = hasPermission(user.role, 'attendance:view');
+  const canInventory = hasPermission(user.role, 'inventory:view');
   const canSales = hasPermission(user.role, 'sales:view');
   const canPayroll = hasPermission(user.role, 'payroll:view');
   const canInquiries = hasPermission(user.role, 'inquiries:view');
@@ -98,14 +100,14 @@ export default async function DashboardPage() {
     openInquiryCount,
     priceRecordCounts,
   ] = await Promise.all([
-    getEmployees(),
-    getAttendanceForDate(today),
-    getAttendanceRateForRange(monthStart, today),
-    getSkus(),
-    getFamilies(),
-    getLocations(),
-    getBalances(),
-    getProductionCountForDate(today),
+    canAttendance ? getEmployees() : Promise.resolve([]),
+    canAttendance ? getAttendanceForDate(today) : Promise.resolve([]),
+    canAttendance ? getAttendanceRateForRange(monthStart, today) : Promise.resolve(0),
+    canInventory ? getSkus() : Promise.resolve([]),
+    canInventory ? getFamilies() : Promise.resolve([]),
+    canInventory ? getLocations() : Promise.resolve([]),
+    canInventory ? getBalances() : Promise.resolve([]),
+    canInventory ? getProductionCountForDate(today) : Promise.resolve(0),
     canSales ? getSalesOrderTodayCount(today) : Promise.resolve(0),
     canSales ? getPendingDeliveryOrderCount() : Promise.resolve(0),
     canPayroll ? getDraftPayrollRunCount() : Promise.resolve(0),
@@ -150,87 +152,101 @@ export default async function DashboardPage() {
         }
       />
 
-      <div className="grid grid-cols-2 gap-3 lg:grid-cols-4">
-        <StatCard
-          className={ENTER_CLASS}
-          style={enterStyle(0)}
-          href="/attendance"
-          icon={<Sun className="h-4 w-4" />}
-          label={t('dash.morningAtt')}
-          value={
+      {(canAttendance || canInventory) && (
+        <div className="grid grid-cols-2 gap-3 lg:grid-cols-4">
+          {canAttendance && (
             <>
-              <AnimatedNumber value={morning.present} />/{morning.totalActive}
-            </>
-          }
-          sub={
-            <>
-              {sub(morning)}
-              <AnimatedBar
-                percent={
-                  morning.totalActive > 0 ? (morning.present / morning.totalActive) * 100 : 0
+              <StatCard
+                className={ENTER_CLASS}
+                style={enterStyle(0)}
+                href="/attendance"
+                icon={<Sun className="h-4 w-4" />}
+                label={t('dash.morningAtt')}
+                value={
+                  <>
+                    <AnimatedNumber value={morning.present} />/{morning.totalActive}
+                  </>
                 }
-                className={morning.unmarked > 0 ? 'bg-warning' : 'bg-success'}
+                sub={
+                  <>
+                    {sub(morning)}
+                    <AnimatedBar
+                      percent={
+                        morning.totalActive > 0 ? (morning.present / morning.totalActive) * 100 : 0
+                      }
+                      className={morning.unmarked > 0 ? 'bg-warning' : 'bg-success'}
+                    />
+                  </>
+                }
+                tone={morning.unmarked > 0 ? 'warning' : 'success'}
+              />
+              <StatCard
+                className={ENTER_CLASS}
+                style={enterStyle(60)}
+                href="/attendance"
+                icon={<CloudSun className="h-4 w-4" />}
+                label={t('dash.afternoonAtt')}
+                value={
+                  <>
+                    <AnimatedNumber value={afternoon.present} />/{afternoon.totalActive}
+                  </>
+                }
+                sub={
+                  <>
+                    {sub(afternoon)}
+                    <AnimatedBar
+                      percent={
+                        afternoon.totalActive > 0
+                          ? (afternoon.present / afternoon.totalActive) * 100
+                          : 0
+                      }
+                      className={afternoon.unmarked > 0 ? 'bg-warning' : 'bg-success'}
+                    />
+                  </>
+                }
+                tone={afternoon.unmarked > 0 ? 'warning' : 'success'}
+              />
+              <StatCard
+                className={ENTER_CLASS}
+                style={enterStyle(120)}
+                href="/attendance"
+                icon={<TrendingUp className="h-4 w-4" />}
+                label={t('dash.mtdRate')}
+                value={<AnimatedNumber value={mtdRate * 100} suffix="%" />}
+                sub={
+                  <>
+                    {formatDDMMYYYY(monthStart)} – {formatDDMMYYYY(today)}
+                    <AnimatedBar
+                      percent={mtdRate * 100}
+                      className={
+                        mtdRate >= 0.9
+                          ? 'bg-success'
+                          : mtdRate >= 0.75
+                            ? 'bg-primary'
+                            : 'bg-warning'
+                      }
+                    />
+                  </>
+                }
+                tone="primary"
               />
             </>
-          }
-          tone={morning.unmarked > 0 ? 'warning' : 'success'}
-        />
-        <StatCard
-          className={ENTER_CLASS}
-          style={enterStyle(60)}
-          href="/attendance"
-          icon={<CloudSun className="h-4 w-4" />}
-          label={t('dash.afternoonAtt')}
-          value={
-            <>
-              <AnimatedNumber value={afternoon.present} />/{afternoon.totalActive}
-            </>
-          }
-          sub={
-            <>
-              {sub(afternoon)}
-              <AnimatedBar
-                percent={
-                  afternoon.totalActive > 0 ? (afternoon.present / afternoon.totalActive) * 100 : 0
-                }
-                className={afternoon.unmarked > 0 ? 'bg-warning' : 'bg-success'}
-              />
-            </>
-          }
-          tone={afternoon.unmarked > 0 ? 'warning' : 'success'}
-        />
-        <StatCard
-          className={ENTER_CLASS}
-          style={enterStyle(120)}
-          href="/attendance"
-          icon={<TrendingUp className="h-4 w-4" />}
-          label={t('dash.mtdRate')}
-          value={<AnimatedNumber value={mtdRate * 100} suffix="%" />}
-          sub={
-            <>
-              {formatDDMMYYYY(monthStart)} – {formatDDMMYYYY(today)}
-              <AnimatedBar
-                percent={mtdRate * 100}
-                className={
-                  mtdRate >= 0.9 ? 'bg-success' : mtdRate >= 0.75 ? 'bg-primary' : 'bg-warning'
-                }
-              />
-            </>
-          }
-          tone="primary"
-        />
-        <StatCard
-          className={ENTER_CLASS}
-          style={enterStyle(180)}
-          href="/inventory"
-          icon={<Factory className="h-4 w-4" />}
-          label={t('dash.productionToday')}
-          value={<AnimatedNumber value={productionToday} />}
-          sub="张 · 钢筋网"
-        />
-      </div>
+          )}
+          {canInventory && (
+            <StatCard
+              className={ENTER_CLASS}
+              style={enterStyle(180)}
+              href="/inventory"
+              icon={<Factory className="h-4 w-4" />}
+              label={t('dash.productionToday')}
+              value={<AnimatedNumber value={productionToday} />}
+              sub="张 · 钢筋网"
+            />
+          )}
+        </div>
+      )}
 
-      {canLogProduction && warehouseLocationId && (
+      {canInventory && canLogProduction && warehouseLocationId && (
         <div className={`mt-4 ${ENTER_CLASS}`} style={enterStyle(220)}>
           <ProductionQuickEntry
             skus={rows.map((r) => ({ skuId: r.skuId, label: r.label }))}
@@ -240,69 +256,71 @@ export default async function DashboardPage() {
         </div>
       )}
 
-      <div className="mt-4 grid gap-4 lg:grid-cols-3">
-        <Link
-          href="/inventory"
-          className={`h-full lg:col-span-1 ${ENTER_CLASS} ${LINK_CARD_CLASS}`}
-          style={enterStyle(260)}
-        >
-          <Card className="h-full">
-            <CardHeader className="pb-3">
-              <CardTitle className="flex items-center gap-2 text-base">
-                <Boxes className="h-4 w-4 text-primary" /> {t('dash.inventoryTotals')}
-              </CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-2">
-              {familyTotals.length === 0 && <p className="text-sm text-muted-foreground">—</p>}
-              {familyTotals.map((f) => (
-                <div
-                  key={`${f.familyId}-${f.unit}`}
-                  className="flex items-center justify-between text-sm"
-                >
-                  <span>{f.familyName}</span>
-                  <span className="font-semibold tabular-nums">
-                    {f.total.toLocaleString()} {f.unit}
-                  </span>
-                </div>
-              ))}
-            </CardContent>
-          </Card>
-        </Link>
+      {canInventory && (
+        <div className="mt-4 grid gap-4 lg:grid-cols-3">
+          <Link
+            href="/inventory"
+            className={`h-full lg:col-span-1 ${ENTER_CLASS} ${LINK_CARD_CLASS}`}
+            style={enterStyle(260)}
+          >
+            <Card className="h-full">
+              <CardHeader className="pb-3">
+                <CardTitle className="flex items-center gap-2 text-base">
+                  <Boxes className="h-4 w-4 text-primary" /> {t('dash.inventoryTotals')}
+                </CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-2">
+                {familyTotals.length === 0 && <p className="text-sm text-muted-foreground">—</p>}
+                {familyTotals.map((f) => (
+                  <div
+                    key={`${f.familyId}-${f.unit}`}
+                    className="flex items-center justify-between text-sm"
+                  >
+                    <span>{f.familyName}</span>
+                    <span className="font-semibold tabular-nums">
+                      {f.total.toLocaleString()} {f.unit}
+                    </span>
+                  </div>
+                ))}
+              </CardContent>
+            </Card>
+          </Link>
 
-        <Link
-          href="/inventory"
-          className={`h-full lg:col-span-2 ${ENTER_CLASS} ${LINK_CARD_CLASS}`}
-          style={enterStyle(300)}
-        >
-          <Card className="h-full">
-            <CardHeader className="pb-3">
-              <CardTitle className="flex items-center gap-2 text-base">
-                <AlertTriangle
-                  className={`h-4 w-4 text-warning ${lowStock.length > 0 ? 'motion-safe:animate-pulse' : ''}`}
-                />{' '}
-                {t('dash.lowStock')}
-                {lowStock.length > 0 && <Badge variant="warning">{lowStock.length}</Badge>}
-              </CardTitle>
-            </CardHeader>
-            <CardContent>
-              {lowStock.length === 0 ? (
-                <p className="text-sm text-muted-foreground">{t('dash.allGood')} ✅</p>
-              ) : (
-                <ul className="space-y-1.5 text-sm">
-                  {lowStock.slice(0, 8).map((r) => (
-                    <li key={r.skuId} className="flex items-center justify-between">
-                      <span className="truncate pr-2">{r.label}</span>
-                      <span className="shrink-0 font-semibold tabular-nums text-warning">
-                        {r.total} / {r.minimumLevel} {r.unit}
-                      </span>
-                    </li>
-                  ))}
-                </ul>
-              )}
-            </CardContent>
-          </Card>
-        </Link>
-      </div>
+          <Link
+            href="/inventory"
+            className={`h-full lg:col-span-2 ${ENTER_CLASS} ${LINK_CARD_CLASS}`}
+            style={enterStyle(300)}
+          >
+            <Card className="h-full">
+              <CardHeader className="pb-3">
+                <CardTitle className="flex items-center gap-2 text-base">
+                  <AlertTriangle
+                    className={`h-4 w-4 text-warning ${lowStock.length > 0 ? 'motion-safe:animate-pulse' : ''}`}
+                  />{' '}
+                  {t('dash.lowStock')}
+                  {lowStock.length > 0 && <Badge variant="warning">{lowStock.length}</Badge>}
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                {lowStock.length === 0 ? (
+                  <p className="text-sm text-muted-foreground">{t('dash.allGood')} ✅</p>
+                ) : (
+                  <ul className="space-y-1.5 text-sm">
+                    {lowStock.slice(0, 8).map((r) => (
+                      <li key={r.skuId} className="flex items-center justify-between">
+                        <span className="truncate pr-2">{r.label}</span>
+                        <span className="shrink-0 font-semibold tabular-nums text-warning">
+                          {r.total} / {r.minimumLevel} {r.unit}
+                        </span>
+                      </li>
+                    ))}
+                  </ul>
+                )}
+              </CardContent>
+            </Card>
+          </Link>
+        </div>
+      )}
 
       {canPriceRecords && priceRecordCounts && (
         <Link
@@ -344,51 +362,53 @@ export default async function DashboardPage() {
         </Link>
       )}
 
-      <Link
-        href="/attendance"
-        className={`mt-4 block ${ENTER_CLASS} ${LINK_CARD_CLASS}`}
-        style={enterStyle(340)}
-      >
-        <Card>
-          <CardHeader className="pb-3">
-            <CardTitle className="flex items-center gap-2 text-base">
-              <CalendarCheck className="h-4 w-4 text-primary" /> {t('dash.attExceptions')}
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            {morning.exceptions.length === 0 && afternoon.exceptions.length === 0 ? (
-              <p className="text-sm text-muted-foreground">{t('dash.none')} ✅</p>
-            ) : (
-              <div className="grid gap-4 sm:grid-cols-2">
-                {(['morning', 'afternoon'] as const).map((shift) => {
-                  const summary = shift === 'morning' ? morning : afternoon;
-                  return (
-                    <div key={shift}>
-                      <div className="mb-1 text-xs font-semibold uppercase text-muted-foreground">
-                        {shift === 'morning' ? t('dash.morning') : t('dash.afternoon')}
+      {canAttendance && (
+        <Link
+          href="/attendance"
+          className={`mt-4 block ${ENTER_CLASS} ${LINK_CARD_CLASS}`}
+          style={enterStyle(340)}
+        >
+          <Card>
+            <CardHeader className="pb-3">
+              <CardTitle className="flex items-center gap-2 text-base">
+                <CalendarCheck className="h-4 w-4 text-primary" /> {t('dash.attExceptions')}
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              {morning.exceptions.length === 0 && afternoon.exceptions.length === 0 ? (
+                <p className="text-sm text-muted-foreground">{t('dash.none')} ✅</p>
+              ) : (
+                <div className="grid gap-4 sm:grid-cols-2">
+                  {(['morning', 'afternoon'] as const).map((shift) => {
+                    const summary = shift === 'morning' ? morning : afternoon;
+                    return (
+                      <div key={shift}>
+                        <div className="mb-1 text-xs font-semibold uppercase text-muted-foreground">
+                          {shift === 'morning' ? t('dash.morning') : t('dash.afternoon')}
+                        </div>
+                        {summary.exceptions.length === 0 ? (
+                          <p className="text-sm text-muted-foreground">—</p>
+                        ) : (
+                          <ul className="space-y-1 text-sm">
+                            {summary.exceptions.map((ex) => (
+                              <li key={ex.employeeId} className="flex justify-between">
+                                <span>{nameOf.get(ex.employeeId) ?? ex.employeeId}</span>
+                                <Badge variant={ex.status === 'unmarked' ? 'outline' : 'secondary'}>
+                                  {STATUS_LABELS[ex.status][locale]}
+                                </Badge>
+                              </li>
+                            ))}
+                          </ul>
+                        )}
                       </div>
-                      {summary.exceptions.length === 0 ? (
-                        <p className="text-sm text-muted-foreground">—</p>
-                      ) : (
-                        <ul className="space-y-1 text-sm">
-                          {summary.exceptions.map((ex) => (
-                            <li key={ex.employeeId} className="flex justify-between">
-                              <span>{nameOf.get(ex.employeeId) ?? ex.employeeId}</span>
-                              <Badge variant={ex.status === 'unmarked' ? 'outline' : 'secondary'}>
-                                {STATUS_LABELS[ex.status][locale]}
-                              </Badge>
-                            </li>
-                          ))}
-                        </ul>
-                      )}
-                    </div>
-                  );
-                })}
-              </div>
-            )}
-          </CardContent>
-        </Card>
-      </Link>
+                    );
+                  })}
+                </div>
+              )}
+            </CardContent>
+          </Card>
+        </Link>
+      )}
 
       {(canSales || canPayroll || canInquiries) && (
         <div className="mt-4 grid gap-3 sm:grid-cols-2 lg:grid-cols-4">

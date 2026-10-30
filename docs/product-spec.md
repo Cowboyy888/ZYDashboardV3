@@ -85,6 +85,12 @@ Seeded opening stock (Storage Room): 拔丝料 10厘 = 10 捆; 拔丝料 6厘 = 
 
 ## Roadmap (later passes)
 
+- **P4.1 Production Orders:** draft planning for a confirmed sales line or internal
+  replenishment request, saved drawing geometry, planned quantity/area/due date,
+  Owner approval, holds/cancellation, immutable approved plans and atomic audit.
+  This does not implement manufacturing execution or automatic stock posting.
+  See `docs/PRODUCTION_ORDERS.md` for the exact boundary and role policy.
+
 - **Purchasing — removed (29/10/2026):** no dashboard cards, navigation, supplier/PO pages, exports, PDFs, or server actions. Migration `20261029035331_remove_purchasing.sql` snapshots existing purchasing source records to the restricted audit log, then removes purchasing tables and RPCs. Historical stock receipts remain in balances; new purchase receipts are blocked.
 - **Third pass — Sales (built):** customers, sales orders (USD/KHR/CNY,
   `SO-YYYY-####`, Draft → Confirmed → Partially Delivered/Delivered/Cancelled),

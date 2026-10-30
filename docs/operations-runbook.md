@@ -65,6 +65,22 @@ Chinese names. Add remaining specifications in **Settings → Products**.
 
 ## Daily operations
 
+- **Production planning:** Production → New production order. Warehouse Admin or
+  Owner selects a confirmed sales line (or supplies an internal replenishment
+  reason), sheet SKU and prepared wire mesh drawing. Enter quantity, due date,
+  priority and optional supervisor/line reference. Save and review the persisted
+  geometry/counts before Owner approval. Edit is draft-only. Hold/cancel require
+  reasons; restoring an approved plan requires Owner. This never posts inventory.
+  Drawings must first be prepared through the existing Sales drawing workflow.
+  See `docs/PRODUCTION_ORDERS.md`.
+
+- **Unavailable product requests** (inquiry managers): Sales → Inquiries →
+  New/Edit → choose **Product unavailable**, enter diameter, panel size, mesh
+  spacing and requested sheets, then save. Reopen the same inquiry for revisions.
+  Use the existing stage/follow-up fields to track an open request; select a Lost
+  stage only when the sale is actually lost. This does not snapshot inventory,
+  compute shortages, or post stock. See `docs/INVENTORY_DEMAND.md`.
+
 - **Attendance** (Attendance Admin): open **Attendance**, pick the shift, click
   **Mark all present**, then adjust exceptions (Late/Leave/Absent). The banner
   warns about anyone still **Unmarked**. Reports auto-send at 08:00/13:00; use
@@ -78,6 +94,12 @@ Chinese names. Add remaining specifications in **Settings → Products**.
 
 ## Deploying
 
+For P4.1, review and apply the single additive
+`20261030041812_production_orders.sql` migration only after confirming the target
+baseline. Do not replay historical migrations. Verify new RLS/RPC grants and keep
+`production_private` outside API-exposed schemas before releasing application code.
+No production migration or deployment is performed by this implementation.
+
 1. Create a Supabase project; push migrations: `supabase link` then
    `supabase db push` (and run the seed if desired).
 2. Host the Next.js app (Node 20+). Set all env from `.env.example` with real
@@ -87,6 +109,23 @@ Chinese names. Add remaining specifications in **Settings → Products**.
    `docs/telegram-runbook.md`).
 4. Run `npm run verify` in CI on every change; run `PLAYWRIGHT=1 npm run verify`
    against a staging deployment for end-to-end coverage.
+
+## Migration drift verification
+
+Before releasing code that depends on database changes, run `npm run db:drift`
+with `SUPABASE_DB_URL` supplied through the server-side environment. This command
+does not load `.env.local` itself and never applies migrations. An unset URL or
+missing `psql` skips the comparison; a skipped check is not deployment evidence.
+
+The checker compares table/added-column/enum fingerprints. It recognizes
+single-table `DROP TABLE public.<name>` statements with or without `IF EXISTS`,
+and excludes retired tables and their columns from historical expectations.
+Surviving ledger columns such as `stock_movements.batch_reference` and
+`purchase_order_item_id` must still exist after Purchasing retirement.
+This is a limited parser, not a SQL interpreter: policy/function changes,
+drop-then-recreate histories, and unsupported SQL syntax require separate catalog
+review. A clean result does not certify RLS, data backfills, or full migration
+application; confirm those against the relevant migration and runbook.
 
 ## Backups & auditability
 

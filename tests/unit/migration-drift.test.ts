@@ -1,4 +1,5 @@
 import { describe, it, expect } from 'vitest';
+import { readFileSync } from 'node:fs';
 import {
   extractExpectedObjects,
   extractDroppedObjects,
@@ -160,6 +161,30 @@ describe('checkMigrationFile — combines parsing + diffing for one file', () =>
 });
 
 describe('extractDroppedObjects — pure parsing, mirrors extractExpectedObjects for drops', () => {
+  it.each([
+    'drop table public.suppliers;',
+    'DROP TABLE IF EXISTS public.suppliers;',
+    'drop\n table\n public.suppliers;',
+  ])('recognizes retired tables: %s', (sql) => {
+    expect(extractDroppedObjects(sql).tables).toEqual(new Set(['suppliers']));
+  });
+
+  it('recognizes all five tables removed by the actual Purchasing retirement', () => {
+    const retirement = readFileSync(
+      'supabase/migrations/20261029035331_remove_purchasing.sql',
+      'utf8',
+    );
+    expect(extractDroppedObjects(retirement).tables).toEqual(
+      new Set([
+        'purchase_order_manual_items',
+        'purchase_order_items',
+        'purchase_orders',
+        'suppliers',
+        'purchase_order_seq',
+      ]),
+    );
+  });
+
   it('extracts a dropped table', () => {
     const sql = `drop table if exists public.deposit_invoice_payments;`;
     expect(extractDroppedObjects(sql).tables).toEqual(new Set(['deposit_invoice_payments']));
@@ -181,6 +206,45 @@ describe('extractDroppedObjects — pure parsing, mirrors extractExpectedObjects
 });
 
 describe('filterDroppedObjects — excludes objects a later migration intentionally removed', () => {
+  it('excludes columns of retired tables while retaining columns of surviving tables', () => {
+    const expected = [
+      { kind: 'column', table: 'purchase_orders', column: 'attachment_path' },
+      { kind: 'column', table: 'stock_movements', column: 'purchase_order_item_id' },
+    ];
+    const dropped = { tables: new Set(['purchase_orders']), columns: new Set() };
+    expect(filterDroppedObjects(expected, dropped)).toEqual([expected[1]]);
+  });
+
+  it('checks surviving ledger columns after the actual Purchasing retirement', () => {
+    const purchasing = readFileSync('supabase/migrations/0013_purchasing.sql', 'utf8');
+    const retirement = readFileSync(
+      'supabase/migrations/20261029035331_remove_purchasing.sql',
+      'utf8',
+    );
+    const liveState = {
+      tables: new Set(['stock_movements']),
+      columns: new Set(['stock_movements.purchase_order_item_id']),
+      enumValues: new Set(),
+    };
+    const result = checkMigrationFile(
+      '0013_purchasing.sql',
+      purchasing,
+      liveState,
+      extractDroppedObjects(retirement),
+    );
+    expect(result.expectedCount).toBe(2);
+    expect(result.missing).toEqual(['column stock_movements.batch_reference']);
+    liveState.columns.add('stock_movements.batch_reference');
+    expect(
+      checkMigrationFile(
+        '0013_purchasing.sql',
+        purchasing,
+        liveState,
+        extractDroppedObjects(retirement),
+      ).missing,
+    ).toEqual([]);
+  });
+
   it('removes a dropped table from the expected list', () => {
     const expected = [{ kind: 'table', table: 'task_departments' }];
     const dropped = { tables: new Set(['task_departments']), columns: new Set() };

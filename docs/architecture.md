@@ -1,5 +1,16 @@
 # Architecture — Zysteel Operations
 
+## Production planning (P4.1)
+
+Production plans are separate from stock movements: approving a plan never posts
+inventory. Existing SKU/drawing/employee/source-order identities are reused;
+geometry is snapshotted and calculated with the existing wire-mesh domain helper.
+Versioned draft/status actions use RLS, database actor/approval guards and an
+atomic audit trigger. Privileged source lookup/trigger helpers are isolated in
+non-exposed `production_private`; public invoker RPCs expose only bounded planning
+references. See [Production Orders](PRODUCTION_ORDERS.md) for lifecycle, migration,
+privacy boundaries and verification. P4.2–P4.8 remain separate increments.
+
 ## Layers
 
 ```
@@ -109,7 +120,30 @@ and RPCs. Historical stock rows remain intact and traceable by their original
 purchase-item UUID; a trigger blocks new purchase receipts. Existing SKU and
 family-history guards resolve historical lines through those snapshots.
 
+## Inventory Demand source capture (30/10/2026)
+
+Inventory Demand's first source-capture increment reuses `sales_inquiries` and
+`inquiry_loss_reasons` rather than introducing another product/customer/demand
+master. Authenticated inquiry actions resolve the stable `stock_unavailable`
+code, validate request fields using the pure inquiry-loss domain helper, and
+update the same inquiry on revision. No stock-at-request snapshot or aggregate
+demand table is introduced. See [scope and dependencies](INVENTORY_DEMAND.md).
+
 ## Dashboard query performance (29/10/2026)
+
+P9's first fix gates dashboard attendance reads/cards/exceptions on
+`attendance:view` and stock/production-receipt reads/cards on `inventory:view`.
+Viewer retains both; production entry additionally requires `stock:production`.
+These are request-time application checks alongside unchanged source RLS, with
+no persistent cache. See [P9 audit and request measurements](PHASE9_TECHNICAL_AUDIT.md).
+
+The [P5.1 KPI contract](DASHBOARD_KPI_DEFINITIONS.md) records current dashboard
+formulas and proposed analytics boundaries. Confirmed order value, paid-date
+markers, historical receipt amounts and contractual invoice amounts are distinct
+measures. Production orders currently represent plans, not execution. Future
+aggregates must authorize each source domain, preserve currencies/units and report
+incomplete coverage or failed reads instead of presenting them as zero activity.
+P5.1 changes documentation only; no new query, cache or aggregate is implemented.
 
 The dashboard computes its month-to-date attendance rate from two parallel,
 RLS-respecting exact HEAD counts (present + late / all non-leave records),

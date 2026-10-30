@@ -1,4 +1,9 @@
 import 'server-only';
+export {
+  getProductionOrders,
+  getProductionOrder,
+  getProductionReferences,
+} from './production-queries';
 import { attendanceRateFromCounts } from '@/lib/domain/attendance';
 import { addDays, businessDate, startOfBusinessDayUtc } from '@/lib/domain/datetime';
 import { createSupabaseServerClient } from '@/lib/supabase/server';
@@ -17,6 +22,7 @@ import type {
   EmployeePrivateRow,
   InquiryCustomerTypeRow,
   InquiryFollowupRow,
+  InquiryLossReasonRow,
   InquirySourceRow,
   InquiryStatusRow,
   InvoiceSettingsRow,
@@ -1198,6 +1204,17 @@ export async function getInquiryStatuses(includeArchived = false): Promise<Inqui
     console.error('[queries] getInquiryStatuses', e);
     return [];
   }
+}
+
+export async function getInquiryLossReasons(): Promise<InquiryLossReasonRow[]> {
+  const supabase = await client();
+  const { data, error } = await supabase
+    .from('inquiry_loss_reasons')
+    .select('id, code, name, sort_order, is_active, created_at')
+    .order('sort_order')
+    .order('name');
+  if (error) throw error;
+  return (data ?? []) as InquiryLossReasonRow[];
 }
 
 export async function getInquiries(): Promise<SalesInquiryRow[]> {

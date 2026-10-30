@@ -7,6 +7,52 @@ import { CURRENCIES } from '@/lib/domain/currency';
 import { DEDUCTION_KINDS } from '@/lib/domain/payroll';
 import { WORK_LOCATIONS } from '@/lib/domain/employees';
 import { TASK_PRIORITIES, TASK_STATUSES } from '@/lib/domain/tasks';
+import { STOCKOUT_REASON_CODE } from '@/lib/domain/inquiry-loss';
+import { PRODUCTION_PRIORITIES, PRODUCTION_STATUSES } from '@/lib/domain/production-orders';
+
+export const productionOrderSchema = z
+  .object({
+    id: z.string().uuid(),
+    version: z.coerce.number().int().min(0),
+    businessDate: z.string().regex(/^\d{4}-\d{2}-\d{2}$/),
+    salesOrderItemId: z.preprocess(
+      (v) => (v === '' || v == null ? null : v),
+      z.string().uuid().nullable(),
+    ),
+    internalReason: z.string().trim().max(500).default(''),
+    skuId: z.string().uuid('Select a valid product specification.'),
+    drawingId: z.string().uuid('Select a valid wire mesh drawing.'),
+    plannedQuantity: z.coerce
+      .number()
+      .int('Planned sheets must be a whole number greater than zero.')
+      .positive('Planned sheets must be a whole number greater than zero.')
+      .max(1_000_000, 'Planned sheets must not exceed 1000000.'),
+    requiredDate: z.string().regex(/^\d{4}-\d{2}-\d{2}$/),
+    priority: z.enum(PRODUCTION_PRIORITIES),
+    plannedLine: z.string().trim().max(120).default(''),
+    supervisorId: z.preprocess(
+      (v) => (v === '' || v == null ? null : v),
+      z.string().uuid().nullable(),
+    ),
+    notes: z.string().trim().max(4000).default(''),
+    attachmentPath: z.string().max(500).default(''),
+  })
+  .refine((v) => Boolean(v.salesOrderItemId) || v.internalReason.length > 0, {
+    path: ['internalReason'],
+    message: 'An internal replenishment reason is required.',
+  });
+
+export const productionTransitionSchema = z
+  .object({
+    id: z.string().uuid(),
+    version: z.coerce.number().int().positive(),
+    status: z.enum(PRODUCTION_STATUSES),
+    reason: z.string().trim().max(1000).default(''),
+  })
+  .refine((v) => !['on_hold', 'cancelled'].includes(v.status) || v.reason.length > 0, {
+    path: ['reason'],
+    message: 'A reason is required to hold or cancel production.',
+  });
 
 /** Reusable primitives. */
 const nonEmpty = z.string().trim().min(1, 'Required');
@@ -576,6 +622,13 @@ export const inquirySchema = z.object({
   contact: optionalText,
   customerTypeId: optionalUuid,
   sourceId: optionalUuid,
+  lossReasonId: z.preprocess(
+    (v) => (v === '' ? null : v),
+    z
+      .union([z.string().uuid(), z.literal(STOCKOUT_REASON_CODE)])
+      .nullable()
+      .optional(),
+  ),
   familyId: optionalUuid,
   specification: optionalText,
   diameter: optionalText,

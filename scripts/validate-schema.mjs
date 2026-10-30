@@ -57,6 +57,7 @@ const tables = [
   'sales_order_items',
   'payment_receipts',
   'wire_mesh_drawings',
+  'production_orders',
   'login_events',
   'payroll_runs',
   'payroll_items',
@@ -374,6 +375,26 @@ check(
 check(/'ZYS-R-' \|\| lpad/i.test(sql), 'ZYS-R-###### receipt number format');
 
 // --- Seed sanity: the supplied example opening stock -------------------------
+const production = readFileSync(
+  join(migrationsDir, '20261030041812_production_orders.sql'),
+  'utf8',
+);
+check(
+  production.includes('production_orders_one_active_sales_item'),
+  'one active production plan per sales line',
+);
+check(production.includes('PRODUCTION_APPROVE_OWNER_ONLY'), 'owner-only production approval');
+check(production.includes('trg_production_order_no_delete'), 'production plans cannot be deleted');
+check(production.includes('trg_production_order_audit'), 'atomic production audit trigger');
+check(
+  /public\.create_production_order[\s\S]*?security invoker/i.test(production),
+  'production create RPC respects RLS',
+);
+check(
+  production.includes('schema production_private'),
+  'privileged production helpers use a non-exposed schema',
+);
+
 for (const qty of ['10', '30.5', '329', '64', '903', '146', '902']) {
   check(seed.includes(qty), `seed contains opening qty ${qty}`);
 }

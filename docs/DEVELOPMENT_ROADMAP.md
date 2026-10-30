@@ -1,5 +1,41 @@
 # Development Roadmap — Zysteel Operations
 
+**P9.1 + first fix:** [Technical audit](PHASE9_TECHNICAL_AUDIT.md) prioritizes
+confirmed security/correctness risks and records controlled request measurements.
+Dashboard attendance/inventory reads AND sections now use existing module grants;
+Viewer retains both. The next priority is dependency-security triage after npm
+reported a critical Next advisory, followed by inactive-account/direct-API RLS
+gaps. No dependency upgrade, RLS migration or deployment is included here.
+
+**P5.1 — documentation only:** [Dashboard audit and KPI definitions](DASHBOARD_KPI_DEFINITIONS.md)
+records existing formulas, source limitations, permissions, dependencies and the
+Phase 5 implementation order. Recommended next: permission-gate dashboard reads
+and sections using existing module grants before P5.2. Target currency/salesperson
+attribution and current amount-based collection data need decisions before those
+KPIs can be implemented. P5.2–P5.8 are not implemented by this audit; the numbered
+phases in the historical checklist below belong to the earlier roadmap.
+
+**P4.1:** Production-order drafts, review/approval, holds/cancellation and bounded
+factory references are implemented separately from the stock ledger. See
+[Production Orders](PRODUCTION_ORDERS.md). P4.2–P4.8 remain unimplemented.
+
+**Inventory Demand increment 1:** Explicit unavailable-product inquiry reasons
+and editable requested specifications reuse the existing CRM schema. See
+[scope, acceptance and remaining work](INVENTORY_DEMAND.md). Stock snapshots,
+cross-source demand aggregation and recommendations remain separate increments.
+
+**Phase 2 increment 1:** Purchasing retirement handling in the existing drift
+checker is repaired, with parser and SELECT-only CLI regressions. See the
+[implementation update](NEXT_PHASE_AUDIT.md#phase-2--increment-1-implementation-update).
+CRM workflow work remains queued behind the documented security/reliability gaps.
+
+**30/10/2026 assessment:** See [Next development phase audit](NEXT_PHASE_AUDIT.md)
+for the current feature inventory, reproduced verification/idempotency issues,
+and ordered implementation recommendations. The checklist below is historical;
+drift tooling and a security matrix already exist, recent dashboard performance
+and drawing work have shipped, and Viewer already has attendance/inventory view
+permissions. Do not reimplement those features from unchecked boxes below.
+
 **29/10/2026 update:** Purchasing has been removed at the user’s request.
 Purchasing-specific preservation constraints below describe the earlier audit
 scope and are superseded by the retirement migration and audit snapshots.

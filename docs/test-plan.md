@@ -88,6 +88,68 @@ Additional coverage: `tests/unit/datetime.test.ts` (Asia/Bangkok ⇄ UTC,
 dd/mm/yyyy, business-date boundary), `tests/unit/inventory-view.test.ts`
 (Storage/Warehouse/total split + low-stock).
 
+## Dashboard permission boundaries — acceptance #42 (P9 first fix)
+
+For all eight roles, dashboard attendance and stock sections must authorize both
+reads and rendering using existing module grants. Viewer keeps both; denied
+domains must start no requests and display no misleading zeros/exceptions.
+Production entry still requires stock:production and a warehouse location.
+
+`tests/integration/dashboard-permissions.test.ts` renders the actual Server
+Component, checks every source helper and section, sequential role changes,
+failed user guard, both locales and entry permissions. The existing RBAC unit
+tests retain the canonical grant matrix. `dashboard-request-cost.test.ts` uses
+real Supabase query builders/intercepted transport to verify per-role request
+budgets; these are not live speed or effective-RLS benchmarks.
+`tests/e2e/dashboard-permissions.spec.ts` adds eight mobile login/role cases for
+the real local stack. Report environment skips separately. P9 audit findings
+include existing SQL tests that return early without a backend; their green
+Vitest status does not prove SQL assertions executed.
+
+## Production Orders — acceptance #41 (P4.1)
+
+**41:** Authorized factory users create/edit draft production plans linked to an
+eligible sales line or an internal reason. Stable request identity and one active
+plan per sales line prevent duplicate active planning. Drawing geometry/counts
+and area remain reproducible; approved plans freeze their snapshot. Owner-only
+approval, valid reasoned holds/cancellations, version checks and atomic old/new
+audit are enforced independently by the DB. Planning never changes stock.
+
+Coverage: `tests/unit/production-orders.test.ts`,
+`tests/integration/production-orders.test.ts`,
+`tests/sql/production-orders.sql`, `tests/e2e/production-orders.spec.ts`, plus
+`scripts/validate-schema.mjs` checks. SQL tests run only on disposable migrated
+databases; browser tests require local Supabase. Existing #3–6/#10/#21/#39 remain
+required regressions (ledger, privacy, prices and drawings).
+
+## Inventory Demand source capture — acceptance #40
+
+**40:** An authorized inquiry manager records an explicit unavailable-product
+reason with diameter, panel size, mesh spacing and positive requested quantity.
+Reopening/revising preserves the same inquiry and its customer link; invalid
+fields or newly assigned archived reasons fail. This creates no stock movements
+and does not imply a lost sale without an existing `lost` status category.
+
+`tests/unit/inquiry-loss.test.ts` covers validation and EN/中文 labels/messages;
+`tests/integration/inquiry-stockout.test.ts` covers actions, query-builder
+duplicate-ignore semantics, old/new audit metadata, failures and denied roles;
+`tests/e2e/inquiry-stockout.spec.ts` covers save/reopen/revise; the rolled-back
+`tests/sql/inquiry-stockout.sql` checks actual reason uniqueness, RLS and
+unchanged ledger counts on a disposable migrated database. Existing acceptance
+#3–6/#21 remain required regressions.
+
+## Migration reliability regression (Phase 2 prerequisite)
+
+Acceptance #13/#34 depend on retaining Purchasing retirement while preserving
+the surviving ledger schema. `tests/unit/migration-drift.test.ts` covers actual
+retirement SQL, optional `IF EXISTS`, whitespace/case variations, exclusion of
+columns belonging to retired tables, and continued detection of missing ledger
+columns. `tests/integration/migration-drift-cli.test.ts` runs the real checker CLI
+with a fixture `psql` catalog: a retired catalog passes, missing Tasks/ledger
+objects fail, and only SELECT queries are issued. These tests never connect to a
+database. No UI workflow changes in this increment; existing Playwright flows
+remain the browser regression suite when local Supabase is available.
+
 ## Dashboard correctness and performance regressions
 
 Acceptance #7 aggregation and #10 access restrictions remain covered. Additional
@@ -155,6 +217,13 @@ The domain tests assert the rules; the database enforces them independently:
 silently removed.
 
 ## Running subsets
+
+P5.1 is a documentation-only audit: see the
+[KPI definitions and future test requirements](DASHBOARD_KPI_DEFINITIONS.md).
+Later analytics changes must test source grain, currency/unit separation,
+Bangkok date boundaries, incomplete coverage, errors versus empty success,
+all eight roles and query/export/drill-down parity. Audit definitions alone do
+not certify those future behaviors or replace the existing acceptance tests.
 
 ```bash
 npm run test                    # all unit + integration

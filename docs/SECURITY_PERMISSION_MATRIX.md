@@ -1,5 +1,13 @@
 # Security Permission Matrix — RBAC ↔ RLS Audit
 
+**30/10/2026 update:** this is a historical 17/10 audit, not a current live
+certificate. F0's unsafe schema-validator replay was subsequently removed;
+current validation only performs optional SELECT 1. Purchasing was retired.
+[P9 audit](PHASE9_TECHNICAL_AUDIT.md) rechecks current source, fixes dashboard
+query/render permission gates and records remaining direct-API and inactive-user
+gaps. F1/F2/F3 are not closed by hiding dashboard sections. P9 had no running
+local Supabase, so it does not renew this document's live-policy claims.
+
 Audit date: 2026-10-17. Scope: every role, every table's RLS policy, Storage
 bucket policy, and SECURITY DEFINER function, cross-referenced against
 `src/lib/domain/rbac.ts` (the app's single source of truth per `CLAUDE.md`)

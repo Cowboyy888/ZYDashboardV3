@@ -102,7 +102,7 @@ export function extractExpectedObjects(rawSql) {
 }
 
 /**
- * Mirror of extractExpectedObjects, for `drop table if exists` / `drop
+ * Mirror of extractExpectedObjects, for `drop table [if exists]` / `drop
  * column if exists` instead of the `add`/`create` forms — needed because
  * this repo's migrations are additive-only but a LATER migration is allowed
  * to drop something an EARLIER one added (0054 added the `*_unclassified_*`
@@ -117,7 +117,7 @@ export function extractDroppedObjects(rawSql) {
   const sql = stripLineComments(rawSql);
   const dropped = { tables: new Set(), columns: new Set() };
 
-  for (const m of sql.matchAll(/drop table if exists public\.(\w+)/gi)) {
+  for (const m of sql.matchAll(/\bdrop\s+table\s+(?:if\s+exists\s+)?public\.(\w+)\b/gi)) {
     dropped.tables.add(m[1]);
   }
 
@@ -138,7 +138,12 @@ export function extractDroppedObjects(rawSql) {
 export function filterDroppedObjects(expectedObjects, droppedGlobally) {
   return expectedObjects.filter((obj) => {
     if (obj.kind === 'table') return !droppedGlobally.tables.has(obj.table);
-    if (obj.kind === 'column') return !droppedGlobally.columns.has(`${obj.table}.${obj.column}`);
+    if (obj.kind === 'column') {
+      return (
+        !droppedGlobally.tables.has(obj.table) &&
+        !droppedGlobally.columns.has(`${obj.table}.${obj.column}`)
+      );
+    }
     return true; // enum values: Postgres has no DROP VALUE, nothing to exclude.
   });
 }

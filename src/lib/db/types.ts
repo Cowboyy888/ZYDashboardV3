@@ -277,6 +277,15 @@ export interface InquirySourceRow {
   created_at: string;
 }
 
+export interface InquiryLossReasonRow {
+  id: string;
+  code: string;
+  name: string;
+  sort_order: number;
+  is_active: boolean;
+  created_at: string;
+}
+
 export interface InquiryStatusRow {
   id: string;
   name: string;
@@ -297,6 +306,7 @@ export interface SalesInquiryRow {
   contact: string | null;
   customer_type_id: string | null;
   source_id: string | null;
+  loss_reason_id: string | null;
   family_id: string | null;
   specification: string | null;
   diameter: string | null;

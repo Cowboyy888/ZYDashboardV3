@@ -5,6 +5,7 @@ import {
   getInquiryCustomerTypes,
   getInquirySources,
   getInquiryStatuses,
+  getInquiryLossReasons,
   getEmployees,
   getFamilies,
 } from '@/lib/db/queries';
@@ -23,7 +24,7 @@ export default async function InquiriesPage() {
   const t = translator(locale);
   const canManage = hasPermission(user.role, 'inquiries:manage');
 
-  const [inquiries, followups, customerTypes, sources, statuses, employees, families] =
+  const [inquiries, followups, customerTypes, sources, statuses, employees, families, lossReasons] =
     await Promise.all([
       getInquiries(),
       getInquiryFollowups(),
@@ -32,6 +33,7 @@ export default async function InquiriesPage() {
       getInquiryStatuses(true),
       getEmployees(),
       getFamilies(true),
+      getInquiryLossReasons(),
     ]);
 
   return (
@@ -44,6 +46,7 @@ export default async function InquiriesPage() {
         customerTypes={customerTypes}
         sources={sources}
         statuses={statuses}
+        lossReasons={lossReasons}
         employees={employees.map((e) => ({
           id: e.id,
           name: e.display_name || e.name_english || e.name_chinese || e.employee_code,

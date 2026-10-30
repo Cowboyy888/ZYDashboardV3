@@ -12,13 +12,17 @@ export function AttachmentField({
   name,
   label,
   folder,
+  initialPath = null,
+  onPendingChange,
 }: {
   name: string;
   label: string;
   folder: string;
+  initialPath?: string | null;
+  onPendingChange?: (pending: boolean) => void;
 }) {
   const [pending, start] = useTransition();
-  const [path, setPath] = useState<string | null>(null);
+  const [path, setPath] = useState<string | null>(initialPath);
   const [fileName, setFileName] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
 
@@ -26,6 +30,7 @@ export function AttachmentField({
     const file = e.target.files?.[0];
     if (!file) return;
     setError(null);
+    onPendingChange?.(true);
     start(async () => {
       try {
         const { createSupabaseBrowserClient } = await import('@/lib/supabase/client');
@@ -43,6 +48,8 @@ export function AttachmentField({
         setFileName(file.name);
       } catch (err) {
         setError(err instanceof Error ? err.message : 'Upload failed');
+      } finally {
+        onPendingChange?.(false);
       }
     });
   }

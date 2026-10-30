@@ -198,6 +198,11 @@ customers`, `order_date`, `expected_delivery_date`, `currency`, `status`,
 `payment_status`, `notes`, `attachment_path`, `quotation_id → quotations`
 (nullable, `on delete set null`), `created_by → profiles`,
 `confirmed_at`, `cancelled_at`, `created_at`, `updated_at`.
+- `deposit_paid_on` and `balance_paid_on` (nullable dates, migration 0037)
+  are the current UI's payment markers. `markSalesOrderPaid` records a business
+  date, not an amount transaction. `computeSoPaymentStatus` derives displayed
+  payment badges from these markers and invoice presence. Neither marker proves
+  a measured cash amount or supports a current receivables balance.
 - One currency per SO; no exchange-rate conversion.
 - Trigger `enforce_so_header_immutable`: once `status <> 'draft'`, `customer_id`
   /`currency`/`order_date` can no longer change (`expected_delivery_date`,
@@ -211,7 +216,9 @@ customers`, `order_date`, `expected_delivery_date`, `currency`, `status`,
 - `payment_status` (`none`/`pending_deposit`/`partially_paid`/`paid`) is
   orthogonal to `status` — it tracks the SO's deposit invoice, not delivery.
   Mirrored by trigger `mirror_deposit_invoice_status` from the SO's active
-  `deposit_invoices.status`; the app never writes it directly.
+  `deposit_invoices.status`; the app never writes it directly. This legacy DB
+  status is not the current paid-marker UI status and may be stale when only
+  the current UI markers are updated.
 - `quotation_id` is set when this order was auto-created from a Quotation's
   paid deposit (`markPaid` in `src/lib/actions/quotations.ts`) — see the
   `quotations` section below for the full flow. `on delete set null` rather
@@ -280,7 +287,7 @@ complete. Its own trigger (`recompute_deposit_invoice_status`, AFTER INSERT)
 is likewise dormant — untouched rather than repointed, so nothing about its
 old behaviour changed.
 
-### payment_receipts  *(Seventh pass — append-only ledger)*
+### payment_receipts  *(Seventh pass — historical ledger; UI writes dormant since 0037)*
 `id`, `receipt_number` (unique — the independent Receipt Number, one per
 payment, never dependent on `so_number`. Format `ZYS-R-######` since Ninth
 pass: a GLOBAL, never-year-resetting counter, `receipt_number_seq` +
@@ -295,12 +302,15 @@ SO's deposit invoice), `receipt_type` (`deposit`/`final`), `amount`,
 UPDATE/DELETE path from the app — matches `stock_movements`'/
 `deposit_invoice_payments`' posture: a mistake gets a correcting entry, not
 an edit.
-- What the app now writes for every payment against a Sales Order — both the
+- The Seventh-pass workflow wrote each payment against a Sales Order — both the
   deposit (`receipt_type = 'deposit'`, gating the deposit invoice's status
   same as before) and, once the deposit is fully paid, the remaining balance
   (`receipt_type = 'final'`, possibly several partial entries). This is what
   closes the gap `deposit_invoices.remaining_balance` always had: nothing
-  previously recorded what happened to the balance after the deposit.
+  previously recorded what happened to the balance after the deposit. Migration
+  `0037_so_deposit_balance_paid.sql` replaced current amount-entry UI writes with
+  SO paid-date markers. Existing receipt rows and guards remain; do not infer
+  comprehensive current cash collection from this historical ledger.
 - Trigger `enforce_payment_receipt_rules` (BEFORE INSERT) is the
   authoritative "total collected can never exceed the SO total" guard: it
   recomputes the SO's total fresh as `SUM(sales_order_items.line_total)` and
@@ -316,10 +326,12 @@ an edit.
   `deposit_amount`), just sourced from `payment_receipts` instead of
   `deposit_invoice_payments`. `mirror_deposit_invoice_status` (unchanged)
   still mirrors the resulting status onto `sales_orders.payment_status`.
-- Total paid / deposit paid / final paid / balance due are all derived
-  live from this table in the app (`src/lib/domain/payment-receipt.ts`),
-  never stored — same "ledger, not totals" posture as everywhere else in
-  this schema.
+- `src/lib/domain/payment-receipt.ts` retains a historical balance helper for
+  receipt/PDF use. Current payment entry does not supply complete amount data
+  to this table. Historical recorded receipts, invoice contractual amounts and
+  current paid-date markers must remain distinct in reports; none establishes
+  a comprehensive current outstanding balance without verified payment coverage.
+  See [P5.1 collection definitions](DASHBOARD_KPI_DEFINITIONS.md#f-collections-blocked-amount-metrics-and-safe-alternatives).
 - `receipt_seq` (the numbering counter table) has RLS enabled with **no
   policies** (default-deny) — its only writer is the `security definer`
   `assign_receipt_number()` trigger, which bypasses RLS regardless; mirrors
@@ -471,7 +483,62 @@ breakdown both read.
   shipped — see 0059 for why it also needed read access to `employees`/
   `customers` (the New Task form's pickers), not just `tasks` itself.
 
+### Inquiry loss reasons — Inventory Demand source capture
+
+Existing migration 0038 defines `inquiry_loss_reasons` (`id`, unique `code`,
+`name`, `sort_order`, `is_active`, `created_at`) and nullable
+`sales_inquiries.loss_reason_id` referencing it with `ON DELETE SET NULL`.
+The inquiry create/edit UI now uses that existing relationship. The reserved
+`stock_unavailable` code is created only on an explicit authorized save, with
+duplicate-ignore semantics; historical generic reasons are never reinterpreted.
+Archived reasons remain readable on their existing inquiry. Lookup and inquiry
+read/write policies remain owner/system_admin/sales_admin.
+
+No schema is added in this increment. Requested diameter, panel size, mesh
+spacing and quantity stay on the existing inquiry row through revisions; the
+customer reference is preserved on edit. Loss reason alone does not establish a
+lost sale (status category must be `lost`), a measured stock snapshot or a
+shortage quantity. See [Inventory Demand scope](INVENTORY_DEMAND.md).
+
+### Production orders — P4.1
+
+Migration `20261030041812_production_orders.sql` adds `production_orders`: UUID
+`id` (also the create request identity), permanent `order_number`, Bangkok
+`business_date`, optional `sales_order_item_id`/derived `sales_order_id`, order and
+customer-name snapshots, internal request reason, existing `sku_id`/label,
+existing `drawing_id`/`geometry` snapshot, whole-sheet `planned_quantity`, required
+date, priority (`normal/high/urgent`), optional planned-line text and employee
+supervisor/name, notes/private attachment path, status, held-from status/reason,
+approval actor/time, creation/update actors/times, version and original
+`creation_payload` for idempotent retries. Planned m²/counts are derived, not
+editable totals. No actual output or material-consumption fields are introduced.
+
+Statuses: `draft`, `approved`, `on_hold`, `cancelled`. Approved plans cannot be
+edited; holds/cancellations require reasons; cancelled is terminal. Approval and
+resumption to Approved require Owner. One active plan per sales line; quantities
+must fit current undelivered sales quantities at save/approval. Plans cannot be
+deleted. Atomic audit triggers retain old/new metadata; no salaries/prices enter
+these rows/events. Draft edits refresh drawing snapshots; approvals freeze them.
+
+`production_order_number_seq` is a protected, global never-resetting sequence.
+`production_private` contains role-checked definer reference/trigger helpers and
+must remain outside exposed API schemas. Public invoker RPCs:
+`create_production_order(uuid,jsonb)` (idempotent original payload) and
+`production_reference_options(text,text,uuid)` (30 narrow matches).
+
+Read: Owner/System Admin/Warehouse Admin/Sales Admin. Insert/update:
+Owner/Warehouse Admin, with active-profile and approval guards. Existing source
+table RLS is not widened; references deliberately expose only planning identifiers,
+labels and necessary SKU identity. See [workflow](PRODUCTION_ORDERS.md).
+
 ## RLS matrix (summary)
+
+P9's dashboard fix applies existing `attendance:view`/`inventory:view` before
+starting corresponding reads and rendering sections. Stock production receipts
+are inventory data; production planning uses its separate existing grants.
+No table, grant or policy changes are introduced. This does not repair legacy
+`auth_role()` ignoring inactive profiles or the other direct-API parity findings;
+see [P9 technical audit](PHASE9_TECHNICAL_AUDIT.md).
 
 | Table | Read | Write |
 | --- | --- | --- |
