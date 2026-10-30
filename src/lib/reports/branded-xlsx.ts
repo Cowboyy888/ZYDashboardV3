@@ -1,5 +1,7 @@
 import 'server-only';
 import ExcelJS from 'exceljs';
+import { readFile } from 'node:fs/promises';
+import path from 'node:path';
 
 /**
  * The ZY Steel branded report template — one builder every export uses, so all
@@ -71,6 +73,8 @@ export interface BrandedReportSpec<T> {
   notes?: string[];
   /** Overrides the default footer strip text. */
   footer?: string;
+  /** Show the official ZY Steel logo in the report letterhead. */
+  includeLogo?: boolean;
 }
 
 const DEFAULT_FOOTER = 'ZY STEEL 中粤铁网 · Phnom Penh, Cambodia · Thank you for your business';
@@ -106,30 +110,44 @@ export async function buildBrandedXlsx<T>(spec: BrandedReportSpec<T>): Promise<B
 
   let r = 1;
   const mergeFull = (row: number) => sheet.mergeCells(row, 1, row, colCount);
+  const letterheadStartCol = spec.includeLogo && colCount >= 4 ? 2 : 1;
+  const mergeLetterhead = (row: number) => sheet.mergeCells(row, letterheadStartCol, row, colCount);
 
   // --- 1. Letterhead ----------------------------------------------------------
-  mergeFull(r);
-  const brand = sheet.getCell(r, 1);
+  if (spec.includeLogo && colCount >= 4) {
+    const logo = await readFile(path.join(process.cwd(), 'public', 'brand', 'zysteel-logo.png'));
+    const logoId = workbook.addImage({
+      base64: `data:image/png;base64,${logo.toString('base64')}`,
+      extension: 'png',
+    });
+    sheet.addImage(logoId, {
+      tl: { col: 0.08, row: 0.08 },
+      ext: { width: 68, height: 57 },
+      editAs: 'oneCell',
+    });
+  }
+  mergeLetterhead(r);
+  const brand = sheet.getCell(r, letterheadStartCol);
   brand.value = 'ZY STEEL';
   brand.font = { name: FONT, size: 20, bold: true, color: { argb: INK } };
   brand.alignment = { vertical: 'middle' };
   sheet.getRow(r).height = 26;
   r++;
 
-  mergeFull(r);
-  const zh = sheet.getCell(r, 1);
+  mergeLetterhead(r);
+  const zh = sheet.getCell(r, letterheadStartCol);
   zh.value = '中粤铁网';
   zh.font = { name: FONT, size: 12, bold: true, color: { argb: RED } };
   r++;
 
-  mergeFull(r);
-  const sub1 = sheet.getCell(r, 1);
+  mergeLetterhead(r);
+  const sub1 = sheet.getCell(r, letterheadStartCol);
   sub1.value = 'Steel Mesh & Wire Drawing Manufacturer';
   sub1.font = { name: FONT, size: 9, color: { argb: GREY_TEXT } };
   r++;
 
-  mergeFull(r);
-  const sub2 = sheet.getCell(r, 1);
+  mergeLetterhead(r);
+  const sub2 = sheet.getCell(r, letterheadStartCol);
   sub2.value = 'Phnom Penh, Kingdom of Cambodia';
   sub2.font = { name: FONT, size: 9, color: { argb: GREY_TEXT } };
   r++;

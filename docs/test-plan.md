@@ -124,12 +124,13 @@ required regressions (ledger, privacy, prices and drawings).
 
 ## Attendance location exports — acceptance #42
 
-**42:** Any role with `attendance:view` can download the selected date and
-morning/afternoon shift as two distinct Excel reports: Office contains only
+**42:** Any role with `attendance:view` can filter an inclusive date range up to
+366 days and download two distinct, ZY-logo Excel reports. Office contains only
 active `work_location = office` employees; Factory contains active factory
-employees and the established null/unknown fallback. The export is read-only,
-uses existing RLS-respecting queries, shows unmarked employees explicitly, and
-does not alter attendance or payroll source records.
+employees and the established null/unknown fallback. Each daily row shows both
+morning and afternoon status. The export is read-only, pages through existing
+RLS-respecting queries, shows unmarked shifts explicitly, and does not alter
+attendance or payroll source records.
 
 Coverage: `tests/unit/attendance-export.test.ts`,
 `tests/integration/attendance-report-render.test.ts`, and the download-link case

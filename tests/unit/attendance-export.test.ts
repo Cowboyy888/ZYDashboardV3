@@ -52,21 +52,28 @@ function record(employeeId: string, shift: 'morning' | 'afternoon', status: 'pre
 }
 
 describe('attendance export filters', () => {
-  it('requires a valid date, shift and explicit office/factory location', () => {
+  it('requires a valid bounded date range and explicit office/factory location', () => {
     expect(
       parseAttendanceExportFilters(
-        new URLSearchParams('date=2026-10-30&shift=morning&location=office'),
+        new URLSearchParams('from=2026-10-01&to=2026-10-30&location=office'),
       ),
-    ).toEqual({ date: '2026-10-30', shift: 'morning', location: 'office' });
-    expect(parseAttendanceExportFilters(new URLSearchParams('date=bad&shift=morning'))).toBeNull();
+    ).toEqual({ from: '2026-10-01', to: '2026-10-30', location: 'office' });
+    expect(
+      parseAttendanceExportFilters(new URLSearchParams('from=bad&to=2026-10-30&location=office')),
+    ).toBeNull();
     expect(
       parseAttendanceExportFilters(
-        new URLSearchParams('date=2026-10-30&shift=night&location=factory'),
+        new URLSearchParams('from=2026-10-31&to=2026-10-30&location=factory'),
+      ),
+    ).toBeNull();
+    expect(
+      parseAttendanceExportFilters(
+        new URLSearchParams('from=2025-01-01&to=2026-10-30&location=factory'),
       ),
     ).toBeNull();
   });
 
-  it('keeps Office and Factory separate and reports only the selected shift', () => {
+  it('keeps locations separate and reports both shifts for every selected date', () => {
     const employees = [
       employee('office', 'ZY-0001', 'office'),
       employee('factory', 'ZY-0002', 'factory'),
@@ -81,18 +88,23 @@ describe('attendance export filters', () => {
     const groups: AttendanceGroupRow[] = [];
 
     const office = attendanceExportRows(employees, attendance, groups, {
-      date: '2026-10-30',
-      shift: 'morning',
+      from: '2026-10-30',
+      to: '2026-10-31',
       location: 'office',
     });
     const factory = attendanceExportRows(employees, attendance, groups, {
-      date: '2026-10-30',
-      shift: 'morning',
+      from: '2026-10-30',
+      to: '2026-10-30',
       location: 'factory',
     });
 
-    expect(office.map((row) => [row.employeeCode, row.status])).toEqual([['ZY-0001', 'present']]);
-    expect(factory.map((row) => [row.employeeCode, row.status])).toEqual([
+    expect(
+      office.map((row) => [row.date, row.employeeCode, row.morningStatus, row.afternoonStatus]),
+    ).toEqual([
+      ['2026-10-30', 'ZY-0001', 'present', 'late'],
+      ['2026-10-31', 'ZY-0001', 'unmarked', 'unmarked'],
+    ]);
+    expect(factory.map((row) => [row.employeeCode, row.morningStatus])).toEqual([
       ['ZY-0002', 'late'],
       ['ZY-0003', 'unmarked'],
     ]);

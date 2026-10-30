@@ -1,5 +1,5 @@
 import { requirePermission } from '@/lib/auth';
-import { getAttendanceForDate, getAttendanceGroups, getEmployees } from '@/lib/db/queries';
+import { getAttendanceForRange, getAttendanceGroups, getEmployees } from '@/lib/db/queries';
 import {
   attendanceExportRows,
   parseAttendanceExportFilters,
@@ -16,13 +16,13 @@ export async function GET(request: Request) {
 
   const [employees, attendance, groups] = await Promise.all([
     getEmployees(),
-    getAttendanceForDate(filters.date),
+    getAttendanceForRange(filters.from, filters.to),
     getAttendanceGroups(true),
   ]);
   const rows = attendanceExportRows(employees, attendance, groups, filters);
   const buffer = await buildAttendanceReportXlsx(rows, filters);
   return xlsxResponse(
     buffer,
-    `attendance-${filters.location}-${filters.date}-${filters.shift}.xlsx`,
+    `attendance-${filters.location}-${filters.from}-to-${filters.to}.xlsx`,
   );
 }

@@ -316,6 +316,33 @@ export async function getAttendanceForDate(businessDate: string): Promise<Attend
   }
 }
 
+/** Attendance rows for a bounded inclusive report period, paged past PostgREST's row cap. */
+export async function getAttendanceForRange(from: string, to: string): Promise<AttendanceRow[]> {
+  try {
+    const supabase = await client();
+    const rows: AttendanceRow[] = [];
+    const pageSize = 1000;
+    for (let offset = 0; ; offset += pageSize) {
+      const { data, error } = await supabase
+        .from('attendance')
+        .select('*')
+        .gte('business_date', from)
+        .lte('business_date', to)
+        .order('business_date')
+        .order('id')
+        .range(offset, offset + pageSize - 1);
+      if (error) throw error;
+      const page = (data as AttendanceRow[]) ?? [];
+      rows.push(...page);
+      if (page.length < pageSize) break;
+    }
+    return rows;
+  } catch (e) {
+    console.error('[queries] getAttendanceForRange', e);
+    return [];
+  }
+}
+
 /** Full-period rate via exact HEAD counts; unaffected by PostgREST's row cap. */
 export async function getAttendanceRateForRange(from: string, to: string): Promise<number> {
   try {

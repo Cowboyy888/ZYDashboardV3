@@ -4,6 +4,7 @@ import Link from 'next/link';
 import { AlertTriangle, Download } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import {
   Table,
@@ -74,7 +75,10 @@ export function AttendanceBoard({
 }) {
   const { t, locale } = useT();
   const [shift, setShift] = useState<Shift>('morning');
+  const [reportFrom, setReportFrom] = useState(date);
+  const [reportTo, setReportTo] = useState(date);
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
+  const reportRangeValid = reportFrom <= reportTo;
   const activeIds = employees.map((e) => e.id);
   const employeesByLocation: Record<AttendanceLocation, EmployeeRow[]> = {
     office: [],
@@ -93,6 +97,11 @@ export function AttendanceBoard({
     return rec?.status ?? 'unmarked';
   };
   const summary = summarizeShift(activeIds, asRecords, date, shift);
+
+  useEffect(() => {
+    setReportFrom(date);
+    setReportTo(date);
+  }, [date]);
 
   const headerCheckboxRefs = useRef<Partial<Record<AttendanceLocation, HTMLInputElement | null>>>(
     {},
@@ -145,6 +154,36 @@ export function AttendanceBoard({
               label={t('att.sendReport')}
               confirmText={t('common.confirmSendReport')}
             />
+          )}
+        </div>
+
+        <div className="mt-4 flex flex-wrap items-end gap-3 rounded-lg border bg-muted/30 p-3">
+          <div>
+            <div className="mb-1 text-sm font-medium">{t('att.reportDateRange')}</div>
+            <div className="text-xs text-muted-foreground">{t('att.reportDateRangeHint')}</div>
+          </div>
+          <label className="min-w-40 text-xs font-medium">
+            {t('common.dateFrom')}
+            <Input
+              type="date"
+              value={reportFrom}
+              max={reportTo}
+              onChange={(event) => setReportFrom(event.target.value)}
+              className="mt-1"
+            />
+          </label>
+          <label className="min-w-40 text-xs font-medium">
+            {t('common.dateTo')}
+            <Input
+              type="date"
+              value={reportTo}
+              min={reportFrom}
+              onChange={(event) => setReportTo(event.target.value)}
+              className="mt-1"
+            />
+          </label>
+          {!reportRangeValid && (
+            <div className="text-sm text-destructive">{t('att.invalidReportRange')}</div>
           )}
         </div>
 
@@ -217,14 +256,21 @@ export function AttendanceBoard({
                       {ATTENDANCE_LOCATION_LABEL[loc].zh} {ATTENDANCE_LOCATION_LABEL[loc].en}{' '}
                       <span className="font-normal text-muted-foreground">({group.length})</span>
                     </CardTitle>
-                    <Button asChild variant="outline" size="sm">
-                      <Link
-                        href={`/api/export/attendance?date=${date}&shift=${shift}&location=${loc}`}
-                      >
+                    {reportRangeValid ? (
+                      <Button asChild variant="outline" size="sm">
+                        <Link
+                          href={`/api/export/attendance?from=${reportFrom}&to=${reportTo}&location=${loc}`}
+                        >
+                          <Download className="mr-2 h-4 w-4" />
+                          {t('att.downloadReport')}
+                        </Link>
+                      </Button>
+                    ) : (
+                      <Button variant="outline" size="sm" disabled>
                         <Download className="mr-2 h-4 w-4" />
                         {t('att.downloadReport')}
-                      </Link>
-                    </Button>
+                      </Button>
+                    )}
                   </CardHeader>
                   <CardContent className="p-0">
                     <Table>

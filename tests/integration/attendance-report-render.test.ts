@@ -7,16 +7,18 @@ describe('separate attendance report workbook', () => {
     const buffer = await buildAttendanceReportXlsx(
       [
         {
+          date: '2026-10-30',
           employeeCode: 'ZY-0001',
           employeeName: 'Office Employee',
           khmerName: '',
           groupName: 'Office Team',
           jobTitle: 'Assistant',
-          status: 'present',
+          morningStatus: 'present',
+          afternoonStatus: 'late',
           notes: '',
         },
       ],
-      { date: '2026-10-30', shift: 'morning', location: 'office' },
+      { from: '2026-10-30', to: '2026-10-31', location: 'office' },
     );
     const workbook = new ExcelJS.Workbook();
     await workbook.xlsx.load(buffer as unknown as ArrayBuffer);
@@ -32,5 +34,8 @@ describe('separate attendance report workbook', () => {
     expect(text).toContain('Office Employee');
     expect(text).not.toContain('Factory Employee');
     expect(text).toContain('Morning 上午');
+    expect(text).toContain('Afternoon 下午');
+    expect(text).toContain('30/10/2026 — 31/10/2026');
+    expect(sheet.getImages()).toHaveLength(1);
   });
 });

@@ -186,6 +186,15 @@ export const dictionary = {
   'att.afternoon': { en: 'Afternoon', zh: '下午' },
   'att.sendReport': { en: 'Send report', zh: '发送报告' },
   'att.downloadReport': { en: 'Download report', zh: '下载报告' },
+  'att.reportDateRange': { en: 'Report date range', zh: '报告日期范围' },
+  'att.reportDateRangeHint': {
+    en: 'The Excel report includes both morning and afternoon shifts.',
+    zh: 'Excel 报告包含上午和下午班次。',
+  },
+  'att.invalidReportRange': {
+    en: 'The start date must be before the end date.',
+    zh: '开始日期必须早于结束日期。',
+  },
   'att.markNPresent': { en: 'Mark {n} present', zh: '标记 {n} 人出勤' },
   'att.markAllPresent': { en: 'Mark all present', zh: '全部标为出勤' },
   'att.selectAll': { en: 'Select all', zh: '全选' },

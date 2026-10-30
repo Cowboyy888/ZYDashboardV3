@@ -17,7 +17,7 @@ test('attendance: mark all present, then set a leave exception', async ({ page }
   await expect(page.getByText('Leave', { exact: true }).first()).toBeVisible();
 });
 
-test('attendance: exposes separate Office and Factory downloads for the selected shift', async ({
+test('attendance: filters separate Office and Factory downloads by date range', async ({
   page,
 }) => {
   await page.goto('/attendance?date=2026-10-30');
@@ -25,20 +25,21 @@ test('attendance: exposes separate Office and Factory downloads for the selected
   await expect(downloads).toHaveCount(2);
   await expect(downloads.nth(0)).toHaveAttribute(
     'href',
-    '/api/export/attendance?date=2026-10-30&shift=morning&location=office',
+    '/api/export/attendance?from=2026-10-30&to=2026-10-30&location=office',
   );
   await expect(downloads.nth(1)).toHaveAttribute(
     'href',
-    '/api/export/attendance?date=2026-10-30&shift=morning&location=factory',
+    '/api/export/attendance?from=2026-10-30&to=2026-10-30&location=factory',
   );
 
-  await page.getByRole('tab', { name: /Afternoon|下午/ }).click();
+  await page.getByLabel(/Date from|起始日期/).fill('2026-10-01');
+  await page.getByLabel(/Date to|结束日期/).fill('2026-10-31');
   await expect(downloads.nth(0)).toHaveAttribute(
     'href',
-    '/api/export/attendance?date=2026-10-30&shift=afternoon&location=office',
+    '/api/export/attendance?from=2026-10-01&to=2026-10-31&location=office',
   );
   await expect(downloads.nth(1)).toHaveAttribute(
     'href',
-    '/api/export/attendance?date=2026-10-30&shift=afternoon&location=factory',
+    '/api/export/attendance?from=2026-10-01&to=2026-10-31&location=factory',
   );
 });

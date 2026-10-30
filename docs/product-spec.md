@@ -81,9 +81,10 @@ Seeded opening stock (Storage Room): 拔丝料 10厘 = 10 捆; 拔丝料 6厘 = 
   edits exceptions. Unmarked employees are flagged before a report is sent.
 - Reports: morning at **08:00**, afternoon at **13:00** (Asia/Bangkok), with
   totals + exceptions. Admin can resend a corrected report. Scheduled sends are
-  idempotent (no duplicates). Attendance viewers can download the selected
-  date/shift as separate Office and Factory Excel reports; each file contains
-  only active employees assigned to that location.
+  idempotent (no duplicates). Attendance viewers can filter an inclusive date
+  range (up to 366 days) and download separate branded Office and Factory Excel
+  reports. Each file contains both shifts and only active employees assigned to
+  that location.
 
 ## Roadmap (later passes)
 
