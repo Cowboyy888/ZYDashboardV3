@@ -185,6 +185,7 @@ export const dictionary = {
   'att.morning': { en: 'Morning', zh: '上午' },
   'att.afternoon': { en: 'Afternoon', zh: '下午' },
   'att.sendReport': { en: 'Send report', zh: '发送报告' },
+  'att.downloadReport': { en: 'Download report', zh: '下载报告' },
   'att.markNPresent': { en: 'Mark {n} present', zh: '标记 {n} 人出勤' },
   'att.markAllPresent': { en: 'Mark all present', zh: '全部标为出勤' },
   'att.selectAll': { en: 'Select all', zh: '全选' },

@@ -122,6 +122,19 @@ Coverage: `tests/unit/production-orders.test.ts`,
 databases; browser tests require local Supabase. Existing #3–6/#10/#21/#39 remain
 required regressions (ledger, privacy, prices and drawings).
 
+## Attendance location exports — acceptance #42
+
+**42:** Any role with `attendance:view` can download the selected date and
+morning/afternoon shift as two distinct Excel reports: Office contains only
+active `work_location = office` employees; Factory contains active factory
+employees and the established null/unknown fallback. The export is read-only,
+uses existing RLS-respecting queries, shows unmarked employees explicitly, and
+does not alter attendance or payroll source records.
+
+Coverage: `tests/unit/attendance-export.test.ts`,
+`tests/integration/attendance-report-render.test.ts`, and the download-link case
+in `tests/e2e/attendance.spec.ts`.
+
 ## Inventory Demand source capture — acceptance #40
 
 **40:** An authorized inquiry manager records an explicit unavailable-product

@@ -16,3 +16,29 @@ test('attendance: mark all present, then set a leave exception', async ({ page }
   await page.getByRole('button', { name: 'Leave', exact: true }).first().click();
   await expect(page.getByText('Leave', { exact: true }).first()).toBeVisible();
 });
+
+test('attendance: exposes separate Office and Factory downloads for the selected shift', async ({
+  page,
+}) => {
+  await page.goto('/attendance?date=2026-10-30');
+  const downloads = page.getByRole('link', { name: /Download report|下载报告/ });
+  await expect(downloads).toHaveCount(2);
+  await expect(downloads.nth(0)).toHaveAttribute(
+    'href',
+    '/api/export/attendance?date=2026-10-30&shift=morning&location=office',
+  );
+  await expect(downloads.nth(1)).toHaveAttribute(
+    'href',
+    '/api/export/attendance?date=2026-10-30&shift=morning&location=factory',
+  );
+
+  await page.getByRole('tab', { name: /Afternoon|下午/ }).click();
+  await expect(downloads.nth(0)).toHaveAttribute(
+    'href',
+    '/api/export/attendance?date=2026-10-30&shift=afternoon&location=office',
+  );
+  await expect(downloads.nth(1)).toHaveAttribute(
+    'href',
+    '/api/export/attendance?date=2026-10-30&shift=afternoon&location=factory',
+  );
+});

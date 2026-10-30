@@ -1,7 +1,9 @@
 'use client';
 import { useEffect, useRef, useState } from 'react';
-import { AlertTriangle } from 'lucide-react';
+import Link from 'next/link';
+import { AlertTriangle, Download } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
+import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import {
   Table,
@@ -215,6 +217,14 @@ export function AttendanceBoard({
                       {ATTENDANCE_LOCATION_LABEL[loc].zh} {ATTENDANCE_LOCATION_LABEL[loc].en}{' '}
                       <span className="font-normal text-muted-foreground">({group.length})</span>
                     </CardTitle>
+                    <Button asChild variant="outline" size="sm">
+                      <Link
+                        href={`/api/export/attendance?date=${date}&shift=${shift}&location=${loc}`}
+                      >
+                        <Download className="mr-2 h-4 w-4" />
+                        {t('att.downloadReport')}
+                      </Link>
+                    </Button>
                   </CardHeader>
                   <CardContent className="p-0">
                     <Table>
